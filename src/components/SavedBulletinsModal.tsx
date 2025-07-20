@@ -143,7 +143,7 @@ export default function SavedBulletinsModal({
                       )}
 
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500">
-                        <span>{bulletin.speakers?.length || 0} speakers</span>
+                        <span>{bulletin.agenda?.filter((a: any) => a.type === 'speaker').length || 0} speakers</span>
                         <span>{bulletin.announcements?.length || 0} announcements</span>
                         <span>{bulletin.meetings?.length || 0} meetings</span>
                       </div>

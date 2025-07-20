@@ -232,7 +232,7 @@ function App() {
           announcements: publicBulletin.announcements || [],
           meetings: publicBulletin.meetings || [],
           specialEvents: publicBulletin.special_events || [],
-          agenda: (publicBulletin as any)?.agenda ? (publicBulletin as any).agenda : ((publicBulletin as any)?.speakers || []),
+          agenda: publicBulletin.agenda || [],
           prayers: publicBulletin.prayers || { opening: '', closing: '', invocation: '', benediction: '' },
           musicProgram: publicBulletin.music_program || {
             openingHymn: '',

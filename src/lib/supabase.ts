@@ -459,14 +459,14 @@ export const bulletinService = {
       const bulletinsWithData = await Promise.all(
         data.map(async (bulletin) => {
           try {
-            const [wardName, theme, bishopric, announcements, meetings, events, speakers, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
+            const [wardName, theme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-ward_name`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-theme`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-bishopric`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-announcements`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-meetings`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-events`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-speakers`),
+              tokenService.getToken(userId, `bulletin-${bulletin.slug}-agenda`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-prayers`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-music`),
               tokenService.getToken(userId, `bulletin-${bulletin.slug}-leadership`),
@@ -485,7 +485,7 @@ export const bulletinService = {
               announcements: announcements ? JSON.parse(announcements) : [],
               meetings: meetings ? JSON.parse(meetings) : [],
               special_events: events ? JSON.parse(events) : [],
-              speakers: speakers ? JSON.parse(speakers) : [],
+              agenda: agenda ? JSON.parse(agenda) : [],
               prayers: prayers ? JSON.parse(prayers) : {},
               music_program: music ? JSON.parse(music) : {},
               leadership: leadership ? JSON.parse(leadership) : {},
@@ -507,7 +507,7 @@ export const bulletinService = {
               announcements: [],
               meetings: [],
               special_events: [],
-              speakers: [],
+              agenda: [],
               prayers: {},
               music_program: {},
               leadership: {},
@@ -553,7 +553,7 @@ export const bulletinService = {
     const userId = data.created_by;
     
     // Fetch bulletin data from tokens
-    const [wardName, theme, image, bishopric, announcements, meetings, events, speakers, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
+    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
       tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
       tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
       tokenService.getToken(userId, `bulletin-${data.slug}-image`),
@@ -561,7 +561,7 @@ export const bulletinService = {
       tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
       tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
       tokenService.getToken(userId, `bulletin-${data.slug}-events`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-speakers`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-agenda`),
       tokenService.getToken(userId, `bulletin-${data.slug}-prayers`),
       tokenService.getToken(userId, `bulletin-${data.slug}-music`),
       tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
@@ -581,7 +581,7 @@ export const bulletinService = {
       announcements: announcements ? JSON.parse(announcements) : [],
       meetings: meetings ? JSON.parse(meetings) : [],
       special_events: events ? JSON.parse(events) : [],
-      speakers: speakers ? JSON.parse(speakers) : [],
+      agenda: agenda ? JSON.parse(agenda) : [],
       prayers: prayers ? JSON.parse(prayers) : {},
       music_program: music ? JSON.parse(music) : {},
       leadership: leadership ? JSON.parse(leadership) : {},
@@ -641,7 +641,7 @@ export const bulletinService = {
     const userId = userData.id;
     
     // Fetch bulletin data from tokens
-    const [wardName, theme, image, bishopric, announcements, meetings, events, speakers, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
+    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
       tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
       tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
       tokenService.getToken(userId, `bulletin-${data.slug}-image`),
@@ -649,7 +649,7 @@ export const bulletinService = {
       tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
       tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
       tokenService.getToken(userId, `bulletin-${data.slug}-events`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-speakers`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-agenda`),
       tokenService.getToken(userId, `bulletin-${data.slug}-prayers`),
       tokenService.getToken(userId, `bulletin-${data.slug}-music`),
       tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
@@ -669,7 +669,7 @@ export const bulletinService = {
       announcements: announcements ? JSON.parse(announcements) : [],
       meetings: meetings ? JSON.parse(meetings) : [],
       special_events: events ? JSON.parse(events) : [],
-      speakers: speakers ? JSON.parse(speakers) : [],
+      agenda: agenda ? JSON.parse(agenda) : [],
       prayers: prayers ? JSON.parse(prayers) : {},
       music_program: music ? JSON.parse(music) : {},
       leadership: leadership ? JSON.parse(leadership) : {},

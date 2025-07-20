@@ -42,8 +42,18 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
   const handleHymnNumberChange = (field: string, value: string) => {
     const number = parseInt(value);
+
+    if (field.startsWith('agenda-')) {
+      const id = field.replace('agenda-', '');
+      updateAgendaItem(id, {
+        hymnNumber: value,
+        hymnTitle: isValidHymnNumber(number) ? getHymnTitle(number) : ''
+      });
+      return;
+    }
+
     const hymnData = { ...data.musicProgram };
-    
+
     if (field === 'openingHymnNumber') {
       hymnData.openingHymnNumber = value;
       if (isValidHymnNumber(number)) {
@@ -77,8 +87,16 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
   };
 
   const selectHymnFromSearch = (field: string, hymnNumber: number, hymnTitle: string) => {
+    if (field.startsWith('agenda-')) {
+      const id = field.replace('agenda-', '');
+      updateAgendaItem(id, { hymnNumber: hymnNumber.toString(), hymnTitle });
+      setHymnSearchResults([]);
+      setActiveHymnSearch(null);
+      return;
+    }
+
     const hymnData = { ...data.musicProgram };
-    
+
     if (field === 'openingHymnNumber') {
       hymnData.openingHymnNumber = hymnNumber.toString();
       hymnData.openingHymnTitle = hymnTitle;
@@ -638,17 +656,6 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
           {/* Agenda (After Sacrament) */}
           <section className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Agenda (After Sacrament)</h3>
-            <div className="flex items-center gap-2 mb-2">
-              <label className="text-sm font-medium text-gray-700">Label for musical item:</label>
-              <select
-                value={data.musicalLabel || 'Musical Number'}
-                onChange={e => updateField('musicalLabel', e.target.value)}
-                className="px-2 py-1 border rounded"
-              >
-                <option value="Musical Number">Musical Number</option>
-                <option value="Intermediate Hymn">Intermediate Hymn</option>
-              </select>
-            </div>
             <div className="space-y-3">
             {data.agenda.map((item, idx) => (
               <div key={item.id} className="bg-gray-50 p-4 rounded-lg flex flex-wrap gap-2 items-center">
@@ -666,10 +673,67 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                   </>
                 ) : (
                   <>
-                    <input type="text" value={item.hymnNumber || ''} onChange={e => updateAgendaItem(item.id, { hymnNumber: e.target.value })} placeholder="Hymn # (optional)" className="min-w-[80px] max-w-[100px] px-3 py-2 border border-gray-300 rounded-lg" />
-                    <input type="text" value={item.hymnTitle || ''} onChange={e => updateAgendaItem(item.id, { hymnTitle: e.target.value })} placeholder="Hymn Title (auto)" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" readOnly={!!item.hymnNumber} />
-                    <input type="text" value={item.songName || ''} onChange={e => updateAgendaItem(item.id, { songName: e.target.value })} placeholder="Song Name (if not hymn)" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
-                    <input type="text" value={item.performers || ''} onChange={e => updateAgendaItem(item.id, { performers: e.target.value })} placeholder="Performers (optional)" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
+                    <select
+                      value={item.label || 'Musical Number'}
+                      onChange={e => updateAgendaItem(item.id, { label: e.target.value })}
+                      className="px-2 py-1 border rounded-lg min-w-[150px]"
+                    >
+                      <option value="Musical Number">Musical Number</option>
+                      <option value="Intermediate Hymn">Intermediate Hymn</option>
+                    </select>
+                    <input
+                      type="text"
+                      value={item.hymnNumber || ''}
+                      onChange={e => handleHymnNumberChange(`agenda-${item.id}`, e.target.value)}
+                      placeholder="Hymn # (optional)"
+                      className="min-w-[80px] max-w-[100px] px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                    <div className="relative hymn-search-container flex-1">
+                      <input
+                        type="text"
+                        value={item.hymnTitle || ''}
+                        onChange={e => {
+                          updateAgendaItem(item.id, { hymnTitle: e.target.value });
+                          handleHymnTitleSearch(`agenda-${item.id}`, e.target.value);
+                        }}
+                        onFocus={() => {
+                          if (item.hymnTitle && item.hymnTitle.length >= 2) {
+                            handleHymnTitleSearch(`agenda-${item.id}`, item.hymnTitle);
+                          }
+                        }}
+                        placeholder="Hymn Title (search or auto)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        readOnly={!!item.hymnNumber}
+                      />
+                      {activeHymnSearch === `agenda-${item.id}` && hymnSearchResults.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {hymnSearchResults.map(hymn => (
+                            <button
+                              key={hymn.number}
+                              type="button"
+                              onClick={() => selectHymnFromSearch(`agenda-${item.id}`, hymn.number, hymn.title)}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
+                            >
+                              <div className="font-medium">#{hymn.number} - {hymn.title}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={item.songName || ''}
+                      onChange={e => updateAgendaItem(item.id, { songName: e.target.value })}
+                      placeholder="Song Name (if not hymn)"
+                      className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                    <input
+                      type="text"
+                      value={item.performers || ''}
+                      onChange={e => updateAgendaItem(item.id, { performers: e.target.value })}
+                      placeholder="Performers (optional)"
+                      className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg"
+                    />
                   </>
                 )}
                 <div className="flex flex-row items-center space-x-1">
@@ -682,7 +746,17 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </div>
             <div className="flex gap-2 mt-2">
               <button onClick={() => updateField('agenda', [...data.agenda, { id: Date.now().toString(), type: 'speaker', name: '', speakerType: 'adult' }])} className="px-3 py-1 bg-blue-600 text-white rounded-lg">Add Speaker</button>
-              <button onClick={() => updateField('agenda', [...data.agenda, { id: Date.now().toString(), type: 'musical', label: data.musicalLabel || 'Musical Number', hymnNumber: '', hymnTitle: '', songName: '', performers: '' }])} className="px-3 py-1 bg-green-600 text-white rounded-lg">{`Add ${data.musicalLabel || 'Musical Number'}`}</button>
+              <button
+                onClick={() =>
+                  updateField('agenda', [
+                    ...data.agenda,
+                    { id: Date.now().toString(), type: 'musical', label: 'Musical Number', hymnNumber: '', hymnTitle: '', songName: '', performers: '' }
+                  ])
+                }
+                className="px-3 py-1 bg-green-600 text-white rounded-lg"
+              >
+                Add Hymn/Musical Number
+              </button>
               <button onClick={() => updateField('agenda', [...data.agenda, { id: Date.now().toString(), type: 'testimony' }])} className="px-3 py-1 bg-yellow-500 text-white rounded-lg">Bearing of Testimonies</button>
             </div>
           </section>
