@@ -18,6 +18,9 @@ import { useQuery } from '@tanstack/react-query';
 import Logo from './components/Logo';
 import BulletinPrintLayout from './components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
+import AboutPage from './pages/AboutPage';
+import HowToUsePage from './pages/HowToUsePage';
+import ContactPage from './pages/ContactPage';
 
 
 function decodeJwtExp(token: string) {
@@ -248,6 +251,15 @@ function App() {
 
   // Check for profile slug in URL
   const path = window.location.pathname;
+  if (path === '/about') {
+    return <AboutPage />;
+  }
+  if (path === '/how-to-use') {
+    return <HowToUsePage />;
+  }
+  if (path === '/contact') {
+    return <ContactPage />;
+  }
   const profileSlugMatch = path.match(/^\/u\/([^\/]+)$/);
   const profileSlug = profileSlugMatch ? profileSlugMatch[1] : null;
 
@@ -809,6 +821,11 @@ function App() {
                 <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
                 <p className="text-sm text-gray-600">Ward Bulletin Creator</p>
               </div>
+              <nav className="hidden md:flex ml-6 space-x-4">
+                <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
+                <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
+                <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+              </nav>
             </div>
             
             {/* Desktop Menu */}

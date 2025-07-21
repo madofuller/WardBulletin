@@ -1,9 +1,5 @@
 {
   "rewrites": [
-    { "source": "/about", "destination": "/about.html" },
-    { "source": "/features", "destination": "/features.html" },
-    { "source": "/why-free", "destination": "/why-free.html" },
-    { "source": "/ward-bulletins", "destination": "/ward-bulletins.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
