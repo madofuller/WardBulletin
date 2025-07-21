@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Ward Bulletins</title>
+    <meta name="description" content="Tips for creating and sharing digital ward bulletins using ZionBoard." />
+    <link rel="canonical" href="https://zionboard.com/ward-bulletins" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900 p-8">
+    <header class="max-w-3xl mx-auto text-center mb-8">
+      <h1 class="text-3xl font-bold mb-2">Digital Ward Bulletins</h1>
+      <nav class="space-x-4">
+        <a href="/" class="underline text-blue-700">Home</a>
+        <a href="/about" class="underline text-blue-700">About</a>
+        <a href="/features" class="underline text-blue-700">Features</a>
+        <a href="/why-free" class="underline text-blue-700">Why It&#39;s Free</a>
+      </nav>
+    </header>
+    <main class="max-w-3xl mx-auto space-y-4">
+      <p>ZionBoard makes it simple to publish ward bulletins online. Members can scan a QR code or visit your personal link to view each week&#39;s bulletin. You can also print a PDF for those who prefer paper.</p>
+      <h2 class="text-2xl font-semibold">Copy a Sample Bulletin</h2>
+      <p>If you need a quick start, copy an existing bulletin and customize it for your ward. The built-in templates make it easy to fill in agenda items, hymns, and announcements.</p>
+      <textarea id="sample-bulletin" rows="12" cols="60" readonly class="w-full max-w-xl font-mono mt-2 border rounded p-2">Ward Name: Zion 1st Ward
+Date: July 20, 2025
+Presiding: Bishop Smith
+Conducting: Brother Johnson
+Chorister: Sister Lee
+Organist: Brother Davis
+
+Opening Hymn: 100 - Nearer, My God, to Thee
+Invocation: John Doe
+Sacrament Hymn: 169 - As Now We Take the Sacrament
+Speaker: Jane Doe
+Closing Hymn: 152 - God Be with You Till We Meet Again
+Benediction: Mary Doe
+
+Announcements:
+- Ward picnic next Saturday at 5 PM
+- Youth service project on July 25 at 3 PM</textarea>
+      <br />
+      <button id="copy-bulletin" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded">Copy Bulletin</button>
+      <span id="copy-message" class="text-green-600 ml-2 hidden">Copied!</span>
+      <p class="mt-4">Email <a href="mailto:matthew@zionboard.com" class="underline text-blue-700">matthew@zionboard.com</a> for help or to request additional features.</p>
+    </main>
+    <footer class="text-center mt-8">
+      <p>&copy; 2025 ZionBoard</p>
+    </footer>
+    <script>
+      const copyBtn = document.getElementById('copy-bulletin');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const sample = document.getElementById('sample-bulletin');
+          const text = sample && 'value' in sample ? sample.value : '';
+          navigator.clipboard.writeText(text).then(() => {
+            const msg = document.getElementById('copy-message');
+            if (msg) {
+              msg.classList.remove('hidden');
+              setTimeout(() => {
+                msg.classList.add('hidden');
+              }, 2000);
+            }
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
