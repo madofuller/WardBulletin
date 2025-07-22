@@ -279,7 +279,7 @@ export const userService = {
 };
 
 // Timeout wrapper function to prevent hanging operations
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 20000): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
@@ -364,8 +364,7 @@ export const bulletinService = {
         ({ data, error } = await withTimeout(
           supabase
             .from('tokens')
-            .upsert(tokens, { onConflict: 'key,created_by' }),
-          10000
+            .upsert(tokens, { onConflict: 'key,created_by' })
         ));
         console.log('[DEBUG] saveBulletin: tokens upsert result', { data, error });
       } catch (timeoutError) {
@@ -400,8 +399,7 @@ export const bulletinService = {
               .eq('id', bulletinId)
               .eq('created_by', userId)
               .select()
-              .single(),
-            10000
+              .single()
           ));
           console.log('[DEBUG] saveBulletin: bulletin update result', { data, error });
         } catch (timeoutError) {
@@ -419,8 +417,7 @@ export const bulletinService = {
               .from('bulletins')
               .insert(dbBulletinRecord)
               .select()
-              .single(),
-            10000
+              .single()
           ));
           console.log('[DEBUG] saveBulletin: bulletin insert result', { data, error });
         } catch (timeoutError) {
@@ -473,8 +470,7 @@ export const bulletinService = {
           .from('bulletins')
           .select('*')
           .eq('created_by', userId)
-          .order('created_at', { ascending: false }),
-        10000
+          .order('created_at', { ascending: false })
       );
       
       if (error) {
