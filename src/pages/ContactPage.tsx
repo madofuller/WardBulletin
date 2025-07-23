@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
 
 export default function ContactPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const navigate = useNavigate();
   // Handler to redirect to homepage
-  const goHome = () => { window.location.href = '/'; };
+  const goHome = () => navigate('/');
   // Handler to open auth modal
   const openAuthModal = () => setShowAuthModal(true);
   return (

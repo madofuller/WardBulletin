@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Logo from '../components/Logo';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { Link } from 'react-router-dom';
 
 
 function decodeJwtExp(token: string) {
@@ -1038,9 +1039,9 @@ function EditorApp() {
               All data is processed locally in your browser for privacy and security
             </p>
             <nav className="mt-4 space-x-4">
-              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
-              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+              <Link to="/about" className="text-gray-600 hover:text-gray-900">About</Link>
+              <Link to="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</Link>
+              <Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link>
             </nav>
           </div>
         </div>
