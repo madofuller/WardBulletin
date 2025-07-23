@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Logo from '../components/Logo';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 function decodeJwtExp(token: string) {
@@ -45,6 +46,7 @@ function EditorApp() {
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const queryClient = useQueryClient();
 
 
   // Move DEFAULT_KEYS and getDefault above useState
@@ -479,6 +481,7 @@ function EditorApp() {
       if (didTimeout) return; // Already handled by catch
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
+      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
       toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
         toastId: 'bulletin-save-success'
       });
@@ -612,10 +615,11 @@ function EditorApp() {
 
   const handleActiveBulletinSelect = async (bulletinId: string | null) => {
     if (!user) return;
-    
+
     try {
       await userService.updateActiveBulletinId(user.id, bulletinId);
       setActiveBulletinId(bulletinId);
+      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
     } catch (error) {
       console.error('Error updating active bulletin:', error);
       toast.error('Error updating active bulletin: ' + (error as Error).message);

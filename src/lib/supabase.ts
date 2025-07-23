@@ -191,6 +191,34 @@ export const tokenService = {
       console.error('Token fetch error:', err);
       return null;
     }
+  },
+
+  async getTokensByPrefix(userId: string, prefix: string): Promise<Record<string, string>> {
+    if (!supabase) throw new Error('Supabase not configured');
+
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('tokens')
+          .select('key,value')
+          .eq('created_by', userId)
+          .like('key', `${prefix}%`)
+      );
+
+      if (error) return {};
+
+      const result: Record<string, string> = {};
+      for (const row of data || []) {
+        result[row.key] = row.value as string;
+      }
+      return result;
+    } catch (err: any) {
+      if (err && err.message && err.message.includes('timed out')) {
+        throw err;
+      }
+      console.error('Token fetch error:', err);
+      return {};
+    }
   }
 };
 
@@ -512,20 +540,19 @@ export const bulletinService = {
       const bulletinsWithData = await Promise.all(
         data.map(async (bulletin) => {
           try {
-            const [wardName, theme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-ward_name`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-theme`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-bishopric`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-announcements`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-meetings`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-events`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-agenda`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-prayers`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-music`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-leadership`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-wardLeadership`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-missionaries`),
-            ]);
+            const tokens = await tokenService.getTokensByPrefix(userId, `bulletin-${bulletin.slug}-`);
+            const wardName = tokens[`bulletin-${bulletin.slug}-ward_name`] || '';
+            const theme = tokens[`bulletin-${bulletin.slug}-theme`] || '';
+            const bishopric = tokens[`bulletin-${bulletin.slug}-bishopric`] || '';
+            const announcements = tokens[`bulletin-${bulletin.slug}-announcements`] || null;
+            const meetings = tokens[`bulletin-${bulletin.slug}-meetings`] || null;
+            const events = tokens[`bulletin-${bulletin.slug}-events`] || null;
+            const agenda = tokens[`bulletin-${bulletin.slug}-agenda`] || null;
+            const prayers = tokens[`bulletin-${bulletin.slug}-prayers`] || null;
+            const music = tokens[`bulletin-${bulletin.slug}-music`] || null;
+            const leadership = tokens[`bulletin-${bulletin.slug}-leadership`] || null;
+            const wardLeadership = tokens[`bulletin-${bulletin.slug}-wardLeadership`] || null;
+            const missionaries = tokens[`bulletin-${bulletin.slug}-missionaries`] || null;
 
             return {
               id: bulletin.id,
@@ -613,21 +640,20 @@ export const bulletinService = {
     const userId = data.created_by;
     
     // Fetch bulletin data from tokens
-    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
-      tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-image`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-bishopric`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-events`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-agenda`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-prayers`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-music`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-wardLeadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-missionaries`),
-    ]);
+    const tokens = await tokenService.getTokensByPrefix(userId, `bulletin-${data.slug}-`);
+    const wardName = tokens[`bulletin-${data.slug}-ward_name`] || '';
+    const theme = tokens[`bulletin-${data.slug}-theme`] || '';
+    const image = tokens[`bulletin-${data.slug}-image`] || '';
+    const bishopric = tokens[`bulletin-${data.slug}-bishopric`] || '';
+    const announcements = tokens[`bulletin-${data.slug}-announcements`] || null;
+    const meetings = tokens[`bulletin-${data.slug}-meetings`] || null;
+    const events = tokens[`bulletin-${data.slug}-events`] || null;
+    const agenda = tokens[`bulletin-${data.slug}-agenda`] || null;
+    const prayers = tokens[`bulletin-${data.slug}-prayers`] || null;
+    const music = tokens[`bulletin-${data.slug}-music`] || null;
+    const leadership = tokens[`bulletin-${data.slug}-leadership`] || null;
+    const wardLeadership = tokens[`bulletin-${data.slug}-wardLeadership`] || null;
+    const missionaries = tokens[`bulletin-${data.slug}-missionaries`] || null;
 
     return {
       id: data.id,
@@ -715,21 +741,20 @@ export const bulletinService = {
     const userId = userData.id;
     
     // Fetch bulletin data from tokens
-    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
-      tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-image`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-bishopric`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-events`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-agenda`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-prayers`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-music`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-wardLeadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-missionaries`),
-    ]);
+    const tokens = await tokenService.getTokensByPrefix(userId, `bulletin-${data.slug}-`);
+    const wardName = tokens[`bulletin-${data.slug}-ward_name`] || '';
+    const theme = tokens[`bulletin-${data.slug}-theme`] || '';
+    const image = tokens[`bulletin-${data.slug}-image`] || '';
+    const bishopric = tokens[`bulletin-${data.slug}-bishopric`] || '';
+    const announcements = tokens[`bulletin-${data.slug}-announcements`] || null;
+    const meetings = tokens[`bulletin-${data.slug}-meetings`] || null;
+    const events = tokens[`bulletin-${data.slug}-events`] || null;
+    const agenda = tokens[`bulletin-${data.slug}-agenda`] || null;
+    const prayers = tokens[`bulletin-${data.slug}-prayers`] || null;
+    const music = tokens[`bulletin-${data.slug}-music`] || null;
+    const leadership = tokens[`bulletin-${data.slug}-leadership`] || null;
+    const wardLeadership = tokens[`bulletin-${data.slug}-wardLeadership`] || null;
+    const missionaries = tokens[`bulletin-${data.slug}-missionaries`] || null;
 
     return {
       id: data.id,
