@@ -144,8 +144,7 @@ function EditorApp() {
 
   const [showQRCode, setShowQRCode] = useState(false);
   const bulletinRef = useRef<HTMLDivElement>(null);
-  const printPage1Ref = useRef<HTMLDivElement>(null);
-  const printPage2Ref = useRef<HTMLDivElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // Add a helper for draft key
   const DRAFT_KEY = 'draft_bulletin';
@@ -554,75 +553,34 @@ function EditorApp() {
   };
 
   const handleExportPDF = async () => {
-    if (printPage1Ref.current && printPage2Ref.current) {
+    if (printRef.current) {
       try {
-        // Use a higher scale for crisper print quality
         const scale = 3;
-        const marginX = 0; // extra horizontal margin handled by centering
-        const marginY = 10; // mm top/bottom padding
+        const marginX = 0;
+        const marginY = 10;
 
-        // Render page 1
-        const canvas1 = await html2canvas(printPage1Ref.current, {
+        const canvas = await html2canvas(printRef.current, {
           scale,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          width: printPage1Ref.current.scrollWidth,
-          height: printPage1Ref.current.scrollHeight
+          width: printRef.current.scrollWidth,
+          height: printRef.current.scrollHeight
         });
 
-        // Render page 2
-        const canvas2 = await html2canvas(printPage2Ref.current, {
-          scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: printPage2Ref.current.scrollWidth,
-          height: printPage2Ref.current.scrollHeight
-        });
-
-        const imgData1 = canvas1.toDataURL('image/png');
-        const imgData2 = canvas2.toDataURL('image/png');
-
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [216, 279] });
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Page 1
-        const ratio1 = Math.min(
+        const ratio = Math.min(
           1,
-          (pdfWidth - marginX * 2) / canvas1.width,
-          (pdfHeight - marginY * 2) / canvas1.height
+          (pdfWidth - marginX * 2) / canvas.width,
+          (pdfHeight - marginY * 2) / canvas.height
         );
-        const imgX1 = (pdfWidth - canvas1.width * ratio1) / 2;
-        const imgY1 = marginY;
-        pdf.addImage(
-          imgData1,
-          'PNG',
-          imgX1,
-          imgY1,
-          canvas1.width * ratio1,
-          canvas1.height * ratio1
-        );
-
-        // Page 2
-        pdf.addPage('a4', 'landscape');
-        const ratio2 = Math.min(
-          1,
-          (pdfWidth - marginX * 2) / canvas2.width,
-          (pdfHeight - marginY * 2) / canvas2.height
-        );
-        const imgX2 = (pdfWidth - canvas2.width * ratio2) / 2;
-        const imgY2 = marginY;
-        pdf.addImage(
-          imgData2,
-          'PNG',
-          imgX2,
-          imgY2,
-          canvas2.width * ratio2,
-          canvas2.height * ratio2
-        );
-
+        const imgX = (pdfWidth - canvas.width * ratio) / 2;
+        const imgY = marginY;
+        pdf.addImage(imgData, 'PNG', imgX, imgY, canvas.width * ratio, canvas.height * ratio);
         pdf.autoPrint();
         pdf.save('Ward-Bulletin.pdf');
       } catch (error) {
@@ -974,6 +932,7 @@ function EditorApp() {
 
         {/* Hidden print layout for PDF export */}
         <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+<<<<<<< HEAD
           <BulletinPrintLayout
             data={{
               ...bulletinData,
@@ -981,6 +940,9 @@ function EditorApp() {
             }}
             refs={{ page1: printPage1Ref, page2: printPage2Ref }}
           />
+=======
+          <BulletinPrintLayout data={bulletinData} ref={printRef} />
+>>>>>>> origin/codex/analyze-pdf-export-configuration
         </div>
       </main>
 
