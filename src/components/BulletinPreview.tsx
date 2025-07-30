@@ -338,52 +338,132 @@ export default function BulletinPreview({ data, hideTabs = false, activeTab, onT
           </div>
         </div>
       )}
-      {/* {activeTab === 'wardinfo' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
-          <h3 className="text-base font-bold mb-3 text-center">Ward Leadership</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border text-xs">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-2 py-1 border">Title</th>
-                  <th className="px-2 py-1 border">Name</th>
-                  <th className="px-2 py-1 border">Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.wardLeadership.map((entry, idx) => (
-                  <tr key={idx}>
-                    <td className="border px-2 py-1">{entry.title}</td>
-                    <td className="border px-2 py-1">{entry.name}</td>
-                    <td className="border px-2 py-1">{entry.phone}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {(!hideTabs || tabsToShow.includes('wardinfo')) &&
+        validActiveTab === 'wardinfo' && (
+          <div className="p-6 space-y-6 text-sm leading-relaxed">
+            {data.wardLeadership.length > 0 && (
+              <div>
+                <h3 className="text-base font-bold mb-3 text-center">
+                  Ward Leadership
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border text-xs">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-2 py-1 border">Title</th>
+                        <th className="px-2 py-1 border">Name</th>
+                        <th className="px-2 py-1 border">Phone</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.wardLeadership.map((entry, idx) => (
+                        <tr key={idx}>
+                          <td className="border px-2 py-1">{entry.title}</td>
+                          <td className="border px-2 py-1">{entry.name}</td>
+                          <td className="border px-2 py-1">{entry.phone}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {data.missionaries.length > 0 && (
+              <div>
+                <h3 className="text-base font-bold mb-3 text-center mt-4">
+                  Missionaries
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border text-xs">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-2 py-1 border">Names</th>
+                        <th className="px-2 py-1 border">Phone</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.missionaries.map((entry, idx) => (
+                        <tr key={idx}>
+                          <td className="border px-2 py-1">{entry.names}</td>
+                          <td className="border px-2 py-1">{entry.phone}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {data.wardMissionaries.length > 0 && (
+              <div>
+                <h3 className="text-base font-bold mb-3 text-center mt-4">
+                  Ward Missionaries
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border text-xs">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-2 py-1 border">Name</th>
+                        <th className="px-2 py-1 border">Mission</th>
+                        <th className="px-2 py-1 border">Address</th>
+                        <th className="px-2 py-1 border">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.wardMissionaries.map((entry, idx) => (
+                        <tr key={idx}>
+                          <td className="border px-2 py-1">{entry.name}</td>
+                          <td className="border px-2 py-1">{entry.mission}</td>
+                          <td className="border px-2 py-1">{entry.missionAddress}</td>
+                          <td className="border px-2 py-1">{entry.email}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-          <h3 className="text-base font-bold mb-3 text-center mt-8">Missionaries</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border text-xs">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="px-2 py-1 border">Name</th>
-                  <th className="px-2 py-1 border">Phone</th>
-                  <th className="px-2 py-1 border">Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.missionaries.map((entry, idx) => (
-                  <tr key={idx}>
-                    <td className="border px-2 py-1">{entry.name}</td>
-                    <td className="border px-2 py-1">{entry.phone}</td>
-                    <td className="border px-2 py-1">{entry.email}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        )}
+
+      {(!hideTabs || tabsToShow.includes('building')) &&
+        validActiveTab === 'building' && (
+          <div className="p-6 space-y-4 text-sm leading-relaxed">
+            <h3 className="text-base font-bold mb-3 text-center">
+              Building Information
+            </h3>
+            <ul className="space-y-1">
+              {data.buildingInformation.buildingName && (
+                <li>
+                  <strong>Building:</strong> {data.buildingInformation.buildingName}
+                </li>
+              )}
+              {data.buildingInformation.address && (
+                <li>
+                  <strong>Address:</strong> {data.buildingInformation.address}
+                </li>
+              )}
+              {data.buildingInformation.phone && (
+                <li>
+                  <strong>Phone:</strong> {data.buildingInformation.phone}
+                </li>
+              )}
+              {data.buildingInformation.emergencyContact && (
+                <li>
+                  <strong>Emergency Contact:</strong>{' '}
+                  {data.buildingInformation.emergencyContact}
+                </li>
+              )}
+              {data.buildingInformation.emergencyPhone && (
+                <li>
+                  <strong>Emergency Phone:</strong>{' '}
+                  {data.buildingInformation.emergencyPhone}
+                </li>
+              )}
+            </ul>
           </div>
-        </div>
-      )} */}
+        )}
       {/* Print: Always show both sections, hide tabs */}
       <div className="hidden print:block p-6 space-y-4 text-sm leading-relaxed">
         {/* Header */}
