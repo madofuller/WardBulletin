@@ -1,18 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Building } from 'lucide-react';
 import { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import BuildingInformationForm from './BuildingInformationForm';
 
 interface BulletinFormProps {
   data: BulletinData;
   onChange: (data: BulletinData) => void;
+  userId?: string;
+  activeTab: 'program' | 'announcements' | 'wardinfo' | 'building';
+  setActiveTab: (tab: 'program' | 'announcements' | 'wardinfo' | 'building') => void;
 }
 
-export default function BulletinForm({ data, onChange }: BulletinFormProps) {
-  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
+export default function BulletinForm({ data, onChange, userId, activeTab, setActiveTab }: BulletinFormProps) {
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
   const [songTypes, setSongTypes] = useState<Record<string, SongType>>({
@@ -263,6 +266,8 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
     preludeMusic: 'default_preludeMusic',
     wardLeadership: 'default_wardLeadership',
     missionaries: 'default_missionaries',
+    wardMissionaries: 'default_wardMissionaries',
+    buildingInformation: 'default_buildingInformation',
   };
 
   // Load defaults from localStorage on mount
@@ -330,7 +335,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
   // Save default handlers (to localStorage)
   const saveDefault = (key: keyof typeof DEFAULT_KEYS, value: any) => {
-    if (key === 'wardLeadership' || key === 'missionaries') {
+    if (key === 'wardLeadership' || key === 'missionaries' || key === 'wardMissionaries' || key === 'buildingInformation') {
       localStorage.setItem(DEFAULT_KEYS[key], JSON.stringify(value));
     } else {
       localStorage.setItem(DEFAULT_KEYS[key], value);
@@ -443,21 +448,21 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-4" aria-label="Main tabs">
         <ul className="flex flex-col gap-3 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
-          {['program', 'announcements'].map(tab => (
+          {['program', 'announcements', 'wardinfo', 'building'].map(tab => (
             <li key={tab} role="presentation" className="w-full sm:w-auto">
               <button
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tab}
                 aria-controls={`tab-panel-${tab}`}
-                className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base
+                className={`w-full sm:w-auto px-4 sm:px-6 py-2 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-sm whitespace-nowrap
                   ${activeTab === tab
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
                 `}
-                onClick={() => setActiveTab(tab as typeof activeTab)}
+                onClick={() => setActiveTab(tab as any)}
               >
-                {tab === 'program' ? 'Program' : 'Announcements'}
+                {tab === 'program' ? 'Program' : tab === 'announcements' ? 'Announcements' : tab === 'wardinfo' ? 'Ward' : 'Building'}
               </button>
             </li>
           ))}
@@ -1188,7 +1193,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
           </section>
         </>
       )}
-      {/* {activeTab === 'wardinfo' && (
+      {activeTab === 'wardinfo' && (
         <section className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">Ward Leadership
             <div className="flex flex-col items-end ml-2">
@@ -1288,16 +1293,15 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
               >
                 Save as default
               </button>
-              <span className="text-xs text-gray-500 mt-1">Saves name, phone, and email for each missionary as your template.</span>
+              <span className="text-xs text-gray-500 mt-1">Saves names and phone for each missionary as your template.</span>
             </div>
           </h3>
           <div className="overflow-x-auto">
             <table className="min-w-full border text-sm rounded-lg overflow-hidden bg-white shadow-sm">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="px-2 py-1 border-b">Name</th>
+                  <th className="px-2 py-1 border-b">Names (e.g., "Elder Snow & Score")</th>
                   <th className="px-2 py-1 border-b">Phone</th>
-                  <th className="px-2 py-1 border-b">Email</th>
                   <th className="px-2 py-1 border-b"></th>
                 </tr>
               </thead>
@@ -1307,37 +1311,27 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                     <td className="border-b px-2 py-1">
                       <input
                         type="text"
-                        value={entry.name}
+                        value={entry.names}
                         onChange={e => {
                           const updated = [...data.missionaries];
-                          updated[idx] = { ...updated[idx], name: e.target.value };
+                          updated[idx] = { ...updated[idx], names: e.target.value };
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                        placeholder="Elder Snow & Score"
                       />
                     </td>
                     <td className="border-b px-2 py-1">
                       <input
                         type="text"
-                        value={entry.phone || ''}
+                        value={entry.phone}
                         onChange={e => {
                           const updated = [...data.missionaries];
                           updated[idx] = { ...updated[idx], phone: e.target.value };
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
-                      />
-                    </td>
-                    <td className="border-b px-2 py-1">
-                      <input
-                        type="email"
-                        value={entry.email || ''}
-                        onChange={e => {
-                          const updated = [...data.missionaries];
-                          updated[idx] = { ...updated[idx], email: e.target.value };
-                          updateField('missionaries', updated);
-                        }}
-                        className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                        placeholder="(555) 123-4567"
                       />
                     </td>
                     <td className="border-b px-2 py-1 text-center">
@@ -1359,14 +1353,124 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </table>
             <button
               type="button"
-              onClick={() => updateField('missionaries', [...data.missionaries, { name: '', phone: '', email: '' }])}
+              onClick={() => updateField('missionaries', [...data.missionaries, { names: '', phone: '' }])}
               className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg"
             >
               Add Missionary
             </button>
           </div>
+
+          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mt-8 flex items-center justify-between">Ward Missionaries
+            <div className="flex flex-col items-end ml-2">
+              <button
+                type="button"
+                onClick={() => saveDefault('wardMissionaries', data.wardMissionaries)}
+                className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
+                title="Save as default"
+              >
+                Save as default
+              </button>
+              <span className="text-xs text-gray-500 mt-1">Saves name, mission, and address for each ward missionary as your template.</span>
+            </div>
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border text-sm rounded-lg overflow-hidden bg-white shadow-sm">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-2 py-1 border-b">Name</th>
+                  <th className="px-2 py-1 border-b">Mission</th>
+                  <th className="px-2 py-1 border-b">Mission Address</th>
+                  <th className="px-2 py-1 border-b">Email</th>
+                  <th className="px-2 py-1 border-b"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.wardMissionaries.map((entry, idx) => (
+                  <tr key={idx} className="hover:bg-blue-50 transition">
+                    <td className="border-b px-2 py-1">
+                      <input
+                        type="text"
+                        value={entry.name}
+                        onChange={e => {
+                          const updated = [...data.wardMissionaries];
+                          updated[idx] = { ...updated[idx], name: e.target.value };
+                          updateField('wardMissionaries', updated);
+                        }}
+                        className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                      />
+                    </td>
+                    <td className="border-b px-2 py-1">
+                      <input
+                        type="text"
+                        value={entry.mission || ''}
+                        onChange={e => {
+                          const updated = [...data.wardMissionaries];
+                          updated[idx] = { ...updated[idx], mission: e.target.value };
+                          updateField('wardMissionaries', updated);
+                        }}
+                        className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                      />
+                    </td>
+                    <td className="border-b px-2 py-1">
+                      <input
+                        type="text"
+                        value={entry.missionAddress || ''}
+                        onChange={e => {
+                          const updated = [...data.wardMissionaries];
+                          updated[idx] = { ...updated[idx], missionAddress: e.target.value };
+                          updateField('wardMissionaries', updated);
+                        }}
+                        className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                      />
+                    </td>
+                    <td className="border-b px-2 py-1">
+                      <input
+                        type="email"
+                        value={entry.email || ''}
+                        onChange={e => {
+                          const updated = [...data.wardMissionaries];
+                          updated[idx] = { ...updated[idx], email: e.target.value };
+                          updateField('wardMissionaries', updated);
+                        }}
+                        className="w-full px-1 py-1 border rounded bg-gray-50 focus:bg-white"
+                      />
+                    </td>
+                    <td className="border-b px-2 py-1 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = data.wardMissionaries.filter((_, i) => i !== idx);
+                          updateField('wardMissionaries', updated);
+                        }}
+                        className="text-red-600 hover:underline"
+                        title="Remove"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              type="button"
+              onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', missionAddress: '', email: '' }])}
+              className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg"
+            >
+              Add Ward Missionary
+            </button>
+          </div>
+
         </section>
-      )} */}
+      )}
+      {activeTab === 'building' && (
+        <BuildingInformationForm 
+          data={data.buildingInformation} 
+          onChange={(buildingInfo) => updateField('buildingInformation', buildingInfo)}
+          userId={userId}
+          onSaveDefault={(buildingInfo) => saveDefault('buildingInformation', buildingInfo)}
+        />
+      )}
     </div>
   );
 }

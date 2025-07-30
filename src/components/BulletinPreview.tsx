@@ -7,6 +7,8 @@ import { getSongUrl, getSongTitle } from '../lib/songService';
 interface BulletinPreviewProps {
   data: BulletinData;
   hideTabs?: boolean;
+  activeTab: 'program' | 'announcements' | 'wardinfo' | 'building';
+  onTabChange?: (tab: 'program' | 'announcements' | 'wardinfo' | 'building') => void;
 }
 
 // Add audience label map and order at the top of the file
@@ -33,14 +35,13 @@ const audienceOrder = [
   'other',
 ];
 
-export default function BulletinPreview({ data, hideTabs = false }: BulletinPreviewProps) {
-  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
-
+export default function BulletinPreview({ data, hideTabs = false, activeTab, onTabChange }: BulletinPreviewProps) {
   const formatDate = (dateString: string) => {
     // Fix timezone issue by creating date in local timezone
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
@@ -57,27 +58,59 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
     </div>
   );
 
+  // Dynamically build visibleTabs for public view
+  let visibleTabs: ('program' | 'announcements' | 'wardinfo' | 'building')[] = ['program', 'announcements'];
+  if (
+    (data.wardLeadership && data.wardLeadership.length > 0) ||
+    (data.missionaries && data.missionaries.length > 0) ||
+    (data.wardMissionaries && data.wardMissionaries.length > 0)
+  ) {
+    visibleTabs.push('wardinfo');
+  }
+  if (
+    data.buildingInformation && (
+      data.buildingInformation.buildingName.trim() ||
+      data.buildingInformation.address.trim() ||
+      data.buildingInformation.phone.trim() ||
+      data.buildingInformation.emergencyContact.trim() ||
+      data.buildingInformation.emergencyPhone.trim()
+    )
+  ) {
+    visibleTabs.push('building');
+  }
+
+  // Use visibleTabs only if hideTabs is true (public view), otherwise show all tabs in editor
+  const tabsToShow = hideTabs ? visibleTabs : ['program', 'announcements', 'wardinfo', 'building'];
+  
+  // Ensure activeTab is valid for the available tabs (only in public view)
+  const validActiveTab = hideTabs ? (tabsToShow.includes(activeTab) ? activeTab : tabsToShow[0]) : activeTab;
+
   return (
     <div className="bulletin bg-white shadow-lg rounded-lg overflow-hidden max-w-2xl mx-auto font-sans">
       {/* Tab Navigation (hidden in print and if hideTabs) */}
       {!hideTabs && (
         <nav className="flex justify-center print:hidden mb-4 mt-4" aria-label="Main tabs">
           <ul className="flex flex-col gap-3 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
-            {['program', 'announcements'].map(tab => (
+            {tabsToShow.map(tab => (
               <li key={tab} role="presentation" className="w-full sm:w-auto">
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={activeTab === tab}
+                  aria-selected={validActiveTab === tab}
                   aria-controls={`tab-panel-${tab}`}
-                  className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base
-                    ${activeTab === tab
+                  className={`w-full sm:w-auto px-4 sm:px-6 py-2 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-sm whitespace-nowrap
+                    ${validActiveTab === tab
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
                   `}
-                  onClick={() => setActiveTab(tab as typeof activeTab)}
+                  disabled={hideTabs}
+                  onClick={() => {
+                    if (!hideTabs && onTabChange) {
+                      onTabChange(tab as 'program' | 'announcements' | 'wardinfo' | 'building');
+                    }
+                  }}
                 >
-                  {tab === 'program' ? 'Program' : 'Announcements'}
+                  {tab === 'program' ? 'Program' : tab === 'announcements' ? 'Announcements' : tab === 'wardinfo' ? 'Ward' : 'Building'}
                 </button>
               </li>
             ))}
@@ -85,7 +118,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         </nav>
       )}
       {/* Main Content */}
-      {activeTab === 'program' && (
+      {(!hideTabs || tabsToShow.includes('program')) && validActiveTab === 'program' && (
         <div className="p-6 space-y-4 text-sm leading-relaxed">
           {/* Header */}
           <div className="bg-gray-100 border-b-2 border-gray-300 text-center relative overflow-hidden">
@@ -262,7 +295,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           )}
         </div>
       )}
-      {activeTab === 'announcements' && (
+      {(!hideTabs || tabsToShow.includes('announcements')) && validActiveTab === 'announcements' && (
         <div className="p-6 space-y-4 text-sm leading-relaxed">
           {/* Announcements */}
           {data.announcements.length > 0 ? (

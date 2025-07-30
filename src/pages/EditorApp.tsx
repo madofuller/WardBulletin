@@ -78,7 +78,7 @@ function EditorApp() {
 
   // Move DEFAULT_KEYS and getDefault above useState
   const DEFAULT_KEYS: Record<
-    'wardName' | 'presiding' | 'conducting' | 'chorister' | 'organist' | 'wardLeadership' | 'missionaries',
+    'wardName' | 'presiding' | 'conducting' | 'chorister' | 'organist' | 'wardLeadership' | 'missionaries' | 'wardMissionaries' | 'buildingInformation',
     string
   > = {
     wardName: 'default_wardName',
@@ -88,12 +88,14 @@ function EditorApp() {
     organist: 'default_organist',
     wardLeadership: 'default_wardLeadership',
     missionaries: 'default_missionaries',
+    wardMissionaries: 'default_wardMissionaries',
+    buildingInformation: 'default_buildingInformation',
   };
   function getDefault<K extends keyof typeof DEFAULT_KEYS, T>(key: K, fallback: T): T {
     try {
       const val = localStorage.getItem(DEFAULT_KEYS[key]);
       if (val) {
-        if (key === 'wardLeadership' || key === 'missionaries') {
+        if (key === 'wardLeadership' || key === 'missionaries' || key === 'wardMissionaries' || key === 'buildingInformation') {
           try { return JSON.parse(val) as T; } catch { return fallback; }
         }
         return val as T;
@@ -155,7 +157,15 @@ function EditorApp() {
         { title: 'Building Representative', name: '', phone: '' },
         { title: 'Temple & Family History', name: '', phone: '' }
       ]),
-      missionaries: getDefault('missionaries', [])
+      missionaries: getDefault('missionaries', []),
+      wardMissionaries: getDefault('wardMissionaries', []),
+      buildingInformation: getDefault('buildingInformation', {
+        buildingName: '',
+        address: '',
+        phone: '',
+        emergencyContact: '',
+        emergencyPhone: ''
+      })
     };
   }
 
@@ -277,7 +287,15 @@ function EditorApp() {
       { title: 'Building Representative', name: '', phone: '' },
       { title: 'Temple & Family History', name: '', phone: '' }
     ],
-    missionaries: bulletin.missionaries || []
+    missionaries: bulletin.missionaries || [],
+    wardMissionaries: bulletin.wardMissionaries || [],
+    buildingInformation: bulletin.building_information || {
+      buildingName: '',
+      address: '',
+      phone: '',
+      emergencyContact: '',
+      emergencyPhone: ''
+    }
   });
 
   const handleBulletinDataChange = (newData: BulletinData) => {
@@ -515,7 +533,15 @@ function EditorApp() {
               { title: 'Building Representative', name: '', phone: '' },
               { title: 'Temple & Family History', name: '', phone: '' }
             ],
-            missionaries: bulletin.missionaries || []
+            missionaries: bulletin.missionaries || [],
+            wardMissionaries: bulletin.wardMissionaries || [],
+            buildingInformation: bulletin.building_information || {
+              buildingName: '',
+              address: '',
+              phone: '',
+              emergencyContact: '',
+              emergencyPhone: ''
+            }
           };
 
           setBulletinData(loadedData);
@@ -576,7 +602,15 @@ function EditorApp() {
         { title: 'Building Representative', name: '', phone: '' },
         { title: 'Temple & Family History', name: '', phone: '' }
       ],
-      missionaries: bulletin.missionaries || []
+      missionaries: bulletin.missionaries || [],
+      wardMissionaries: bulletin.wardMissionaries || [],
+      buildingInformation: bulletin.building_information || {
+        buildingName: '',
+        address: '',
+        phone: '',
+        emergencyContact: '',
+        emergencyPhone: ''
+      }
     };
 
     setBulletinData(loadedData);
@@ -777,6 +811,8 @@ function EditorApp() {
     );
   }
 
+  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo' | 'building'>('program');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -969,7 +1005,7 @@ function EditorApp() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Create Your Bulletin</h2>
-              <BulletinForm data={bulletinData} onChange={handleBulletinDataChange} />
+              <BulletinForm data={bulletinData} onChange={handleBulletinDataChange} userId={user?.id} activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
           </div>
 
@@ -994,7 +1030,14 @@ function EditorApp() {
                 )}
               </div>
               <div ref={bulletinRef}>
-                <BulletinPreview data={bulletinData} />
+                <BulletinPreview 
+                  data={bulletinData} 
+                  activeTab={activeTab} 
+                  onTabChange={(tab) => {
+                    console.log('setActiveTab called with:', tab);
+                    setActiveTab(tab);
+                  }}
+                />
               </div>
               {user && currentBulletinId && activeBulletinId !== currentBulletinId && (
                 <button

@@ -368,6 +368,8 @@ export const bulletinService = {
         { key: `bulletin-${slug}-leadership`, value: JSON.stringify(bulletinData.leadership || {}), created_by: userId },
         { key: `bulletin-${slug}-wardLeadership`, value: JSON.stringify(bulletinData.wardLeadership || []), created_by: userId },
         { key: `bulletin-${slug}-missionaries`, value: JSON.stringify(bulletinData.missionaries || []), created_by: userId },
+        { key: `bulletin-${slug}-wardMissionaries`, value: JSON.stringify(bulletinData.wardMissionaries || []), created_by: userId },
+        { key: `bulletin-${slug}-buildingInformation`, value: JSON.stringify(bulletinData.buildingInformation || {}), created_by: userId },
       ];
       // Security: Removed debug logging
       let data, error;
@@ -613,7 +615,7 @@ export const bulletinService = {
     const userId = data.created_by;
     
     // Fetch bulletin data from tokens
-    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries] = await Promise.all([
+    const [wardName, theme, image, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries, buildingInformation] = await Promise.all([
       tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
       tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
       tokenService.getToken(userId, `bulletin-${data.slug}-image`),
@@ -627,6 +629,8 @@ export const bulletinService = {
       tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
       tokenService.getToken(userId, `bulletin-${data.slug}-wardLeadership`),
       tokenService.getToken(userId, `bulletin-${data.slug}-missionaries`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-wardMissionaries`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-buildingInformation`),
     ]);
 
     return {
@@ -647,6 +651,8 @@ export const bulletinService = {
       leadership: leadership ? JSON.parse(leadership) : {},
       wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
       missionaries: missionaries ? JSON.parse(missionaries) : [],
+      wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+      building_information: buildingInformation ? JSON.parse(buildingInformation) : {},
       created_at: data.created_at,
       updated_at: data.created_at
     };

@@ -75,9 +75,23 @@ export interface WardLeadershipEntry {
 }
 
 export interface MissionaryEntry {
+  names: string; // Combined names like "Elder Snow & Score"
+  phone: string;
+}
+
+export interface WardMissionaryEntry {
   name: string;
-  phone?: string;
-  email?: string;
+  mission: string; // Name of the mission
+  missionAddress: string; // Address of the mission
+  email?: string; // Email address for ward missionaries
+}
+
+export interface BuildingInformation {
+  buildingName: string;
+  address: string;
+  phone: string;
+  emergencyContact: string;
+  emergencyPhone: string;
 }
 
 export interface BulletinData {
@@ -95,4 +109,6 @@ export interface BulletinData {
   leadership: Leadership;
   wardLeadership: WardLeadershipEntry[];
   missionaries: MissionaryEntry[];
+  wardMissionaries: WardMissionaryEntry[];
+  buildingInformation: BuildingInformation;
 }
