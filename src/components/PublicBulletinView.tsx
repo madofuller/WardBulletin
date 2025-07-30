@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Home } from 'lucide-react';
 import BulletinPreview from './BulletinPreview';
 import { BulletinData } from '../types/bulletin';
@@ -10,12 +10,13 @@ interface PublicBulletinViewProps {
   onBackToEditor: () => void;
 }
 
-export default function PublicBulletinView({ 
-  bulletinData, 
-  loading, 
-  error, 
-  onBackToEditor 
+export default function PublicBulletinView({
+  bulletinData,
+  loading,
+  error,
+  onBackToEditor
 }: PublicBulletinViewProps) {
+  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo' | 'building'>('program');
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -147,7 +148,11 @@ export default function PublicBulletinView({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Bulletin Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-8">
-        <BulletinPreview data={bulletinData} />
+        <BulletinPreview
+          data={bulletinData}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
         
         {/* Footer */}
         <div className="text-center mt-8">
