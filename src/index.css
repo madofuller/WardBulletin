@@ -94,3 +94,47 @@ input, textarea, select {
   text-decoration: underline;
   word-break: break-all;
 }
+
+/* Bulletin Customization Styles */
+.bulletin-customization {
+  --primary-color: #1e40af;
+  --secondary-color: #3b82f6;
+  --background-color: #ffffff;
+  --text-color: #1f2937;
+  --accent-color: #10b981;
+}
+
+.bulletin-customization .color-preview {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bulletin-customization .color-preview:hover {
+  transform: scale(1.1);
+  border-color: #9ca3af;
+}
+
+.bulletin-customization .theme-preview {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.bulletin-customization .theme-preview:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bulletin-customization .theme-preview.selected {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+}

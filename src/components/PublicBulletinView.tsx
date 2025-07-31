@@ -144,23 +144,47 @@ export default function PublicBulletinView({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div 
+      className="min-h-screen"
+      style={{
+        background: bulletinData?.customization?.theme === 'minimal' 
+          ? 'white' 
+          : bulletinData?.customization?.theme === 'modern'
+          ? 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+          : bulletinData?.customization?.theme === 'warm'
+          ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+          : bulletinData?.customization?.theme === 'cool'
+          ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+          : bulletinData?.customization?.theme === 'elegant'
+          ? 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)'
+          : 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+      }}
+    >
       {/* Bulletin Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-8">
         <BulletinPreview data={bulletinData} />
         
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-gray-600 text-sm">
-            Built with MyWardBulletin.com
-          </p>
-          <button
-            onClick={onBackToEditor}
-            className="mt-2 text-blue-600 hover:text-blue-700 text-sm underline"
-          >
-            Create your own bulletin
-          </button>
-        </div>
+        {bulletinData?.customization?.showBranding && (
+          <div className="text-center mt-8">
+            <p 
+              className="text-sm"
+              style={{ color: bulletinData?.customization?.secondaryColor || '#6b7280' }}
+            >
+              Built with MyWardBulletin.com
+            </p>
+            <button
+              onClick={onBackToEditor}
+              className="mt-2 text-sm underline"
+              style={{ 
+                color: bulletinData?.customization?.primaryColor || '#3b82f6',
+                ':hover': { color: bulletinData?.customization?.accentColor || '#1d4ed8' }
+              }}
+            >
+              Create your own bulletin
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

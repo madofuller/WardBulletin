@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
+import { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem, BulletinCustomization } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';
@@ -12,7 +12,7 @@ interface BulletinFormProps {
 }
 
 export default function BulletinForm({ data, onChange }: BulletinFormProps) {
-  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
+  const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo' | 'customization'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
   const [songTypes, setSongTypes] = useState<Record<string, SongType>>({
@@ -446,7 +446,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-4" aria-label="Main tabs">
         <ul className="flex flex-col gap-3 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
-          {['program', 'announcements'].map(tab => (
+          {['program', 'announcements', 'customization'].map(tab => (
             <li key={tab} role="presentation" className="w-full sm:w-auto">
               <button
                 type="button"
@@ -460,7 +460,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                 `}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
               >
-                {tab === 'program' ? 'Program' : 'Announcements'}
+                {tab === 'program' ? 'Program' : tab === 'announcements' ? 'Announcements' : 'Customize'}
               </button>
             </li>
           ))}
@@ -1408,6 +1408,36 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
           </div>
         </section>
       )} */}
+      
+      {/* Customization Tab */}
+      {activeTab === 'customization' && (
+        <section className="space-y-6">
+          <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
+            Customize Your Bulletin Appearance
+          </h3>
+          <p className="text-sm text-gray-600 mb-6">
+            Customize the colors, fonts, and branding of your public bulletin view. These settings will apply to how your bulletin appears when shared publicly.
+          </p>
+          
+          <BulletinCustomization
+            customization={data.customization || {
+              primaryColor: '#1e40af',
+              secondaryColor: '#3b82f6',
+              backgroundColor: '#ffffff',
+              textColor: '#1f2937',
+              accentColor: '#10b981',
+              fontFamily: 'serif',
+              headerFontSize: 'large',
+              bodyFontSize: 'medium',
+              theme: 'classic',
+              showBranding: true,
+              headerStyle: 'centered',
+              spacing: 'normal'
+            }}
+            onChange={(customization) => updateField('customization', customization)}
+          />
+        </section>
+      )}
     </div>
   );
 }

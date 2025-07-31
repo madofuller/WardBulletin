@@ -52,6 +52,7 @@ export interface Database {
           created_by: string | null
           expires_at: string | null
           created_at: string
+          customization?: any
         }
         Insert: {
           id?: string
@@ -62,6 +63,7 @@ export interface Database {
           created_by?: string | null
           expires_at?: string | null
           created_at?: string
+          customization?: any
         }
         Update: {
           id?: string
@@ -72,6 +74,7 @@ export interface Database {
           created_by?: string | null
           expires_at?: string | null
           created_at?: string
+          customization?: any
         }
       }
       tokens: {
@@ -349,6 +352,7 @@ export const bulletinService = {
       leadership: bulletinData.leadership || {},
       wardLeadership: bulletinData.wardLeadership || [],
       missionaries: bulletinData.missionaries || [],
+      customization: bulletinData.customization || null,
     };
     console.log('[DEBUG] saveBulletin: prepared bulletin record', bulletinRecord);
 
@@ -749,6 +753,7 @@ export const bulletinService = {
       leadership: leadership ? JSON.parse(leadership) : {},
       wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
       missionaries: missionaries ? JSON.parse(missionaries) : [],
+      customization: data.customization || null,
       created_at: data.created_at,
       updated_at: data.created_at
     };

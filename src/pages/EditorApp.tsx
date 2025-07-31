@@ -14,6 +14,7 @@ import ProfileModal from '../components/ProfileModal';
 import PublicBulletinView from '../components/PublicBulletinView';
 import SubmissionReviewModal from '../components/SubmissionReviewModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CustomizationTest from '../components/CustomizationTest';
 import { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
@@ -59,6 +60,7 @@ function EditorApp() {
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showCustomizationTest, setShowCustomizationTest] = useState(false);
   
   // Confirmation modal state
   const [confirmationModal, setConfirmationModal] = useState<{
@@ -171,7 +173,21 @@ function EditorApp() {
         { title: 'Building Representative', name: '', phone: '' },
         { title: 'Temple & Family History', name: '', phone: '' }
       ]),
-      missionaries: getDefault('missionaries', [])
+      missionaries: getDefault('missionaries', []),
+      customization: {
+        primaryColor: '#1e40af',
+        secondaryColor: '#3b82f6',
+        backgroundColor: '#ffffff',
+        textColor: '#1f2937',
+        accentColor: '#10b981',
+        fontFamily: 'serif',
+        headerFontSize: 'large',
+        bodyFontSize: 'medium',
+        theme: 'classic',
+        showBranding: true,
+        headerStyle: 'centered',
+        spacing: 'normal'
+      }
     };
   }
 
@@ -294,7 +310,21 @@ function EditorApp() {
       { title: 'Building Representative', name: '', phone: '' },
       { title: 'Temple & Family History', name: '', phone: '' }
     ],
-    missionaries: bulletin.missionaries || []
+    missionaries: bulletin.missionaries || [],
+    customization: bulletin.customization || {
+      primaryColor: '#1e40af',
+      secondaryColor: '#3b82f6',
+      backgroundColor: '#ffffff',
+      textColor: '#1f2937',
+      accentColor: '#10b981',
+      fontFamily: 'serif',
+      headerFontSize: 'large',
+      bodyFontSize: 'medium',
+      theme: 'classic',
+      showBranding: true,
+      headerStyle: 'centered',
+      spacing: 'normal'
+    }
   });
 
   const handleBulletinDataChange = (newData: BulletinData) => {
@@ -849,6 +879,15 @@ function EditorApp() {
                 </button>
               )}
               
+              <button
+                onClick={() => setShowCustomizationTest(true)}
+                className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                title="Test customization functionality"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Test Customization
+              </button>
+              
                 {user ? (
                   <UserMenu
                     user={user}
@@ -1189,6 +1228,13 @@ function EditorApp() {
           message={confirmationModal.message}
           variant={confirmationModal.variant}
         />
+
+        {/* Customization Test Modal */}
+        {showCustomizationTest && (
+          <CustomizationTest
+            onClose={() => setShowCustomizationTest(false)}
+          />
+        )}
 
         {/* Hidden print layout for PDF export */}
         <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>

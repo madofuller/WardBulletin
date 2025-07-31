@@ -36,6 +36,57 @@ const audienceOrder = [
 export default function BulletinPreview({ data, hideTabs = false }: BulletinPreviewProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
 
+  // Get customization settings with defaults
+  const customization = data.customization || {
+    primaryColor: '#1e40af',
+    secondaryColor: '#3b82f6',
+    backgroundColor: '#ffffff',
+    textColor: '#1f2937',
+    accentColor: '#10b981',
+    fontFamily: 'serif',
+    headerFontSize: 'large',
+    bodyFontSize: 'medium',
+    theme: 'classic',
+    showBranding: true,
+    headerStyle: 'centered',
+    spacing: 'normal'
+  };
+
+  // Generate CSS variables for customization
+  const getCustomStyles = () => {
+    const fontSizeMap = {
+      small: '0.875rem',
+      medium: '1rem',
+      large: '1.125rem',
+      xl: '1.25rem'
+    };
+
+    const fontFamilyMap = {
+      serif: 'Georgia, serif',
+      'sans-serif': 'Arial, sans-serif',
+      monospace: 'Courier New, monospace',
+      cursive: 'Brush Script MT, cursive'
+    };
+
+    const spacingMap = {
+      compact: '0.5rem',
+      normal: '1rem',
+      spacious: '1.5rem'
+    };
+
+    return {
+      '--primary-color': customization.primaryColor,
+      '--secondary-color': customization.secondaryColor,
+      '--background-color': customization.backgroundColor,
+      '--text-color': customization.textColor,
+      '--accent-color': customization.accentColor,
+      '--font-family': fontFamilyMap[customization.fontFamily],
+      '--header-font-size': fontSizeMap[customization.headerFontSize],
+      '--body-font-size': fontSizeMap[customization.bodyFontSize],
+      '--spacing': spacingMap[customization.spacing]
+    } as React.CSSProperties;
+  };
+
   const formatDate = (dateString: string) => {
     // Fix timezone issue by creating date in local timezone
     const [year, month, day] = dateString.split('-').map(Number);
@@ -58,7 +109,16 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
   );
 
   return (
-    <div className="bulletin bg-white shadow-lg rounded-lg overflow-hidden max-w-2xl mx-auto font-sans">
+    <div 
+      className="bulletin shadow-lg rounded-lg overflow-hidden max-w-2xl mx-auto"
+      style={{
+        ...getCustomStyles(),
+        backgroundColor: customization.backgroundColor,
+        fontFamily: `var(--font-family)`,
+        fontSize: `var(--body-font-size)`,
+        color: `var(--text-color)`
+      }}
+    >
       {/* Tab Navigation (hidden in print and if hideTabs) */}
       {!hideTabs && (
         <nav className="flex justify-center print:hidden mb-4 mt-4" aria-label="Main tabs">
@@ -88,22 +148,53 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
       {activeTab === 'program' && (
         <div className="p-6 space-y-4 text-sm leading-relaxed">
           {/* Header */}
-          <div className="bg-gray-100 border-b-2 border-gray-300 text-center relative overflow-hidden">
+          <div 
+            className={`border-b-2 text-center relative overflow-hidden ${
+              customization.headerStyle === 'bordered' 
+                ? 'border-2 border-gray-300' 
+                : 'border-b-2 border-gray-300'
+            }`}
+            style={{
+              backgroundColor: customization.theme === 'minimal' ? 'transparent' : 
+                               customization.theme === 'modern' ? '#f8fafc' : 
+                               customization.theme === 'warm' ? '#fef3c7' :
+                               customization.theme === 'cool' ? '#f0f9ff' :
+                               customization.theme === 'elegant' ? '#faf5ff' : '#f3f4f6'
+            }}
+          >
             <div className="relative z-10 p-6">
               {/* Ward Name */}
               {data.wardName && (
-                <h1 className="text-xl font-bold text-gray-900 mb-1">
+                <h1 
+                  className="font-bold mb-1"
+                  style={{
+                    fontSize: `var(--header-font-size)`,
+                    color: `var(--primary-color)`
+                  }}
+                >
                   {data.wardName}
                 </h1>
               )}
               
               {/* Meeting Type */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 
+                className="font-bold mb-2"
+                style={{
+                  fontSize: `calc(var(--header-font-size) * 1.2)`,
+                  color: `var(--text-color)`
+                }}
+              >
                 Sacrament Meeting
               </h2>
               
               {/* Date */}
-              <p className="text-lg text-gray-700 italic">
+              <p 
+                className="italic"
+                style={{
+                  fontSize: `var(--body-font-size)`,
+                  color: `var(--secondary-color)`
+                }}
+              >
                 {data.date ? formatDate(data.date) : 'Date'}
               </p>
             </div>
@@ -617,10 +708,30 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-100 text-center border-t border-gray-300 p-3">
-        <p className="text-sm text-gray-500">
-          {data.wardName}
+      <div 
+        className="text-center border-t border-gray-300 p-3"
+        style={{
+          backgroundColor: customization.theme === 'minimal' ? 'transparent' : 
+                          customization.theme === 'modern' ? '#f8fafc' : 
+                          customization.theme === 'warm' ? '#fef3c7' :
+                          customization.theme === 'cool' ? '#f0f9ff' :
+                          customization.theme === 'elegant' ? '#faf5ff' : '#f3f4f6'
+        }}
+      >
+        <p 
+          className="text-sm"
+          style={{ color: `var(--secondary-color)` }}
+        >
+          {customization.customFooter || data.wardName}
         </p>
+        {customization.showBranding && (
+          <p 
+            className="text-xs mt-1"
+            style={{ color: `var(--secondary-color)` }}
+          >
+            Built with MyWardBulletin.com
+          </p>
+        )}
       </div>
     </div>
   );

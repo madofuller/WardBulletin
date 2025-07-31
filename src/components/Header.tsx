@@ -1,7 +1,7 @@
 import React from 'react';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
-import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
+import { Plus, Download, QrCode, LogIn, Menu, X, Settings } from 'lucide-react';
 
 export default function Header({
   user,
@@ -22,7 +22,8 @@ export default function Header({
   isSupabaseConfigured,
   hideExportPDF = false,
   hideQRCode = false,
-  onlyNewBulletin = false
+  onlyNewBulletin = false,
+  onOpenCustomizationTest
 }) {
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
@@ -75,6 +76,16 @@ export default function Header({
               >
                 <QrCode className="w-4 h-4 mr-2" />
                 My QR Code
+              </button>
+            )}
+            {!onlyNewBulletin && onOpenCustomizationTest && (
+              <button
+                onClick={onOpenCustomizationTest}
+                className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                title="Test customization functionality"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Test Customization
               </button>
             )}
             {!onlyNewBulletin && (user ? (

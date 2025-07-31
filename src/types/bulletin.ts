@@ -82,6 +82,32 @@ export interface MissionaryEntry {
   email?: string;
 }
 
+export interface BulletinCustomization {
+  // Color scheme
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColor: string;
+  
+  // Typography
+  fontFamily: 'serif' | 'sans-serif' | 'monospace' | 'cursive';
+  headerFontSize: 'small' | 'medium' | 'large' | 'xl';
+  bodyFontSize: 'small' | 'medium' | 'large';
+  
+  // Theme
+  theme: 'classic' | 'modern' | 'minimal' | 'elegant' | 'warm' | 'cool';
+  
+  // Branding
+  showBranding: boolean;
+  customLogo?: string;
+  customFooter?: string;
+  
+  // Layout
+  headerStyle: 'centered' | 'left-aligned' | 'bordered';
+  spacing: 'compact' | 'normal' | 'spacious';
+}
+
 export interface BulletinData {
   wardName: string;
   date: string;
@@ -97,4 +123,5 @@ export interface BulletinData {
   leadership: Leadership;
   wardLeadership: WardLeadershipEntry[];
   missionaries: MissionaryEntry[];
+  customization?: BulletinCustomization;
 }
