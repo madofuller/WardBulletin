@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BulletinData } from "../types/bulletin";
+import type { BulletinData } from "../types/bulletin";
 
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { getSongUrl, getSongTitle } from '../lib/songService';

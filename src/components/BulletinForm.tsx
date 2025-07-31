@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem, BulletinCustomization } from '../types/bulletin';
+import type { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem, BulletinCustomization } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Home } from 'lucide-react';
 import BulletinPreview from './BulletinPreview';
-import { BulletinData } from '../types/bulletin';
+import type { BulletinData } from '../types/bulletin';
 
 interface PublicBulletinViewProps {
   bulletinData: BulletinData | null;

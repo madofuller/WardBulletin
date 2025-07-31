@@ -1,4 +1,4 @@
-import { BulletinCustomization } from '../types/bulletin';
+import type { BulletinCustomization } from '../types/bulletin';
 
 // Test default customization values
 export const testDefaultCustomization: BulletinCustomization = {

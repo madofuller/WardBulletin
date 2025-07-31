@@ -15,7 +15,7 @@ import PublicBulletinView from '../components/PublicBulletinView';
 import SubmissionReviewModal from '../components/SubmissionReviewModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CustomizationTest from '../components/CustomizationTest';
-import { BulletinData } from '../types/bulletin';
+import type { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

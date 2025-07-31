@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { BulletinCustomization } from '../types/bulletin';
-import { runCustomizationTests, testDefaultCustomization, testColorPresets } from '../lib/customization.test';
+import type { BulletinCustomization } from '../types/bulletin';
+import { runCustomizationTests, testDefaultCustomization, testColorPresets } from '../lib/customizationHelpers';
 
 interface CustomizationTestProps {
   onClose: () => void;

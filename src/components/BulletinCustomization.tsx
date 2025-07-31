@@ -1,6 +1,6 @@
 import React from 'react';
 import { Palette, Type, Layout, Eye, EyeOff } from 'lucide-react';
-import { BulletinCustomization } from '../types/bulletin';
+import type { BulletinCustomization } from '../types/bulletin';
 
 interface BulletinCustomizationProps {
   customization: BulletinCustomization;
