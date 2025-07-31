@@ -18,6 +18,7 @@ import { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { APP_NAME, APP_TAGLINE } from '../lib/config';
 import Logo from '../components/Logo';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
@@ -802,10 +803,16 @@ function EditorApp() {
           <div className="flex items-center justify-between">
             <a href="/" className="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-shadow no-underline" style={{ textDecoration: 'none' }}>
               <Logo size={40} />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
-                <p className="text-sm text-gray-600">Ward Bulletin Creator</p>
-              </div>
+              {(APP_NAME || APP_TAGLINE) && (
+                <div>
+                  {APP_NAME && (
+                    <h1 className="text-3xl font-bold text-gray-900">{APP_NAME}</h1>
+                  )}
+                  {APP_TAGLINE && (
+                    <p className="text-sm text-gray-600">{APP_TAGLINE}</p>
+                  )}
+                </div>
+              )}
             </a>
             {/* Desktop/Menu/Sign In button remains outside the clickable logo area */}
             
@@ -1206,9 +1213,12 @@ function EditorApp() {
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <p className="text-gray-600">
-              MyWardBulletin.com - Free Ward Bulletin Creator
-            </p>
+            {(APP_NAME || APP_TAGLINE) && (
+              <p className="text-gray-600">
+                {APP_NAME}
+                {APP_TAGLINE ? ` - ${APP_TAGLINE}` : ''}
+              </p>
+            )}
 
             <nav className="mt-4 space-x-4">
               <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>

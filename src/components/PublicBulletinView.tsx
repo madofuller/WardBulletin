@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, Home } from 'lucide-react';
 import BulletinPreview from './BulletinPreview';
 import { BulletinData } from '../types/bulletin';
+import { APP_NAME } from '../lib/config';
 
 interface PublicBulletinViewProps {
   bulletinData: BulletinData | null;
@@ -74,10 +75,12 @@ export default function PublicBulletinView({
             
             {/* Help Text */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
-                Need help? Contact your ward bulletin specialist or visit{' '}
-                <a href="/contact" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
-              </p>
+              {APP_NAME && (
+                <p className="text-xs text-gray-500">
+                  Need help? Contact your ward bulletin specialist or visit{' '}
+                  <a href="/contact" className="text-blue-600 hover:underline">{APP_NAME}.com</a>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -132,10 +135,12 @@ export default function PublicBulletinView({
             
             {/* Help Text */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500">
-                Want to create bulletins for your ward? Visit{' '}
-                <a href="/" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
-              </p>
+              {APP_NAME && (
+                <p className="text-xs text-gray-500">
+                  Want to create bulletins for your ward? Visit{' '}
+                  <a href="/" className="text-blue-600 hover:underline">{APP_NAME}.com</a>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -150,17 +155,17 @@ export default function PublicBulletinView({
         <BulletinPreview data={bulletinData} />
         
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-gray-600 text-sm">
-            Built with MyWardBulletin.com
-          </p>
-          <button
-            onClick={onBackToEditor}
-            className="mt-2 text-blue-600 hover:text-blue-700 text-sm underline"
-          >
-            Create your own bulletin
-          </button>
-        </div>
+        {APP_NAME && (
+          <div className="text-center mt-8">
+            <p className="text-gray-600 text-sm">Built with {APP_NAME}.com</p>
+            <button
+              onClick={onBackToEditor}
+              className="mt-2 text-blue-600 hover:text-blue-700 text-sm underline"
+            >
+              Create your own bulletin
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

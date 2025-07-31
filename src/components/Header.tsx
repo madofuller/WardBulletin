@@ -2,6 +2,7 @@ import React from 'react';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
 import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
+import { APP_NAME, APP_TAGLINE } from '../lib/config';
 
 export default function Header({
   user,
@@ -30,10 +31,16 @@ export default function Header({
         <div className="flex items-center justify-between">
           <a href="/" className="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-shadow no-underline" style={{ textDecoration: 'none' }}>
             <Logo size={40} />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
-              <p className="text-sm text-gray-600">Ward Bulletin Creator</p>
-            </div>
+            {(APP_NAME || APP_TAGLINE) && (
+              <div>
+                {APP_NAME && (
+                  <h1 className="text-3xl font-bold text-gray-900">{APP_NAME}</h1>
+                )}
+                {APP_TAGLINE && (
+                  <p className="text-sm text-gray-600">{APP_TAGLINE}</p>
+                )}
+              </div>
+            )}
           </a>
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-3">

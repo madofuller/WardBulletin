@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
+import { APP_NAME, APP_TAGLINE } from '../lib/config';
 
 export default function HowToUsePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -39,9 +40,9 @@ export default function HowToUsePage() {
       />
       <main className="max-w-3xl mx-auto px-4 py-10">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto mt-8">
-          <h1 className="text-3xl font-bold mb-4 text-blue-800">How to Use MyWardBulletin</h1>
+          <h1 className="text-3xl font-bold mb-4 text-blue-800">How to Use {APP_NAME}</h1>
           <p className="mb-6 text-lg text-gray-700">
-            Creating and sharing a Sunday program should be simple. Here’s how to do it with MyWardBulletin:
+            Creating and sharing a Sunday program should be simple. Here’s how to do it with {APP_NAME}:
           </p>
           <ol className="list-decimal list-inside mb-6 space-y-6 text-gray-700">
             <li>
@@ -119,7 +120,7 @@ export default function HowToUsePage() {
 
           <h2 className="text-2xl font-bold mt-8 mb-4 text-blue-700">Announcement Submissions</h2>
           <p className="mb-4 text-gray-700">
-            MyWardBulletin now includes a collaborative announcement system that allows ward members to submit announcements directly to your bulletin!
+            {APP_NAME} now includes a collaborative announcement system that allows ward members to submit announcements directly to your bulletin!
           </p>
           
           <div className="bg-blue-50 rounded-lg p-6 mb-6">
@@ -176,9 +177,12 @@ export default function HowToUsePage() {
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <p className="text-gray-600">
-              MyWardBulletin.com - Free Ward Bulletin Creator
-            </p>
+            {(APP_NAME || APP_TAGLINE) && (
+              <p className="text-gray-600">
+                {APP_NAME}
+                {APP_TAGLINE ? ` - ${APP_TAGLINE}` : ''}
+              </p>
+            )}
             <nav className="mt-4 space-x-4">
               <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>

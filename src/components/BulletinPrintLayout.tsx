@@ -1,7 +1,7 @@
 import React, { forwardRef, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
-import { SHORT_DOMAIN, FULL_DOMAIN } from "../lib/config";
+import { SHORT_DOMAIN, FULL_DOMAIN, APP_NAME } from "../lib/config";
 
 // Function to format date from ISO format to natural format
 function formatDate(dateString: string): string {
@@ -90,9 +90,11 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
             className="mb-4"
           />
           <p className="text-xs font-semibold text-gray-600 break-all print:!text-lg print:!text-black">{qrUrl}</p>
-          <p className="mt-2 font-semibold text-xs text-gray-500 print:!text-lg print:!text-black">
-            <span className="font-semibold print:!text-black">Build your own at <span className="font-semibold print:!text-black">MyWardBulletin.com</span></span>
-          </p>
+          {APP_NAME && (
+            <p className="mt-2 font-semibold text-xs text-gray-500 print:!text-lg print:!text-black">
+              <span className="font-semibold print:!text-black">Build your own at <span className="font-semibold print:!text-black">{APP_NAME}.com</span></span>
+            </p>
+          )}
         </div>
 
         {/* Front Cover (right) */}

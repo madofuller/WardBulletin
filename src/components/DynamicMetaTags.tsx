@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { APP_NAME } from '../lib/config';
 
 interface BulletinData {
   wardName: string;
@@ -52,7 +53,7 @@ const DynamicMetaTags: React.FC<DynamicMetaTagsProps> = ({
     if (!bulletinData || !isPublicPage) {
       // Reset to default meta tags
       updateMetaTags({
-        title: 'MyWardBulletin - Free Digital Ward Bulletin Creator',
+        title: `${APP_NAME} - Free Digital Ward Bulletin Creator`,
         description: 'Create, share, and print beautiful digital ward bulletins for your LDS ward. Modern, mobile-friendly, and free.',
         image: 'https://mywardbulletin.com/og-image.png',
         url: 'https://mywardbulletin.com/'

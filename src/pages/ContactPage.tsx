@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
+import { APP_NAME, APP_TAGLINE } from '../lib/config';
 
 export default function ContactPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -54,7 +55,7 @@ export default function ContactPage() {
           </p>
           <h2 className="text-xl font-bold mt-6 mb-2 text-blue-700">💡 Feedback or Feature Requests</h2>
           <p className="mb-4 text-gray-700">
-          If there's something you'd like the tool to do, or something that's confusing, feel free to send it my way. MyWardBulletin is constantly improving based on real user input.
+          If there's something you'd like the tool to do, or something that's confusing, feel free to send it my way. {APP_NAME} is constantly improving based on real user input.
           </p>
           <h2 className="text-xl font-bold mt-6 mb-2 text-blue-700">🙏 Built with Purpose</h2>
           <p className="mb-4 text-gray-700">
@@ -69,9 +70,12 @@ export default function ContactPage() {
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <p className="text-gray-600">
-              MyWardBulletin.com - Free Ward Bulletin Creator
-            </p>
+            {(APP_NAME || APP_TAGLINE) && (
+              <p className="text-gray-600">
+                {APP_NAME}
+                {APP_TAGLINE ? ` - ${APP_TAGLINE}` : ''}
+              </p>
+            )}
             <nav className="mt-4 space-x-4">
               <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>

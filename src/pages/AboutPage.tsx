@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
+import { APP_NAME, APP_TAGLINE } from '../lib/config';
 
 export default function AboutPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -41,9 +42,9 @@ export default function AboutPage() {
 
       <main className="max-w-3xl mx-auto px-4 py-12">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto mt-8">
-          <h1 className="text-4xl font-bold mb-4 text-blue-800">About MyWardBulletin</h1>
+          <h1 className="text-4xl font-bold mb-4 text-blue-800">About {APP_NAME}</h1>
           <p className="mb-4 text-lg text-gray-700">
-            MyWardBulletin is a free, private, and modern tool built specifically for Latter-day Saint wards and branches. It simplifies how Sunday programs and announcements are created, shared, and printed.
+            {APP_NAME} is a free, private, and modern tool built specifically for Latter-day Saint wards and branches. It simplifies how Sunday programs and announcements are created, shared, and printed.
           </p>
           <p className="mb-4 text-gray-700">
             I originally built this for my wife when she was called as the ward bulletin specialist. The tools out there were either too clunky, too rigid, or over-engineered. She just needed something that was simple, flexible, and worked every week.
@@ -82,9 +83,12 @@ export default function AboutPage() {
       <footer className="bg-white border-t border-gray-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
-            <p className="text-gray-600 text-base font-medium">
-              MyWardBulletin.com — Free Ward Bulletin Creator
-            </p>
+            {(APP_NAME || APP_TAGLINE) && (
+              <p className="text-gray-600 text-base font-medium">
+                {APP_NAME}
+                {APP_TAGLINE ? ` — ${APP_TAGLINE}` : ''}
+              </p>
+            )}
             <nav className="mt-4 space-x-4">
               <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>

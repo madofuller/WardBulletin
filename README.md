@@ -1,5 +1,16 @@
 # MyWardBulletin
 
+## Custom Branding and Theme
+
+You can change or remove all branding by editing the following variables in your `.env` file:
+
+```bash
+VITE_APP_NAME=MyWardBulletin
+VITE_APP_TAGLINE=Ward Bulletin Creator
+```
+
+Set either value to an empty string to omit it from the UI. Fonts and colors are defined in `tailwind.config.js` and `src/index.css`. Feel free to adjust these files to fit your preferred style.
+
 This project uses environment variables to configure Supabase credentials. To connect the application to your own Supabase project:
 
 1. Copy `.env.example` to `.env` in the project root.
