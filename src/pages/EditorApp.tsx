@@ -13,6 +13,7 @@ import TemplatesModal from '../components/TemplatesModal';
 import ProfileModal from '../components/ProfileModal';
 import PublicBulletinView from '../components/PublicBulletinView';
 import SubmissionReviewModal from '../components/SubmissionReviewModal';
+import { useLanguage } from '../context/LanguageContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
@@ -36,6 +37,7 @@ function decodeJwtExp(token: string) {
 }
 
 function EditorApp() {
+  const { t, toggleLang } = useLanguage();
   const [currentView, setCurrentView] = useState<'editor' | 'public'>('editor');
   const [publicBulletinData, setPublicBulletinData] = useState<any>(null);
   const [publicError, setPublicError] = useState('');
@@ -481,7 +483,7 @@ function EditorApp() {
     if (hasUnsavedChanges) {
       setConfirmationModal({
         isOpen: true,
-        title: 'Unsaved Changes',
+        title: t('unsaved_changes'),
         message: 'You have unsaved changes. Loading this bulletin will discard them. Continue?',
         onConfirm: () => {
           // Convert database format back to app format
@@ -655,7 +657,7 @@ function EditorApp() {
     if (hasUnsavedChanges) {
       setConfirmationModal({
         isOpen: true,
-        title: 'Unsaved Changes',
+        title: t('unsaved_changes'),
         message: 'You have unsaved changes. Creating a new bulletin will discard them. Continue?',
         onConfirm: () => {
           setShowTemplates(true);
@@ -816,7 +818,7 @@ function EditorApp() {
                 className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Bulletin
+                {t('new_bulletin')}
               </button>
               
               <button
@@ -824,7 +826,7 @@ function EditorApp() {
                 className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export PDF
+                {t('export_pdf')}
               </button>
               
 
@@ -832,13 +834,13 @@ function EditorApp() {
               <button
                 onClick={() => setShowQRCode(!showQRCode)}
                 className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                title="Share your QR code"
+                title={t('share')}
               >
                 <QrCode className="w-4 h-4 mr-2" />
-                Share
+                {t('share')}
               </button>
               <button
-                onClick={() => (window as any).toggleLanguage && (window as any).toggleLanguage()}
+                onClick={toggleLang}
                 className="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 ES/EN
@@ -851,7 +853,7 @@ function EditorApp() {
                   title="Review announcement submissions"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Review Submissions ({pendingSubmissionsCount})
+                  {t('review_submissions')} ({pendingSubmissionsCount})
                 </button>
               )}
               
@@ -872,10 +874,10 @@ function EditorApp() {
                 <button
                   onClick={() => setShowAuthModal(true)}
                   className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  title="Sign In"
+                  title={t('sign_in')}
                 >
                   <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
+                  {t('sign_in')}
                 </button>
               )}
             </div>
@@ -907,7 +909,7 @@ function EditorApp() {
                   className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  New Bulletin
+                  {t('new_bulletin')}
                 </button>
                 
                 <button
@@ -918,7 +920,7 @@ function EditorApp() {
                   className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Export PDF
+                  {t('export_pdf')}
                 </button>
                 
 
@@ -931,11 +933,11 @@ function EditorApp() {
                   className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
-                  Share
+                  {t('share')}
                 </button>
                 <button
                   onClick={() => {
-                    (window as any).toggleLanguage && (window as any).toggleLanguage();
+                    toggleLang();
                     setShowMobileMenu(false);
                   }}
                   className="w-full flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
@@ -954,7 +956,7 @@ function EditorApp() {
                         className="w-full flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                       >
                         <MessageSquare className="w-4 h-4 mr-2" />
-                        Review Submissions ({pendingSubmissionsCount})
+                        {t('review_submissions')} ({pendingSubmissionsCount})
                       </button>
                     )}
                     <button
@@ -964,7 +966,7 @@ function EditorApp() {
                       }}
                       className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      My Bulletins
+                      {t('my_bulletins')}
                     </button>
                       <button
                         onClick={async () => {
@@ -973,7 +975,7 @@ function EditorApp() {
                         }}
                         className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       >
-                      Sign Out
+                      {t('sign_out')}
                     </button>
                   </div>
                 ) : (
@@ -986,7 +988,7 @@ function EditorApp() {
                     className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
-                    {isSupabaseConfigured() ? 'Sign In' : 'Sign In (Setup Required)'}
+                    {isSupabaseConfigured() ? t('sign_in') : t('sign_in_setup')}
                   </button>
                 )}
               </div>
@@ -1000,7 +1002,7 @@ function EditorApp() {
           {/* Form Section */}
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Create Your Bulletin</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">{t('create_your_bulletin')}</h2>
               <BulletinForm data={bulletinData} onChange={handleBulletinDataChange} />
             </div>
           </div>
@@ -1010,16 +1012,16 @@ function EditorApp() {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900">
-                Bulletin Preview
+                {t('bulletin_preview')}
                 </h2>
                 {currentBulletinId && (
                   <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2 mb-2">
                     <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                      Saved Bulletin
+                      {t('saved_bulletin')}
                     </span>
                     {hasUnsavedChanges && (
                       <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
-                        Unsaved Changes
+                        {t('unsaved_changes')}
                       </span>
                     )}
                   </div>
@@ -1033,7 +1035,7 @@ function EditorApp() {
                   onClick={() => handleActiveBulletinSelect(currentBulletinId)}
                   className="mt-4 w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  Set This Bulletin as QR Code Bulletin
+                  {t('set_qr_bulletin')}
                 </button>
               )}
               <div className="mt-4 flex flex-col sm:flex-row gap-2">
@@ -1048,7 +1050,11 @@ function EditorApp() {
                     ) : (
                       <Plus className="w-4 h-4 mr-2" />
                     )}
-                    {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
+                    {loading
+                      ? t('saving')
+                      : currentBulletinId
+                      ? t('update_bulletin')
+                      : t('save_bulletin')}
                   </button>
                 )}
                 <button
@@ -1061,7 +1067,7 @@ function EditorApp() {
                   }}
                   className="w-full sm:w-auto inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
-                  Save as Template
+                  {t('save_template')}
                 </button>
               </div>
             </div>
@@ -1099,8 +1105,8 @@ function EditorApp() {
                   />
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">Sign in to create your permanent QR code</p>
-                  <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign In</button>
+                  <p className="text-gray-600 mb-4">{t('qr_sign_in')}</p>
+                  <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('sign_in')}</button>
                 </div>
               )}
             </div>

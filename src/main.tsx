@@ -5,6 +5,7 @@ import App from './App.tsx';
 import './index.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from './lib/SessionContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { inject } from '@vercel/analytics';
 
 const queryClient = new QueryClient();
@@ -16,7 +17,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
-          <App />
+          <LanguageProvider>
+            <App />
+          </LanguageProvider>
         </SessionProvider>
       </QueryClientProvider>
     </BrowserRouter>

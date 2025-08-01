@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, LogOut, Save, FileText, Settings, MessageSquare } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useLanguage } from '../context/LanguageContext';
 
 interface UserMenuProps {
   user: any;
@@ -25,6 +26,7 @@ export default function UserMenu({
   onOpenReviewSubmissions,
   pendingSubmissionsCount
 }: UserMenuProps) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -72,7 +74,7 @@ export default function UserMenu({
               >
                 <Save className="w-4 h-4" />
                 <span className="text-sm">
-                  {hasUnsavedChanges ? 'Save Changes' : 'No Changes to Save'}
+                  {hasUnsavedChanges ? t('save_changes') : t('no_changes')}
                   {hasUnsavedChanges && <span className="text-xs ml-1">(unsaved changes)</span>}
                 </span>
               </button>
@@ -85,7 +87,7 @@ export default function UserMenu({
                 className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <FileText className="w-4 h-4" />
-                <span className="text-sm">My Bulletins</span>
+                <span className="text-sm">{t('my_bulletins')}</span>
               </button>
               
               {onOpenReviewSubmissions && (
@@ -98,7 +100,7 @@ export default function UserMenu({
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span className="text-sm">
-                    Review Submissions
+                    {t('review_submissions')}
                     {pendingSubmissionsCount && typeof pendingSubmissionsCount === 'number' && pendingSubmissionsCount > 0 ? (
                       <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
                         {pendingSubmissionsCount}
@@ -117,7 +119,7 @@ export default function UserMenu({
                   className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="text-sm">Profile Settings</span>
+                  <span className="text-sm">{t('profile_settings')}</span>
                 </button>
               )}
               {onOpenWardSettings && (
@@ -129,7 +131,7 @@ export default function UserMenu({
                   className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="text-sm">Ward Settings</span>
+                  <span className="text-sm">{t('ward_settings')}</span>
                 </button>
               )}
             </div>
@@ -140,7 +142,7 @@ export default function UserMenu({
                 className="w-full flex items-center space-x-2 px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">Sign Out</span>
+                <span className="text-sm">{t('sign_out')}</span>
               </button>
             </div>
           </div>

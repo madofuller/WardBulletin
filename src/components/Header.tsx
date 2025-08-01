@@ -2,6 +2,7 @@ import React from 'react';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
 import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Header({
   user,
@@ -24,6 +25,7 @@ export default function Header({
   hideQRCode = false,
   onlyNewBulletin = false
 }) {
+  const { t, toggleLang } = useLanguage();
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -42,7 +44,7 @@ export default function Header({
               className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
-              New Bulletin
+              {t('new_bulletin')}
             </button>
             {!onlyNewBulletin && !hideExportPDF && (
               <button
@@ -50,7 +52,7 @@ export default function Header({
                 className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export PDF
+                {t('export_pdf')}
               </button>
             )}
             {!onlyNewBulletin && user && (
@@ -64,7 +66,11 @@ export default function Header({
                 ) : (
                   <Plus className="w-4 h-4 mr-2" />
                 )}
-                {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
+                {loading
+                  ? t('saving')
+                  : currentBulletinId
+                  ? t('update_bulletin')
+                  : t('save_bulletin')}
               </button>
             )}
             {!onlyNewBulletin && !hideQRCode && (
@@ -74,11 +80,11 @@ export default function Header({
                 title="Manage your permanent QR code"
               >
                 <QrCode className="w-4 h-4 mr-2" />
-                My QR Code
+                {t('my_qr_code')}
               </button>
             )}
             <button
-              onClick={() => (window as any).toggleLanguage && (window as any).toggleLanguage()}
+              onClick={toggleLang}
               className="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
             >
               ES/EN
@@ -96,10 +102,10 @@ export default function Header({
               <button
                 onClick={() => setShowAuthModal(true)}
                 className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                title="Sign In"
+                title={t('sign_in')}
               >
                 <LogIn className="w-4 h-4 mr-2" />
-                Sign In
+                {t('sign_in')}
               </button>
             ))}
           </div>
@@ -129,7 +135,7 @@ export default function Header({
                 className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Bulletin
+                {t('new_bulletin')}
               </button>
               {!onlyNewBulletin && !hideExportPDF && (
                 <button
@@ -140,7 +146,7 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Export PDF
+                  {t('export_pdf')}
                 </button>
               )}
               {!onlyNewBulletin && user && (
@@ -157,7 +163,11 @@ export default function Header({
                   ) : (
                     <Plus className="w-4 h-4 mr-2" />
                   )}
-                  {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
+                  {loading
+                    ? t('saving')
+                    : currentBulletinId
+                    ? t('update_bulletin')
+                    : t('save_bulletin')}
                 </button>
               )}
               {!onlyNewBulletin && !hideQRCode && (
@@ -169,12 +179,12 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
-                  My QR Code
+                  {t('my_qr_code')}
                 </button>
               )}
               <button
                 onClick={() => {
-                  (window as any).toggleLanguage && (window as any).toggleLanguage();
+                  toggleLang();
                   setShowMobileMenu(false);
                 }}
                 className="w-full flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
@@ -190,7 +200,7 @@ export default function Header({
                     }}
                     className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    My Bulletins
+                    {t('my_bulletins')}
                   </button>
                   <button
                     onClick={() => {
@@ -199,7 +209,7 @@ export default function Header({
                     }}
                     className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
-                    Sign Out
+                    {t('sign_out')}
                   </button>
                 </div>
               ) : (
@@ -212,7 +222,7 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
-                  {isSupabaseConfigured() ? 'Sign In' : 'Sign In (Setup Required)'}
+                  {isSupabaseConfigured() ? t('sign_in') : t('sign_in_setup')}
                 </button>
               ))}
             </div>
