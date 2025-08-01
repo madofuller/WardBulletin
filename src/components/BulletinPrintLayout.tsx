@@ -61,17 +61,16 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
     );
   }, [qrUrl]);
 
-  // Add audienceLabels mapping at the top
   const audienceLabels = {
-    ward: 'Ward',
-    relief_society: 'Relief Society',
-    elders_quorum: 'Elders Quorum',
-    young_women: 'Young Women',
-    young_men: 'Young Men',
-    youth: 'Youth',
-    primary: 'Primary',
-    stake: 'Stake',
-    other: 'Other',
+    ward: t('audience_ward'),
+    relief_society: t('audience_relief_society'),
+    elders_quorum: t('audience_elders_quorum'),
+    young_women: t('audience_young_women'),
+    young_men: t('audience_young_men'),
+    youth: t('audience_youth'),
+    primary: t('audience_primary'),
+    stake: t('audience_stake'),
+    other: t('audience_other'),
   };
 
   return (
@@ -99,10 +98,10 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
 
         {/* Front Cover (right) */}
         <div className="w-1/2 pl-12 pr-2 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
-          <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || 'Ward Name'}</h1>
+          <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('audience_ward')}</h1>
           <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
           <p className="text-base mb-1 print:!text-xl print:!text-black">The Church of Jesus Christ of Latter-day Saints</p>
-          <p className="text-base mb-4 print:!text-xl print:!text-black">{data.meetingType === 'sacrament' ? 'Sacrament Meeting' : data.meetingType}</p>
+          <p className="text-base mb-4 print:!text-xl print:!text-black">{data.meetingType === 'sacrament' ? t('sacrament_meeting') : data.meetingType}</p>
 
           {data.theme && <p className="font-semibold italic text-sm text-gray-600 print:!text-lg print:!text-black">"{data.theme}"</p>}
         </div>
@@ -137,41 +136,41 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
 
           <table className="w-full text-[1.05rem] font-serif print:!text-lg print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
             <tbody>
-              <ProgramTableRow label="Presiding" value={data.leadership?.presiding} />
-              <ProgramTableRow label="Conducting" value={data.leadership?.conducting} />
-              <ProgramTableRow label="Chorister" value={data.leadership?.chorister} />
-              <ProgramTableRow label={data.leadership?.organistLabel || 'Organist'} value={data.leadership?.organist} />
-              <ProgramTableRow label="Prelude Music" value={data.leadership?.preludeMusic} />
+              <ProgramTableRow label={t('presiding')} value={data.leadership?.presiding} />
+              <ProgramTableRow label={t('conducting')} value={data.leadership?.conducting} />
+              <ProgramTableRow label={t('chorister')} value={data.leadership?.chorister} />
+              <ProgramTableRow label={data.leadership?.organistLabel || t('organist')} value={data.leadership?.organist} />
+              <ProgramTableRow label={t('prelude_music')} value={data.leadership?.preludeMusic} />
               <ProgramTableRow
-                label="Opening Hymn"
+                label={t('opening_hymn')}
                 value={data.musicProgram?.openingHymnNumber}
                 extra={data.musicProgram?.openingHymnTitle}
               />
-              <ProgramTableRow label="Invocation" value={data.prayers?.opening} />
+              <ProgramTableRow label={t('invocation')} value={data.prayers?.opening} />
               {data.agenda?.map((item: any, idx: number) => (
                 item.type === 'speaker' ? (
-                  <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'} value={item.name} />
+                  <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? t('youth_speaker') : t('speaker')} value={item.name} />
                 ) : item.type === 'musical' ? (
-                  <ProgramTableRow key={idx} label={item.label || 'Musical Number'} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
+                  <ProgramTableRow key={idx} label={item.label || t('musical_number')} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
                 ) : item.type === 'sacrament' ? (
                   <React.Fragment key={idx}>
                     <ProgramTableRow
-                      label="Sacrament Hymn"
+                      label={t('sacrament_hymn')}
                       value={data.musicProgram?.sacramentHymnNumber}
                       extra={data.musicProgram?.sacramentHymnTitle}
                     />
                     <tr>
-                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">Administration of the Sacrament</td>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">{t('administration_sacrament')}</td>
                     </tr>
                   </React.Fragment>
                 ) : null
               ))}
               <ProgramTableRow
-                label="Closing Hymn"
+                label={t('closing_hymn')}
                 value={data.musicProgram?.closingHymnNumber}
                 extra={data.musicProgram?.closingHymnTitle}
               />
-              <ProgramTableRow label="Benediction" value={data.prayers?.closing} />
+              <ProgramTableRow label={t('benediction')} value={data.prayers?.closing} />
             </tbody>
           </table>
         </div>

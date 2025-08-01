@@ -53,7 +53,27 @@ const translations: Record<Lang, Record<string, string>> = {
     announcements_events: 'Announcements & Events',
     copy_link: 'Copy Link',
     copied: 'Copied!',
-    create_account: 'Create Account'
+    create_account: 'Create Account',
+    youth_speaker: 'Youth Speaker',
+    speaker: 'Speaker',
+    musical_number: 'Musical Number',
+    bearing_testimonies: 'Bearing of Testimonies',
+    have_announcement: 'Have an announcement?',
+    submit_announcement_cta: 'Submit your announcement to be included in the next bulletin!',
+    submit_announcement: 'Submit Announcement',
+    no_announcements: 'No announcements',
+    meetings_this_week: 'Meetings This Week',
+    special_events: 'Special Events',
+    contact: 'Contact',
+    audience_ward: 'Ward',
+    audience_relief_society: 'Relief Society',
+    audience_elders_quorum: 'Elders Quorum',
+    audience_young_women: 'Young Women',
+    audience_young_men: 'Young Men',
+    audience_youth: 'Youth',
+    audience_primary: 'Primary',
+    audience_stake: 'Stake',
+    audience_other: 'Other'
     ,please_wait: 'Please wait...'
     ,sign_up_info: 'Create a free account to save and manage your bulletins with your own permanent QR code.'
     ,sign_in_info: 'Sign in to access your saved bulletins and manage your QR codes.'
@@ -110,7 +130,27 @@ const translations: Record<Lang, Record<string, string>> = {
     announcements_events: 'Anuncios y Eventos',
     copy_link: 'Copiar Enlace',
     copied: '¡Copiado!',
-    create_account: 'Crear Cuenta'
+    create_account: 'Crear Cuenta',
+    youth_speaker: 'Orador Joven',
+    speaker: 'Orador',
+    musical_number: 'Número Musical',
+    bearing_testimonies: 'Testimonios',
+    have_announcement: '¿Tienes un anuncio?',
+    submit_announcement_cta: '¡Envía tu anuncio para incluirlo en el próximo boletín!',
+    submit_announcement: 'Enviar Anuncio',
+    no_announcements: 'No hay anuncios',
+    meetings_this_week: 'Reuniones Esta Semana',
+    special_events: 'Eventos Especiales',
+    contact: 'Contacto',
+    audience_ward: 'Barrio',
+    audience_relief_society: 'Sociedad de Socorro',
+    audience_elders_quorum: 'Quórum de Élderes',
+    audience_young_women: 'Mujeres Jóvenes',
+    audience_young_men: 'Hombres Jóvenes',
+    audience_youth: 'Jóvenes',
+    audience_primary: 'Primaria',
+    audience_stake: 'Estaca',
+    audience_other: 'Otro'
     ,please_wait: 'Por favor espera...'
     ,sign_up_info: 'Crea una cuenta gratis para guardar y gestionar tus boletines con tu código QR permanente.'
     ,sign_in_info: 'Inicia sesión para acceder a tus boletines guardados y administrar tus códigos QR.'

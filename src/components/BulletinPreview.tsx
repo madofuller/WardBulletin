@@ -10,18 +10,7 @@ interface BulletinPreviewProps {
   hideTabs?: boolean;
 }
 
-// Add audience label map and order at the top of the file
-const audienceLabels = {
-  ward: 'Ward',
-  relief_society: 'Relief Society',
-  elders_quorum: 'Elders Quorum',
-  young_women: 'Young Women',
-  young_men: 'Young Men',
-  youth: 'Youth',
-  primary: 'Primary',
-  stake: 'Stake',
-  other: 'Other',
-};
+// Audience labels order
 const audienceOrder = [
   'ward',
   'relief_society',
@@ -36,6 +25,17 @@ const audienceOrder = [
 
 export default function BulletinPreview({ data, hideTabs = false }: BulletinPreviewProps) {
   const { t } = useLanguage();
+  const audienceLabels: Record<string, string> = {
+    ward: t('audience_ward'),
+    relief_society: t('audience_relief_society'),
+    elders_quorum: t('audience_elders_quorum'),
+    young_women: t('audience_young_women'),
+    young_men: t('audience_young_men'),
+    youth: t('audience_youth'),
+    primary: t('audience_primary'),
+    stake: t('audience_stake'),
+    other: t('audience_other'),
+  };
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
 
   const formatDate = (dateString: string) => {
@@ -114,22 +114,22 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {/* Leadership */}
           <div className="space-y-1">
             <DottedLine rightAlign={data.leadership.presiding}>
-              <span>Presiding</span>
+              <span>{t('presiding')}</span>
             </DottedLine>
             {data.leadership.conducting && (
               <DottedLine rightAlign={data.leadership.conducting}>
-                <span>Conducting</span>
+                <span>{t('conducting')}</span>
               </DottedLine>
             )}
             <DottedLine rightAlign={data.leadership.chorister}>
-              <span>Chorister</span>
+              <span>{t('chorister')}</span>
             </DottedLine>
             <DottedLine rightAlign={data.leadership.organist}>
-              <span>{data.leadership.organistLabel || 'Organist'}</span>
+              <span>{data.leadership.organistLabel || t('organist')}</span>
             </DottedLine>
             {data.leadership.preludeMusic && (
               <DottedLine rightAlign={data.leadership.preludeMusic}>
-                <span>Prelude Music</span>
+                <span>{t('prelude_music')}</span>
               </DottedLine>
             )}
           </div>
@@ -178,12 +178,14 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {data.agenda.map((item) => (
             item.type === 'speaker' ? (
               <DottedLine key={item.id} rightAlign={item.name}>
-                <span>{item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'}</span>
+                <span>
+                  {item.speakerType === 'youth' ? t('youth_speaker') : t('speaker')}
+                </span>
               </DottedLine>
             ) : item.type === 'musical' ? (
               <div key={item.id} className="space-y-1">
                 <DottedLine rightAlign={item.hymnNumber || item.songName}>
-                  <span>{item.label || 'Musical Number'}</span>
+                  <span>{item.label || t('musical_number')}</span>
                 </DottedLine>
                 {(item.hymnNumber || item.hymnTitle) && (
                   <div className="text-center py-1">
@@ -204,7 +206,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
               </div>
             ) : item.type === 'testimony' ? (
               <div key={item.id} className="text-center py-3">
-                <h2 className="text-lg font-bold text-gray-900 font-sans">Bearing of Testimonies</h2>
+                <h2 className="text-lg font-bold text-gray-900 font-sans">{t('bearing_testimonies')}</h2>
                 {item.note && <p className="italic text-sm mt-1">{item.note}</p>}
               </div>
             ) : item.type === 'sacrament' ? (
@@ -282,7 +284,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
               ))}
             </div>
           ) : (
-            <div className="text-center text-gray-400">No announcements</div>
+            <div className="text-center text-gray-400">{t('no_announcements')}</div>
           )}
           
           {/* Submissions Notice */}
@@ -294,15 +296,15 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                 </svg>
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-green-900 mb-1">📢 Have an announcement?</h4>
+                <h4 className="text-sm font-medium text-green-900 mb-1">📢 {t('have_announcement')}</h4>
                 <p className="text-sm text-green-800 mb-2">
-                  Submit your announcement to be included in the next bulletin!
+                  {t('submit_announcement_cta')}
                 </p>
                 <a
                   href={`/submit/${window.location.pathname.split('/').pop()}`}
                   className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  📝 Submit Announcement
+                  📝 {t('submit_announcement')}
                 </a>
               </div>
             </div>
@@ -435,7 +437,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {/* Opening Prayer */}
         {data.prayers.opening && (
           <DottedLine rightAlign={data.prayers.opening}>
-            <span>Invocation</span>
+            <span>{t('invocation')}</span>
           </DottedLine>
         )}
 
@@ -467,12 +469,12 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {data.agenda.map((item) => (
           item.type === 'speaker' ? (
             <DottedLine key={item.id} rightAlign={item.name}>
-              <span>{item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'}</span>
+              <span>{item.speakerType === 'youth' ? t('youth_speaker') : t('speaker')}</span>
             </DottedLine>
           ) : item.type === 'musical' ? (
             <div key={item.id} className="space-y-1">
               <DottedLine rightAlign={item.hymnNumber || item.songName}>
-                <span>{item.label || 'Musical Number'}</span>
+                <span>{item.label || t('musical_number')}</span>
               </DottedLine>
               {(item.hymnNumber || item.hymnTitle) && (
                 <div className="text-center py-1">
@@ -493,7 +495,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
             </div>
           ) : item.type === 'testimony' ? (
             <div key={item.id} className="text-center py-3">
-              <h2 className="text-lg font-bold text-gray-900 font-sans">Bearing of Testimonies</h2>
+              <h2 className="text-lg font-bold text-gray-900 font-sans">{t('bearing_testimonies')}</h2>
               {item.note && <p className="italic text-sm mt-1">{item.note}</p>}
             </div>
           ) : item.type === 'sacrament' ? (
@@ -501,7 +503,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
               {(data.musicProgram.sacramentHymnNumber || data.musicProgram.sacramentHymnTitle) && (
                 <div className="space-y-1">
                   <DottedLine rightAlign={data.musicProgram.sacramentHymnNumber}>
-                    <span>Sacrament Hymn</span>
+                    <span>{t('sacrament_hymn')}</span>
                   </DottedLine>
                   <div className="text-center py-1">
                     <p className="italic">
@@ -571,13 +573,13 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-400">No announcements</div>
+          <div className="text-center text-gray-400">{t('no_announcements')}</div>
         )}
 
         {/* Meetings */}
         {data.meetings.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-300">
-            <h3 className="text-base font-bold mb-3 text-center">Meetings This Week</h3>
+            <h3 className="text-base font-bold mb-3 text-center">{t('meetings_this_week')}</h3>
             <div className="space-y-3">
               {data.meetings.map((meeting) => (
                 <div key={meeting.id} className="text-sm bg-gray-50 p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -598,7 +600,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {/* Special Events */}
         {data.specialEvents.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-300">
-            <h3 className="text-base font-bold mb-3 text-center">Special Events</h3>
+            <h3 className="text-base font-bold mb-3 text-center">{t('special_events')}</h3>
             <div className="space-y-3">
               {data.specialEvents.map((event) => (
                 <div key={event.id} className="text-sm bg-gray-50 p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -609,7 +611,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                   <div className="flex flex-col sm:items-end mt-2 sm:mt-0">
                     <span className="text-gray-600">{new Date(event.date).toLocaleDateString()} - {event.time}</span>
                     <span className="text-gray-600">{event.location}</span>
-                    {event.contact && <span className="text-gray-600">Contact: {event.contact}</span>}
+                    {event.contact && <span className="text-gray-600">{t('contact')}: {event.contact}</span>}
                   </div>
                 </div>
               ))}
