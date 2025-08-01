@@ -479,7 +479,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ward Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ward_name')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -499,7 +499,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('date')}</label>
                 <input
                   type="date"
                   value={data.date}
@@ -510,7 +510,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </div>
             <div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Theme/Scripture</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('theme_scripture')}</label>
                 <input
                   type="text"
                   value={data.theme}
@@ -528,7 +528,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             {/* First Row: 2 fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Presiding</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('presiding')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -548,7 +548,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Conducting</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('conducting')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -572,7 +572,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             {/* Second Row: 3 fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Chorister</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('chorister')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -593,24 +593,24 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
               </div>
                       <div>
           <div className="flex items-center gap-2 mb-2">
-            <span 
+            <span
               className={`text-base font-medium cursor-pointer px-2 py-1 rounded ${organistLabel === 'Organist' ? 'text-gray-700 bg-gray-100' : 'text-gray-400'}`}
               onClick={() => {
                 setOrganistLabel('Organist');
                 updateField('leadership', { ...data.leadership, organistLabel: 'Organist' });
               }}
             >
-              Organist
+              {t('organist')}
             </span>
             <span className="text-gray-400">-</span>
-            <span 
+            <span
               className={`text-base font-medium cursor-pointer px-2 py-1 rounded ${organistLabel === 'Pianist' ? 'text-gray-700 bg-gray-100' : 'text-gray-400'}`}
               onClick={() => {
                 setOrganistLabel('Pianist');
                 updateField('leadership', { ...data.leadership, organistLabel: 'Pianist' });
               }}
             >
-              Pianist
+              {t('pianist')}
             </span>
           </div>
           <div className="flex gap-2 md:flex-col md:gap-0">
@@ -632,7 +632,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
           </div>
         </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prelude Music</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('prelude_music')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -659,7 +659,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('music_program')}</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('opening_hymn_number')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -743,7 +743,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sacrament Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('sacrament_hymn_number')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -827,7 +827,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Closing Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('closing_hymn_number')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -916,7 +916,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('prayers')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Invocation</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('invocation')}</label>
                 <input
                   type="text"
                   value={data.prayers.opening}
@@ -926,7 +926,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Benediction</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('benediction')}</label>
                 <input
                   type="text"
                   value={data.prayers.closing}
@@ -946,7 +946,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
               <div key={item.id} className="bg-gray-50 p-4 rounded-lg flex flex-wrap gap-2 items-center">
                 {item.type === 'testimony' ? (
                   <div className="w-full space-y-2">
-                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">Bearing of Testimonies</span>
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bearing_testimonies')}</span>
                     <input
                       type="text"
                       value={item.note || ''}
@@ -957,14 +957,14 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                   </div>
                 ) : item.type === 'sacrament' ? (
                   <div className="w-full flex items-center justify-center">
-                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">Administration of the Sacrament</span>
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('administration_sacrament')}</span>
                   </div>
                 ) : item.type === 'speaker' ? (
                   <>
                     <input type="text" value={item.name} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder="Speaker name" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
                     <select value={item.speakerType} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
-                      <option value="youth">Youth Speaker</option>
-                      <option value="adult">Speaker</option>
+                      <option value="youth">{t('youth_speaker')}</option>
+                      <option value="adult">{t('speaker')}</option>
                     </select>
                   </>
                 ) : (
@@ -1002,8 +1002,8 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                         onChange={e => updateAgendaItem(item.id, { label: e.target.value })}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="Musical Number">Musical Number</option>
-                        <option value="Intermediate Hymn">Intermediate Hymn</option>
+                        <option value="Musical Number">{t('musical_number')}</option>
+                        <option value="Intermediate Hymn">{t('intermediate_hymn')}</option>
                       </select>
                     </div>
 
@@ -1104,28 +1104,28 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
                 onClick={() => handleAddSection('speaker')}
                 className="px-4 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors flex-1"
               >
-                Add Speaker
+                {t('add_speaker')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('musical')}
                 className="px-4 py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors flex-1"
               >
-                Add Musical Number
+                {t('add_musical_number')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('testimony')}
                 className="px-4 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors flex-1"
               >
-                Add Testimonies
+                {t('add_testimonies')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('sacrament')}
                 className="px-4 py-3 bg-orange-600 text-white rounded-lg text-base font-medium hover:bg-orange-700 transition-colors flex-1"
               >
-                Add Sacrament
+                {t('add_sacrament')}
               </button>
             </div>
           </section>

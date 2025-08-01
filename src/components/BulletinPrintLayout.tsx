@@ -128,7 +128,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
 
         {/* Program (right) */}
         <div className="w-1/2 pl-20 pr-8 py-8 text-center print:!text-xl print:!text-black">
-          <h2 className="text-3xl font-bold mb-1 font-serif print:!text-4xl print:!text-black">{data.wardName || 'Ward Name'}</h2>
+          <h2 className="text-3xl font-bold mb-1 font-serif print:!text-4xl print:!text-black">{data.wardName || t('ward_name')}</h2>
           <h3 className="text-2xl font-bold mb-1 font-serif print:!text-3xl print:!text-black">
             {data.meetingType === 'sacrament' ? t('sacrament_meeting') : t('program')}
           </h3>

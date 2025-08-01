@@ -106,7 +106,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
               
               {/* Date */}
               <p className="text-lg text-gray-700 italic">
-                {data.date ? formatDate(data.date) : 'Date'}
+                {data.date ? formatDate(data.date) : t('date')}
               </p>
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
             
             {/* Date */}
             <p className="text-lg text-gray-700 italic">
-              {data.date ? formatDate(data.date) : 'Date'}
+              {data.date ? formatDate(data.date) : t('date')}
             </p>
           </div>
         </div>
