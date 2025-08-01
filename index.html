@@ -24,6 +24,20 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="google_translate_element" style="display:none;"></div>
+    <script>
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({ pageLanguage: 'en', includedLanguages: 'en,es', autoDisplay: false }, 'google_translate_element');
+      }
+      function toggleLanguage() {
+        const combo = document.querySelector('#google_translate_element select.goog-te-combo');
+        if (combo) {
+          combo.value = combo.value === 'es' ? 'en' : 'es';
+          combo.dispatchEvent(new Event('change'));
+        }
+      }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

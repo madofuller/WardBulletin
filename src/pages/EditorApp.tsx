@@ -837,7 +837,13 @@ function EditorApp() {
                 <QrCode className="w-4 h-4 mr-2" />
                 Share
               </button>
-              
+              <button
+                onClick={() => (window as any).toggleLanguage && (window as any).toggleLanguage()}
+                className="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                ES/EN
+              </button>
+
               {user && pendingSubmissionsCount > 0 && (
                 <button
                   onClick={() => setShowSubmissionReview(true)}
@@ -926,6 +932,15 @@ function EditorApp() {
                 >
                   <QrCode className="w-4 h-4 mr-2" />
                   Share
+                </button>
+                <button
+                  onClick={() => {
+                    (window as any).toggleLanguage && (window as any).toggleLanguage();
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  ES/EN
                 </button>
                 
                 {user ? (

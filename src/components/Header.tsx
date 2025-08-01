@@ -77,6 +77,12 @@ export default function Header({
                 My QR Code
               </button>
             )}
+            <button
+              onClick={() => (window as any).toggleLanguage && (window as any).toggleLanguage()}
+              className="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              ES/EN
+            </button>
             {!onlyNewBulletin && (user ? (
               <UserMenu
                 user={user}
@@ -166,6 +172,15 @@ export default function Header({
                   My QR Code
                 </button>
               )}
+              <button
+                onClick={() => {
+                  (window as any).toggleLanguage && (window as any).toggleLanguage();
+                  setShowMobileMenu(false);
+                }}
+                className="w-full flex items-center px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                ES/EN
+              </button>
               {!onlyNewBulletin && (user ? (
                 <div className="space-y-2">
                   <button
