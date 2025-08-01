@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import QRCode from 'qrcode';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { SHORT_DOMAIN, FULL_DOMAIN } from "../lib/config";
@@ -33,6 +34,7 @@ function formatDate(dateString: string): string {
 }
 
 function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> } }) {
+  const { t } = useLanguage();
   const profileSlug = data?.profileSlug || 'your-profile-slug';
   const useShortDomain = true;
   const qrUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${profileSlug}`;
@@ -82,7 +84,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
       >
         {/* Back Cover (left) */}
         <div className="w-1/2 pr-16 py-8 flex flex-col justify-center items-center text-center border-r border-gray-300 print:!text-xl print:!text-black">
-          <p className="text-lg font-semibold mb-4 print:!text-2xl print:!text-black">Digital Version</p>
+          <p className="text-lg font-semibold mb-4 print:!text-2xl print:!text-black">{t('digital_version')}</p>
           <canvas
             id="print-qr-code"
             width={160}
@@ -91,7 +93,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
           />
           <p className="text-xs font-semibold text-gray-600 break-all print:!text-lg print:!text-black">{qrUrl}</p>
           <p className="mt-2 font-semibold text-xs text-gray-500 print:!text-lg print:!text-black">
-            <span className="font-semibold print:!text-black">Build your own at <span className="font-semibold print:!text-black">MyWardBulletin.com</span></span>
+            <span className="font-semibold print:!text-black">{t('build_your_own')} <span className="font-semibold print:!text-black">MyWardBulletin.com</span></span>
           </p>
         </div>
 
@@ -110,7 +112,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
         {/* Announcements (left) */}
         <div className="w-1/2 pl-8 pr-18 py-8 border-r border-gray-300 print:!text-xl print:!text-black">
-          <h2 className="text-xl font-bold mb-4 print:!text-3xl print:!text-black">Announcements & Events</h2>
+          <h2 className="text-xl font-bold mb-4 print:!text-3xl print:!text-black">{t('announcements_events')}</h2>
           <ul className="space-y-4">
             {data.announcements?.map((a: any, idx: number) => (
               <li key={idx}>
@@ -129,7 +131,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
         <div className="w-1/2 pl-20 pr-8 py-8 text-center print:!text-xl print:!text-black">
           <h2 className="text-3xl font-bold mb-1 font-serif print:!text-4xl print:!text-black">{data.wardName || 'Ward Name'}</h2>
           <h3 className="text-2xl font-bold mb-1 font-serif print:!text-3xl print:!text-black">
-            {data.meetingType === 'sacrament' ? 'Sacrament Meeting' : 'Program'}
+            {data.meetingType === 'sacrament' ? t('sacrament_meeting') : t('program')}
           </h3>
           <p className="italic text-lg mb-6 font-serif print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
 

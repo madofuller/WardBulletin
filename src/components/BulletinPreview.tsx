@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { BulletinData } from "../types/bulletin";
 
 import { sanitizeHtml } from '../lib/sanitizeHtml';
@@ -34,6 +35,7 @@ const audienceOrder = [
 ];
 
 export default function BulletinPreview({ data, hideTabs = false }: BulletinPreviewProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
 
   const formatDate = (dateString: string) => {
@@ -77,7 +79,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                   `}
                   onClick={() => setActiveTab(tab as typeof activeTab)}
                 >
-                  {tab === 'program' ? 'Program' : 'Announcements'}
+                  {tab === 'program' ? t('program') : t('announcements')}
                 </button>
               </li>
             ))}
@@ -99,7 +101,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
               
               {/* Meeting Type */}
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Sacrament Meeting
+                {t('sacrament_meeting')}
               </h2>
               
               {/* Date */}
@@ -143,7 +145,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {(data.musicProgram.openingHymnNumber || data.musicProgram.openingHymnTitle) && (
             <div className="space-y-1">
               <DottedLine rightAlign={data.musicProgram.openingHymnNumber}>
-                <span>Opening Hymn</span>
+                <span>{t('opening_hymn')}</span>
               </DottedLine>
               {(data.musicProgram.openingHymnNumber || data.musicProgram.openingHymnTitle) && (
                 <div className="text-center py-1">
@@ -165,7 +167,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {/* Opening Prayer */}
           {data.prayers.opening && (
             <DottedLine rightAlign={data.prayers.opening}>
-              <span>Invocation</span>
+              <span>{t('invocation')}</span>
             </DottedLine>
           )}
 
@@ -210,7 +212,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                 {(data.musicProgram.sacramentHymnNumber || data.musicProgram.sacramentHymnTitle) && (
                   <div className="space-y-1">
                     <DottedLine rightAlign={data.musicProgram.sacramentHymnNumber}>
-                      <span>Sacrament Hymn</span>
+                      <span>{t('sacrament_hymn')}</span>
                     </DottedLine>
                     <div className="text-center py-1">
                       <p className="italic">
@@ -227,7 +229,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                   </div>
                 )}
                 <div className="text-center py-3">
-                  <h2 className="text-lg font-bold text-gray-900 font-sans">Administration of the Sacrament</h2>
+                  <h2 className="text-lg font-bold text-gray-900 font-sans">{t('administration_sacrament')}</h2>
                 </div>
               </React.Fragment>
             ) : null
@@ -237,7 +239,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {(data.musicProgram.closingHymnNumber || data.musicProgram.closingHymnTitle) && (
             <div className="space-y-1">
               <DottedLine rightAlign={data.musicProgram.closingHymnNumber}>
-                <span>Closing Hymn</span>
+                <span>{t('closing_hymn')}</span>
               </DottedLine>
               {(data.musicProgram.closingHymnNumber || data.musicProgram.closingHymnTitle) && (
                 <div className="text-center py-1">
@@ -259,7 +261,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
           {/* Closing Prayer */}
           {data.prayers.closing && (
             <DottedLine rightAlign={data.prayers.closing}>
-              <span>Benediction</span>
+              <span>{t('benediction')}</span>
             </DottedLine>
           )}
         </div>
@@ -367,7 +369,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
             
             {/* Meeting Type */}
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Sacrament Meeting
+              {t('sacrament_meeting')}
             </h2>
             
             {/* Date */}
@@ -380,22 +382,22 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {/* Leadership */}
         <div className="space-y-1">
           <DottedLine rightAlign={data.leadership.presiding}>
-            <span>Presiding</span>
+            <span>{t('presiding')}</span>
           </DottedLine>
           {data.leadership.conducting && (
             <DottedLine rightAlign={data.leadership.conducting}>
-              <span>Conducting</span>
+              <span>{t('conducting')}</span>
             </DottedLine>
           )}
           <DottedLine rightAlign={data.leadership.chorister}>
-            <span>Chorister</span>
+            <span>{t('chorister')}</span>
           </DottedLine>
           <DottedLine rightAlign={data.leadership.organist}>
-            <span>{data.leadership.organistLabel || 'Organist'}</span>
+            <span>{data.leadership.organistLabel || t('organist')}</span>
           </DottedLine>
           {data.leadership.preludeMusic && (
             <DottedLine rightAlign={data.leadership.preludeMusic}>
-              <span>Prelude Music</span>
+              <span>{t('prelude_music')}</span>
             </DottedLine>
           )}
         </div>
@@ -411,7 +413,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {(data.musicProgram.openingHymnNumber || data.musicProgram.openingHymnTitle) && (
           <div className="space-y-1">
             <DottedLine rightAlign={data.musicProgram.openingHymnNumber}>
-              <span>Opening Hymn</span>
+              <span>{t('opening_hymn')}</span>
             </DottedLine>
             {(data.musicProgram.openingHymnNumber || data.musicProgram.openingHymnTitle) && (
               <div className="text-center py-1">
@@ -441,7 +443,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {(data.musicProgram.sacramentHymnNumber || data.musicProgram.sacramentHymnTitle) && (
           <div className="space-y-1">
             <DottedLine rightAlign={data.musicProgram.sacramentHymnNumber}>
-              <span>Sacrament Hymn</span>
+              <span>{t('sacrament_hymn')}</span>
             </DottedLine>
             {(data.musicProgram.sacramentHymnNumber || data.musicProgram.sacramentHymnTitle) && (
               <div className="text-center py-1">
@@ -516,7 +518,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
                 </div>
               )}
               <div className="text-center py-3">
-                <h2 className="text-lg font-bold text-gray-900 font-sans">Administration of the Sacrament</h2>
+                <h2 className="text-lg font-bold text-gray-900 font-sans">{t('administration_sacrament')}</h2>
               </div>
             </React.Fragment>
           ) : null
@@ -526,7 +528,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {(data.musicProgram.closingHymnNumber || data.musicProgram.closingHymnTitle) && (
           <div className="space-y-1">
             <DottedLine rightAlign={data.musicProgram.closingHymnNumber}>
-              <span>Closing Hymn</span>
+              <span>{t('closing_hymn')}</span>
             </DottedLine>
             {(data.musicProgram.closingHymnNumber || data.musicProgram.closingHymnTitle) && (
               <div className="text-center py-1">
@@ -548,7 +550,7 @@ export default function BulletinPreview({ data, hideTabs = false }: BulletinPrev
         {/* Closing Prayer */}
         {data.prayers.closing && (
           <DottedLine rightAlign={data.prayers.closing}>
-            <span>Benediction</span>
+            <span>{t('benediction')}</span>
           </DottedLine>
         )}
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { Plus, Trash2 } from 'lucide-react';
 import { BulletinData, Announcement, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
@@ -12,6 +13,7 @@ interface BulletinFormProps {
 }
 
 export default function BulletinForm({ data, onChange }: BulletinFormProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
@@ -472,7 +474,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
           {/* Basic Information */}
           <section className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
-              Basic Information
+              {t('basic_information')}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -522,7 +524,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
           {/* Leadership */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Leadership</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('leadership')}</h3>
             {/* First Row: 2 fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -654,7 +656,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
           {/* Music Program */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Music Program</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('music_program')}</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hymn Number</label>
@@ -911,7 +913,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
           {/* Prayers */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Prayers</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('prayers')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Invocation</label>
@@ -938,7 +940,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
 
           {/* Agenda */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Agenda</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('agenda')}</h3>
             <div className="space-y-3">
             {data.agenda.map((item, idx) => (
               <div key={item.id} className="bg-gray-50 p-4 rounded-lg flex flex-wrap gap-2 items-center">
@@ -1231,7 +1233,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
       )}
       {/* {activeTab === 'wardinfo' && (
         <section className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">Ward Leadership
+          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{t('ward_leadership')}
             <div className="flex flex-col items-end ml-2">
               <button
                 type="button"
@@ -1319,7 +1321,7 @@ export default function BulletinForm({ data, onChange }: BulletinFormProps) {
             </button>
           </div>
 
-          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mt-8 flex items-center justify-between">Missionaries
+          <h3 className="text-lg font-medium text-gray-900 border-b pb-2 mt-8 flex items-center justify-between">{t('missionaries')}
             <div className="flex flex-col items-end ml-2">
               <button
                 type="button"

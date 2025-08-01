@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Share2, MessageCircle, Copy, Check } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ShareButtonProps {
   url: string;
@@ -30,6 +31,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
 
   const sizeClasses = {
     sm: 'px-2 py-1 text-xs',
@@ -164,10 +166,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       <button
         onClick={handleNativeShare}
         className={`inline-flex items-center space-x-2 rounded-lg transition-colors ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-        aria-label="Share"
+        aria-label={t('share')}
       >
         <Share2 className="w-4 h-4" />
-        <span className="hidden sm:inline">Share</span>
+        <span className="hidden sm:inline">{t('share')}</span>
       </button>
 
       {showDropdown && (
@@ -234,7 +236,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
                 ) : (
                   <Copy className="w-4 h-4 text-gray-600" />
                 )}
-                <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                <span>{copied ? t('copied') : t('copy_link')}</span>
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { X, Mail, Lock, User } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -9,6 +10,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
+  const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -98,7 +100,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-900">
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            {isSignUp ? t('create_account') : t('sign_in')}
           </h3>
           <button
             onClick={onClose}
@@ -110,10 +112,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
 
         <div className="mb-6">
           <p className="text-gray-600 text-sm">
-            {isSignUp 
-              ? 'Create a free account to save and manage your bulletins with your own permanent QR code.'
-              : 'Sign in to access your saved bulletins and manage your QR codes.'
-            }
+            {isSignUp
+              ? t('sign_up_info')
+              : t('sign_in_info')}
           </p>
         </div>
 
@@ -169,7 +170,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
+            {loading ? t('please_wait') : (isSignUp ? t('create_account') : t('sign_in'))}
           </button>
         </form>
 
@@ -178,10 +179,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
             onClick={handleToggleSignUp}
             className="text-blue-600 hover:text-blue-700 text-sm"
           >
-            {isSignUp 
-              ? 'Already have an account? Sign in' 
-              : "Don't have an account? Create one"
-            }
+            {isSignUp
+              ? t('already_have_account')
+              : t('no_account')}
           </button>
         </div>
 
