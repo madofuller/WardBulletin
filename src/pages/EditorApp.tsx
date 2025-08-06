@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { supabase, isSupabaseConfigured, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
+import { supabase, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
 import BulletinForm from '../components/BulletinForm';
 import BulletinPreview from '../components/BulletinPreview';
 import QRCodeGenerator from '../components/QRCodeGenerator';
@@ -361,7 +361,7 @@ function EditorApp() {
   // Load active bulletin on startup (do not automatically load latest)
   useEffect(() => {
     const fetchInitialBulletin = async () => {
-      if (!user || !isSupabaseConfigured()) return;
+      if (!user) return;
       if (currentBulletinId || hasUnsavedChanges) return;
       const bulletinId = activeBulletinId;
       try {
@@ -388,10 +388,6 @@ function EditorApp() {
   };
 
   const handleSaveBulletin = async () => {
-    if (!isSupabaseConfigured()) {
-      toast.error('Please connect to Supabase first to save bulletins.');
-      return;
-    }
     if (!user) {
       // Save draft before showing auth modal
       await robustService.saveDraftBeforeAuth(bulletinData);
@@ -984,11 +980,10 @@ function EditorApp() {
                       setShowAuthModal(true);
                       setShowMobileMenu(false);
                     }}
-                    disabled={!isSupabaseConfigured()}
-                    className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    {isSupabaseConfigured() ? t('sign_in') : t('sign_in_setup')}
+                                      className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  {t('sign_in')}
                   </button>
                 )}
               </div>
@@ -1094,7 +1089,7 @@ function EditorApp() {
                   ×
                 </button>
               </div>
-                {user && isSupabaseConfigured() ? (
+                {user ? (
                   <QRCodeGenerator
                     currentActiveBulletinId={activeBulletinId}
                     onActiveBulletinSelect={handleActiveBulletinSelect}

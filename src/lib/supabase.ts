@@ -1,16 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Hardcoded Supabase configuration - replace with your actual values
+const supabaseUrl = 'https://mbhllitfppuhosjzirgh.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iaGxsaXRmcHB1aG9zanppcmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MzA5MjUsImV4cCI6MjA2ODAwNjkyNX0.XUwI_bOzyBRDGHWtkUeRhoWffDesg3KFqHQbaXdM71Y'
 
-// Create a conditional Supabase client
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+// Create Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Helper function to check if Supabase is configured
+// Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return supabase !== null
+  return true // Supabase is configured with valid credentials
 }
 // Database types
 export interface Database {
@@ -114,7 +113,6 @@ function generateUniqueBulletinSlug(userId: string, date: string): string {
 
 // Helper function to get user's profile_slug
 async function getUserProfileSlug(userId: string): Promise<string | null> {
-  if (!supabase) throw new Error('Supabase not configured');
   
   try {
     const { data, error } = await supabase
@@ -137,7 +135,6 @@ async function getUserProfileSlug(userId: string): Promise<string | null> {
 // Token service functions
 export const tokenService = {
   async saveToken(userId: string, key: string, value: string) {
-    if (!supabase) throw new Error('Supabase not configured');
 
     // Security: Removed debug logging of sensitive data
 
@@ -170,7 +167,6 @@ export const tokenService = {
   },
 
   async getToken(userId: string, key: string): Promise<string | null> {
-    if (!supabase) throw new Error('Supabase not configured');
 
     try {
       const { data, error } = await withTimeout(
@@ -197,7 +193,6 @@ export const tokenService = {
 // User service functions
 export const userService = {
   async checkProfileSlugAvailability(profileSlug: string, currentUserId?: string): Promise<boolean> {
-    if (!supabase) throw new Error('Supabase not configured');
 
     const { data, error } = await supabase
       .from('users')
@@ -218,7 +213,6 @@ export const userService = {
   },
 
   async updateProfileSlug(userId: string, profileSlug: string) {
-    if (!supabase) throw new Error('Supabase not configured');
 
     const sanitized = profileSlug
       .toLowerCase()

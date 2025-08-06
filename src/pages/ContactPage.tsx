@@ -27,7 +27,7 @@ export default function ContactPage() {
         setShowProfile={goHome}
         showMobileMenu={showMobileMenu}
         setShowMobileMenu={setShowMobileMenu}
-        isSupabaseConfigured={true}
+
         hideExportPDF={true}
         hideQRCode={true}
         onlyNewBulletin={true}

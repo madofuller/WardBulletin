@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured, userService } from './supabase';
+import { supabase, userService } from './supabase';
 
 interface UserProfile {
   email: string;
@@ -27,7 +27,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Restore session on mount
   useEffect(() => {
-    if (!isSupabaseConfigured() || !supabase) return;
+    if (!supabase) return;
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);

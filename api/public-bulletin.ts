@@ -2,14 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { defaultRateLimiter } from './rate-limit';
 import { securityMonitor, validateProfileSlug } from '../src/lib/security';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+// Hardcoded Supabase configuration - replace with your actual values
+const supabaseUrl = 'https://mbhllitfppuhosjzirgh.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iaGxsaXRmcHB1aG9zanppcmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MzA5MjUsImV4cCI6MjA2ODAwNjkyNX0.XUwI_bOzyBRDGHWtkUeRhoWffDesg3KFqHQbaXdM71Y';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase environment variables not configured');
-}
-
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const withTimeout = <T>(promise: Promise<T>, timeoutMs = 10000): Promise<T> => {
   return Promise.race([

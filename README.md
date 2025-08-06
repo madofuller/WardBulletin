@@ -1,33 +1,66 @@
 # MyWardBulletin
 
-This project uses environment variables to configure Supabase credentials. To connect the application to your own Supabase project:
+A modern, customizable bulletin creation tool for LDS wards and branches.
 
-1. Copy `.env.example` to `.env` in the project root.
-2. Edit the new `.env` file and replace the placeholder values with your Supabase URL and anon key.
-   Both `VITE_SUPABASE_*` variables are required for the Vite build, and the `SUPABASE_*` aliases are used by serverless functions.
+## 🚀 Quick Start
 
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account (free tier works great!)
+
+### Local Development Setup
+
+1. **Install dependencies**
+   ```bash
+   npm install
    ```
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key
-  SUPABASE_URL=https://your-project.supabase.co
-  SUPABASE_ANON_KEY=your-anon-key
-  ```
 
-3. Restart your development server or redeploy the site so the new variables take effect.
+2. **Configure Supabase**
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Go to Settings → API to get your URL and anon key
+   - Replace the hardcoded values in `src/lib/supabase.ts`:
+   ```typescript
+   const supabaseUrl = 'https://your-actual-project.supabase.co'
+   const supabaseAnonKey = 'your-actual-anon-key'
+   ```
+   - Also update `api/public-bulletin.ts` with the same values
 
-In addition to the Supabase credentials, you can configure the domain names used when generating share links and QR codes. Add the following variables to your `.env` file if you want to override the defaults:
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+## 📁 Project Structure
 
 ```
-VITE_FULL_DOMAIN=mywardbulletin.com
-VITE_SHORT_DOMAIN=mwbltn.com
+src/
+├── components/          # Reusable UI components
+├── pages/              # Page-level components
+├── lib/                # Utilities and services
+├── types/              # TypeScript type definitions
+└── data/               # Static data (hymns, songs)
 ```
 
-The `.env` file is listed in `.gitignore` to keep your credentials private. If you intend to keep the entire project private, ensure your source-control platform (such as GitHub) is configured to make the repository private as well.
+## 🛠️ Development
 
+### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
 
+### Key Technologies
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel
 
-## Bulletin Templates
+## 📄 License
 
-- Use **Save as Template** to store the current bulletin layout locally.
-- Choose **New Bulletin** to open the template picker and start from a saved template or a blank bulletin.
-- Templates are saved securely for your account and can be accessed from any device where you sign in.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
