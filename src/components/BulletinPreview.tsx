@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { decodeHtml } from '../lib/decodeHtml';
 import { getSongUrl, getSongTitle } from '../lib/songService';
 import { LDS_IMAGES, getImageById } from '../data/images';
 
@@ -8,6 +9,7 @@ interface BulletinPreviewProps {
   data: BulletinData;
   hideTabs?: boolean;
   hideImageControls?: boolean;
+  onImagePositionChange?: (pos: { x: number; y: number }) => void;
 }
 
 // Add audience label map and order at the top of the file
@@ -55,10 +57,19 @@ const imagePositions = {
   bottom: { x: 50, y: 75 }
 };
 
-export default function BulletinPreview({ data, hideTabs = false, hideImageControls = false }: BulletinPreviewProps) {
+export default function BulletinPreview({ data, hideTabs = false, hideImageControls = false, onImagePositionChange }: BulletinPreviewProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'wardinfo'>('program');
   const [imagePosition, setImagePosition] = useState(data.imagePosition || imagePositions.center);
   const [showImageControls, setShowImageControls] = useState(false);
+
+  const handleImagePositionChange = (pos: { x: number; y: number }) => {
+    setImagePosition(pos);
+    onImagePositionChange?.(pos);
+  };
+
+  useEffect(() => {
+    setImagePosition(data.imagePosition || imagePositions.center);
+  }, [data.imagePosition]);
 
   const formatDate = (dateString: string) => {
     // Fix timezone issue by creating date in local timezone
@@ -175,7 +186,7 @@ export default function BulletinPreview({ data, hideTabs = false, hideImageContr
                               {Object.entries(imagePositions).map(([key, pos]) => (
                                 <button
                                   key={key}
-                                  onClick={() => setImagePosition(pos)}
+                                  onClick={() => handleImagePositionChange(pos)}
                                   className={`px-3 py-2 text-xs rounded ${
                                     imagePosition.x === pos.x && imagePosition.y === pos.y
                                       ? 'bg-blue-500 text-white'
@@ -382,17 +393,25 @@ export default function BulletinPreview({ data, hideTabs = false, hideImageContr
             {/* Announcements */}
             {data.announcements && data.announcements.length > 0 ? (
               <div className="space-y-4">
-                {data.announcements.map((announcement, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4">
-                    <h3 className="font-bold text-gray-900 mb-1">{announcement.title}</h3>
-                    <p className="text-gray-700 mb-2">{announcement.content}</p>
-                    {announcement.audience && (
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                        {audienceLabels[announcement.audience] || announcement.audience}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {data.announcements.map((announcement, index) => {
+                  const decodedContent = sanitizeHtml(decodeHtml(announcement.content));
+                  return (
+                    <div key={index} className="border-l-4 border-blue-500 pl-4">
+                      <div className="mb-1">
+                        <span className="font-bold text-gray-900 text-sm mr-2">
+                          {audienceLabels[(announcement.audience || 'ward') as keyof typeof audienceLabels]}
+                        </span>
+                        {announcement.category && announcement.category.toLowerCase() !== 'general' && (
+                          <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">
+                            {announcement.category}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-gray-900 mb-1">{announcement.title}</h3>
+                      <div className="text-gray-700 mb-2" dangerouslySetInnerHTML={{ __html: decodedContent }} />
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -764,24 +783,18 @@ export default function BulletinPreview({ data, hideTabs = false, hideImageContr
         {data.announcements && data.announcements.length > 0 ? (
           <div className="space-y-4">
             {data.announcements.map((announcement, index) => {
-              // Debug: Log the raw content
-              console.log('Raw announcement content:', announcement.content);
-              
-              // Try to decode HTML entities if they're double-encoded
-              const decodedContent = announcement.content
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&amp;/g, '&')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'");
-              
-              console.log('Decoded content:', decodedContent);
-              
+              const decodedContent = sanitizeHtml(decodeHtml(announcement.content));
               return (
                 <div key={index} className="text-sm">
                   <div className="mb-1">
-                    <span className="font-bold text-gray-900 text-sm mr-2">{audienceLabels[(announcement.audience || 'ward') as keyof typeof audienceLabels]}</span>
-                    <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">{announcement.category}</span>
+                    <span className="font-bold text-gray-900 text-sm mr-2">
+                      {audienceLabels[(announcement.audience || 'ward') as keyof typeof audienceLabels]}
+                    </span>
+                    {announcement.category && announcement.category.toLowerCase() !== 'general' && (
+                      <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">
+                        {announcement.category}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center mb-1">
                     <h4 className="font-semibold mr-2 text-gray-900">{announcement.title}</h4>

@@ -1051,7 +1051,12 @@ function EditorApp() {
                 )}
               </div>
               <div ref={bulletinRef}>
-                <BulletinPreview data={bulletinData} />
+                <BulletinPreview
+                  data={bulletinData}
+                  onImagePositionChange={(pos) =>
+                    handleBulletinDataChange({ ...bulletinData, imagePosition: pos })
+                  }
+                />
               </div>
               {user && currentBulletinId && activeBulletinId !== currentBulletinId && (
                 <button

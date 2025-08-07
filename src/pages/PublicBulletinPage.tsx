@@ -49,7 +49,18 @@ export default function PublicBulletinPage() {
     meetingType: publicBulletin.meeting_type || '',
     theme: publicBulletin.theme || '',
     imageId: publicBulletin.imageId || 'none',
-    imagePosition: publicBulletin.imagePosition || { x: 50, y: 50 },
+    imagePosition: (() => {
+      const pos = publicBulletin.imagePosition;
+      if (!pos) return { x: 50, y: 50 };
+      if (typeof pos === 'string') {
+        try {
+          return JSON.parse(pos);
+        } catch {
+          return { x: 50, y: 50 };
+        }
+      }
+      return pos;
+    })(),
     bishopricMessage: publicBulletin.bishopric_message || '',
     announcements: publicBulletin.announcements || [],
     meetings: publicBulletin.meetings || [],

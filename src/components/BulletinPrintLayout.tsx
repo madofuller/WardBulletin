@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { decodeHtml } from '../lib/decodeHtml';
 import { LDS_IMAGES, getImageById } from '../data/images';
 
 // Function to format date from ISO format to natural format
@@ -176,20 +177,16 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
           <h2 className="text-xl font-bold mb-4 print:!text-3xl print:!text-black">Announcements & Events</h2>
           <ul className="space-y-4">
             {data.announcements?.map((a: any, idx: number) => {
-              // Try to decode HTML entities if they're double-encoded
-              const decodedContent = a.content
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&amp;/g, '&')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'");
-              
+              const decodedContent = sanitizeHtml(decodeHtml(a.content));
+
               return (
                 <li key={idx}>
                   {/* Audience and Category labels */}
                   <div className="font-bold print:!text-lg print:!text-black mb-1">
                     {audienceLabels[(a.audience as keyof typeof audienceLabels) || 'ward']}
-                    <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded ml-2">{a.category}</span>
+                    {a.category && a.category.toLowerCase() !== 'general' && (
+                      <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded ml-2">{a.category}</span>
+                    )}
                   </div>
                   <div className="font-semibold print:!text-2xl print:!text-black">{a.title}</div>
                   <div className="text-sm print:!text-lg print:!text-black" dangerouslySetInnerHTML={{ __html: decodedContent }} />
