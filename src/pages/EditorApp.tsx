@@ -735,12 +735,21 @@ function EditorApp() {
       const savedBulletin = await Promise.race([savePromise, timeoutPromise]);
       if (timeoutHandle) clearTimeout(timeoutHandle);
       if (didTimeout) return; // Already handled by catch
+
+      // Check if this bulletin was/is active before saving
+      const wasActive = currentBulletinId && currentBulletinId === activeBulletinId;
+
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
-      
+
+      // If the bulletin was active before saving, re-activate it with the new ID
+      if (wasActive && savedBulletin.id !== activeBulletinId) {
+        await handleActiveBulletinSelect(savedBulletin.id);
+      }
+
       // Invalidate query cache to refresh saved bulletins modal
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id, currentProfileSlug] });
-      
+
       toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
         toastId: 'bulletin-save-success'
       });
@@ -1460,10 +1469,11 @@ function EditorApp() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Create Your Bulletin</h2>
-              <BulletinForm 
-                data={bulletinData} 
-                onChange={handleBulletinDataChange} 
+              <BulletinForm
+                data={bulletinData}
+                onChange={handleBulletinDataChange}
                 profileSlug={currentProfileSlug || undefined}
+                userId={user?.id}
               />
             </div>
           </div>

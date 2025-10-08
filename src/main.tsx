@@ -28,6 +28,16 @@ const initializeAnalytics = async () => {
 // Initialize analytics asynchronously after app renders to not block app loading
 setTimeout(initializeAnalytics, 100);
 
+// Suppress findDOMNode warnings from react-quill (third-party library issue)
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  const message = args[0];
+  if (typeof message === 'string' && message.includes('findDOMNode is deprecated')) {
+    return; // Suppress this specific warning
+  }
+  originalWarn.apply(console, args);
+};
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

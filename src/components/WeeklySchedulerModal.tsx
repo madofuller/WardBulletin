@@ -578,9 +578,9 @@ export default function WeeklySchedulerModal({
 
       {/* Bulletin Selector Modal */}
       {showBulletinSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6 border-b">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -612,7 +612,7 @@ export default function WeeklySchedulerModal({
               </div>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 flex-1 overflow-y-auto">
               <div className="space-y-3">
                 {availableBulletins.map((bulletin) => (
                   <button

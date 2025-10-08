@@ -1,7 +1,7 @@
 import React, { forwardRef, useEffect, useRef } from 'react';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { decodeHtml } from '../lib/decodeHtml';
-import { LDS_IMAGES, getImageById } from '../data/images';
+import { LDS_IMAGES, getImageByIdSync } from '../data/images';
 import { useSession } from '../lib/SessionContext';
 import { themes } from '../data/themes';
 
@@ -192,7 +192,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           {data.imageId && data.imageId !== 'none' && (
             <div className="mb-4">
               {(() => {
-                const selectedImage = getImageById(data.imageId);
+                const selectedImage = getImageByIdSync(data.imageId);
                 return selectedImage.url ? (
                   <img
                     src={selectedImage.url}
@@ -256,7 +256,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
                       <div className="mb-2">
                         {(() => {
-                          const selectedImage = getImageById(a.imageId);
+                          const selectedImage = getImageByIdSync(a.imageId);
                           return selectedImage?.url ? (
                             <img
                               src={selectedImage.url}
@@ -279,12 +279,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       <div className="mb-2 space-y-2">
                         {a.images.map((img: any, index: number) => {
                           if (img.hideImageOnPrint) return null;
-                          const selectedImage = getImageById(img.imageId);
-                          return selectedImage?.url ? (
+                          // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
+                          const imageUrl = img.imageUrl || getImageByIdSync(img.imageId)?.url;
+                          return imageUrl ? (
                             <div key={index}>
                               <img
-                                src={selectedImage.url}
-                                alt={selectedImage.name}
+                                src={imageUrl}
+                                alt="Announcement Image"
                                 className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
                                 style={{
                                   objectFit: 'contain',
@@ -341,9 +342,18 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 ) : item.type === 'musical' ? (
                   <ProgramTableRow key={idx} label={item.label || 'Musical Number'} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
                 ) : item.type === 'testimony' ? (
-                  <tr key={idx}>
-                    <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">Bearing of Testimonies</td>
-                  </tr>
+                  <React.Fragment key={idx}>
+                    <tr>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">
+                        Bearing of Testimonies
+                        {item.note && (
+                          <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black">
+                            {item.note}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  </React.Fragment>
                 ) : item.type === 'sacrament' && data.meetingType === 'sacrament' ? (
                   <React.Fragment key={idx}>
                     <ProgramTableRow

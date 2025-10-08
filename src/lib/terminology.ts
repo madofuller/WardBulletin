@@ -44,6 +44,10 @@ export function getAudienceDisplayName(audience: string): string {
       return 'Relief Society';
     case 'elders_quorum':
       return 'Elders Quorum';
+    case 'young_women':
+      return 'Young Women';
+    case 'young_men':
+      return 'Young Men';
     case 'youth':
       return 'Youth';
     case 'primary':
