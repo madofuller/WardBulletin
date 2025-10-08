@@ -47,7 +47,7 @@ function formatDate(dateString: string): string {
   }
 }
 
-function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> } }) {
+const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> } }>(({ data, refs }, ref) => {
   const { user, profile } = useSession();
 
   // Dynamic audience labels based on terminology
@@ -77,7 +77,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
   const selectedTheme = themes.find(t => t.name === data.userTheme);
 
   return (
-    <div className="print-layout font-sans" style={{ fontFamily: selectedTheme ? selectedTheme.fontFamily : 'sans-serif' }}>
+    <div ref={ref} className="print-layout font-sans" style={{ fontFamily: selectedTheme ? selectedTheme.fontFamily : 'sans-serif' }}>
       {/* Page 1: Outside (landscape) */}
       <div
         ref={refs?.page1}
@@ -85,88 +85,104 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
         style={{ pageBreakAfter: 'always' }}
       >
                  {/* Back Cover (left) - Unit Information */}
-         <div className="w-1/2 pr-16 py-8 flex flex-col justify-start items-start text-left border-r border-gray-300 print:!text-xl print:!text-black overflow-y-auto">
-           {/* Unit Leadership Table */}
-            {filteredWardLeadership.length > 0 && (
-              <div className="w-full mb-6">
-                <h2 className="text-2xl font-bold mb-4 print:!text-3xl print:!text-black w-full text-center">{getUnitLeadershipLabel().toUpperCase()}</h2>
-                <table className="w-full text-xs print:!text-sm print:!text-black">
-                  <tbody>
-                    {filteredWardLeadership.map((leader: any, idx: number) => (
-                      <tr key={idx}>
-                        <td className="py-1 font-semibold w-1/3">{leader.title}</td>
-                        <td className="py-1 px-6 w-1/3">{leader.name}</td>
-                        <td className="py-1 w-1/3 text-right">
-                          {leader.phone || ''}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <div className="w-1/2 px-8 py-6 flex flex-col justify-between text-left print:!text-sm print:!text-black pr-16">
+           {/* Scrollable content area - reserves space for QR code if enabled */}
+           <div className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 180px)' : '100%' }}>
+             {/* Unit Leadership Table */}
+              {filteredWardLeadership.length > 0 && (
+                <div className="w-full mb-3">
+                  <h2 className="text-lg font-bold mb-2 print:!text-lg print:!text-black w-full text-center">{getUnitLeadershipLabel().toUpperCase()}</h2>
+                   <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
+                     <tbody>
+                       {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
+                         <tr key={idx}>
+                           <td className="py-1 font-semibold text-xs pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
+                           <td className="py-1 text-xs pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
+                           <td className="py-1 text-right text-xs whitespace-nowrap" style={{ width: '25%' }}>
+                             {leader.phone || ''}
+                           </td>
+                         </tr>
+                       ))}
+                    </tbody>
+                  </table>
+                  {filteredWardLeadership.length > 20 && data.showQRCodeOnPrint === false && (
+                    <p className="text-xs text-gray-600 mt-2 text-center">+ {filteredWardLeadership.length - 20} more leaders</p>
+                  )}
+                </div>
+              )}
 
-            {/* Missionaries Table */}
-            {filteredMissionaries.length > 0 && (
-              <div className="w-full mb-6">
-                <h3 className="text-lg font-semibold mb-3 print:!text-xl print:!text-black">MISSIONARIES</h3>
-                <table className="w-full text-xs print:!text-sm print:!text-black">
-                  <tbody>
-                    {filteredMissionaries.map((missionary: any, idx: number) => (
-                      <tr key={idx}>
-                                                 <td className="py-1 font-semibold w-1/2">{missionary.name}</td>
-                         <td className="py-1 w-1/2 text-right">
-                          {missionary.phone || ''}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              {/* Missionaries Table */}
+              {filteredMissionaries.length > 0 && (
+                <div className="w-full mb-3">
+                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">MISSIONARIES</h3>
+                  <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
+                    <tbody>
+                      {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
+                        <tr key={idx}>
+                          <td className="py-0 font-semibold text-xs pr-1" style={{ width: '60%' }}>{missionary.name}</td>
+                          <td className="py-0 text-right text-xs" style={{ width: '40%' }}>
+                            {missionary.phone || ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredMissionaries.length > 12 && data.showQRCodeOnPrint === false && (
+                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredMissionaries.length - 12} more missionaries</p>
+                  )}
+                </div>
+              )}
 
-            {/* Missionaries from our ward */}
-            {filteredWardMissionaries.length > 0 && (
-              <div className="w-full mb-6">
-                <h3 className="text-lg font-semibold mb-3 print:!text-xl print:!text-black">{getUnitMissionariesLabel().toUpperCase()}</h3>
-                <table className="w-full text-xs print:!text-xs print:!text-black">
-                  <tbody>
-                    {filteredWardMissionaries.map((missionary: any, idx: number) => (
-                      <tr key={idx} className="py-1">
-                        <td className="py-1 font-semibold w-1/3">{missionary.name}</td>
-                        <td className="py-1 w-1/3 text-xs">
-                          {missionary.mission && <span>📍 {missionary.mission}</span>}
-                        </td>
-                        <td className="py-1 w-1/3 text-xs">
-                          {missionary.email && <span>✉️ {missionary.email}</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+              {/* Missionaries from our ward */}
+              {filteredWardMissionaries.length > 0 && (
+                <div className="w-full mb-3">
+                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">{getUnitMissionariesLabel().toUpperCase()}</h3>
+                  <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
+                    <tbody>
+                      {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 20).map((missionary: any, idx: number) => (
+                        <tr key={idx} className="py-0">
+                          <td className="py-0 font-semibold text-xs pr-1 whitespace-nowrap" style={{ width: '20%' }}>{missionary.name}</td>
+                          <td className="py-0 text-xs pr-1" style={{ width: '50%' }}>
+                            {missionary.mission ? (
+                              <span>📍 {missionary.mission}</span>
+                            ) : (
+                              <span className="text-gray-400">No mission assigned</span>
+                            )}
+                          </td>
+                          <td className="py-0 text-right text-xs whitespace-nowrap" style={{ width: '30%' }}>
+                            {missionary.email ? (
+                              <span>✉️ {missionary.email}</span>
+                            ) : (
+                              <span className="text-gray-400">No email</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredWardMissionaries.length > 20 && data.showQRCodeOnPrint === false && (
+                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 20} more ward missionaries</p>
+                  )}
+                </div>
+              )}
+           </div>
 
-           {/* QR Code - always show if profile slug is available */}
-           {profile?.profile_slug && (
-             <div className="w-full flex flex-col items-center justify-center text-center mt-6">
-               <div className="mb-4">
+           {/* QR Code - Fixed at bottom with reserved space, only if enabled */}
+           {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
+             <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0">
+               <div className="mb-3">
                  <PrintQRCode profileSlug={profile.profile_slug} />
                </div>
                <p className="text-sm print:!text-base print:!text-black font-medium">
-                 Scan to view the latest digital bulletin
-               </p>
-               <p className="text-xs print:!text-sm print:!text-black text-gray-600 mt-2">
-                 Visit: mywardbulletin.com/{profile.profile_slug}
+                 Scan with your phone to view
                </p>
              </div>
            )}
-           
 
          </div>
 
         {/* Front Cover (right) */}
-        <div className="w-1/2 pl-12 pr-2 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
+        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
           <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || `${getUnitLabel()} Name`}</h1>
           <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
           <p className="text-base mb-1 print:!text-xl print:!text-black">The Church of Jesus Christ of Latter-day Saints</p>
@@ -194,10 +210,13 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
 
       {/* Page 2: Inside (landscape) */}
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
-        {/* Announcements (left) */}
-        <div className="w-1/2 pl-8 pr-18 py-8 border-r border-gray-300 print:!text-xl print:!text-black">
-          <h2 className="text-xl font-bold mb-4 print:!text-3xl print:!text-black">Announcements & Events</h2>
-          <ul className="space-y-4">
+        {/* Announcements (left) - Unit Information */}
+        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-between text-left print:!text-xl print:!text-black">
+          <div className="flex-1 overflow-y-hidden">
+            {/* Announcements Section */}
+            <div className="w-full mb-4">
+              <h2 className="text-xl font-bold mb-3 print:!text-2xl print:!text-black w-full text-center">Announcements & Events</h2>
+              <ul className="space-y-4">
             {data.announcements?.map((a: any, idx: number) => {
               const decodedContent = sanitizeHtml(decodeHtml(a.content));
 
@@ -210,28 +229,28 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                       <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded ml-2">{a.category}</span>
                     )}
                   </div>
-                                      <div className="font-semibold print:!text-base print:!text-black">{a.title}</div>
-                    
-                    <div 
-                      className="text-sm print:!text-sm print:!text-black mb-2" 
-                      style={{ 
+                  <div className="font-semibold print:!text-base print:!text-black">{a.title}</div>
+
+                    <div
+                      className="text-sm print:!text-sm print:!text-black mb-2"
+                      style={{
                         '--tw-prose-bullets': 'disc',
                         '--tw-prose-list-style': 'disc'
                       } as React.CSSProperties}
-                      dangerouslySetInnerHTML={{ 
+                      dangerouslySetInnerHTML={{
                         __html: decodedContent.replace(
-                          /<ul>/g, 
+                          /<ul>/g,
                           '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
                         ).replace(
-                          /<ol>/g, 
+                          /<ol>/g,
                           '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
                         ).replace(
-                          /<li>/g, 
+                          /<li>/g,
                           '<li style="margin-left: 0.5rem; display: list-item;">'
                         )
-                      }} 
+                      }}
                     />
-                    
+
                     {/* Announcement Images */}
                     {/* Legacy single image support */}
                     {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
@@ -243,8 +262,8 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                               src={selectedImage.url}
                               alt={selectedImage.name}
                               className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
-                              style={{ 
-                                objectFit: 'contain', 
+                              style={{
+                                objectFit: 'contain',
                                 maxHeight: '200px',
                                 borderRadius: '0.5rem',
                                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
@@ -254,7 +273,7 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                         })()}
                       </div>
                     )}
-                    
+
                     {/* Multiple images support */}
                     {a.images && a.images.length > 0 && (
                       <div className="mb-2 space-y-2">
@@ -267,9 +286,12 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                                 src={selectedImage.url}
                                 alt={selectedImage.name}
                                 className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
-                                style={{ 
-                                  objectFit: 'contain', 
-                                  maxHeight: '200px',
+                                style={{
+                                  objectFit: 'contain',
+                                  maxHeight: img.size === 'small' ? '120px' : 
+                                            img.size === 'medium' ? '200px' : 
+                                            img.size === 'large' ? '300px' : 
+                                            img.size === 'xlarge' ? '400px' : '200px',
                                   borderRadius: '0.5rem',
                                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
                                 }}
@@ -282,12 +304,14 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                 </li>
               );
             })}
-          </ul>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        {/* Program (right) */}
-        <div className="w-1/2 pl-20 pr-8 py-8 text-center print:!text-xl print:!text-black">
-          <h2 className="text-3xl font-bold mb-1 print:!text-4xl print:!text-black">{data.wardName || `${getUnitLabel()} Name`}</h2>
+        {/* Program (right) - Front Cover */}
+        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
+          <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || `${getUnitLabel()} Name`}</h2>
           <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">Sacrament Meeting</h3>
           <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
 
@@ -316,6 +340,10 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
                   <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'} value={item.name} />
                 ) : item.type === 'musical' ? (
                   <ProgramTableRow key={idx} label={item.label || 'Musical Number'} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
+                ) : item.type === 'testimony' ? (
+                  <tr key={idx}>
+                    <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">Bearing of Testimonies</td>
+                  </tr>
                 ) : item.type === 'sacrament' && data.meetingType === 'sacrament' ? (
                   <React.Fragment key={idx}>
                     <ProgramTableRow
@@ -339,9 +367,10 @@ function BulletinPrintLayout({ data, refs }: { data: any, refs?: { page1?: React
           </table>
         </div>
       </div>
+
     </div>
   );
-}
+});
 
 // PrintQRCode component for generating QR codes specifically for printing
 function PrintQRCode({ profileSlug }: { profileSlug: string }) {

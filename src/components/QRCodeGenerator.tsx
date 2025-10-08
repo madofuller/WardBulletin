@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { userService } from '../lib/supabase';
+import { userService, bulletinService } from '../lib/supabase';
 import BulletinSelector from './BulletinSelector';
 import { toast } from 'react-toastify';
 import { FULL_DOMAIN, SHORT_DOMAIN } from '../lib/config';
 import { useSession } from '../lib/SessionContext';
 import ShareButton from './ShareButton';
+import { useQuery } from '@tanstack/react-query';
+import { useProfileAccess, useProfilePermissions } from '../hooks/useProfilePermissions';
+import ProfileSharingModal from './ProfileSharingModal';
 
 const LAST_USER_ID = 'last_user_id';
 
@@ -23,7 +26,12 @@ interface QRCodeGeneratorProps {
   currentActiveBulletinId?: string | null;
   onActiveBulletinSelect?: (bulletinId: string | null) => void;
   onProfileSlugUpdate?: (slug: string) => void;
+  onProfileChange?: (profileSlug: string) => void;
+  onCreateProfileSlug?: () => void;
+  onLoadBulletin?: (bulletin: any) => void;
+  onDeleteBulletin?: (bulletinId: string) => void;
   isOpen?: boolean;
+  currentProfileSlug?: string | null;
   bulletinData?: {
     wardName: string;
     date: string;
@@ -39,35 +47,67 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   currentActiveBulletinId,
   onActiveBulletinSelect,
   onProfileSlugUpdate,
+  onProfileChange,
+  onCreateProfileSlug,
+  onLoadBulletin,
+  onDeleteBulletin,
   isOpen,
+  currentProfileSlug,
   bulletinData
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [profileSlug, setProfileSlug] = React.useState('');
+  const [inputValue, setInputValue] = React.useState(''); // For typing without immediate formatting
   const [isEditing, setIsEditing] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [useShortDomain, setUseShortDomain] = React.useState(true);
+  const [showSharingModal, setShowSharingModal] = React.useState(false);
+  const [selectedProfileSlug, setSelectedProfileSlug] = React.useState<string | null>(null);
   const { user, profile } = useSession();
+  const { sharedProfiles, loading: sharedProfilesLoading } = useProfileAccess();
+  const { permissions } = useProfilePermissions(currentProfileSlug || profile?.profile_slug || null);
+
+  // Fetch bulletins for the current profile slug (for shared profiles)
+  const { data: sharedProfileBulletins = [] } = useQuery({
+    queryKey: ['shared-profile-bulletins', currentProfileSlug],
+    queryFn: async () => {
+      if (!currentProfileSlug || currentProfileSlug === profile?.profile_slug) {
+        return [];
+      }
+      return bulletinService.getBulletinsByProfileSlug(currentProfileSlug);
+    },
+    enabled: !!currentProfileSlug && currentProfileSlug !== profile?.profile_slug
+  });
 
   useEffect(() => {
     if (user?.id) {
       localStorage.setItem(LAST_USER_ID, user.id);
     }
-    if (profile?.profile_slug) {
+
+    // Initialize selectedProfileSlug with currentProfileSlug or user's profile
+    if (currentProfileSlug) {
+      setSelectedProfileSlug(currentProfileSlug);
+      setProfileSlug(currentProfileSlug);
+      setInputValue(currentProfileSlug);
+    } else if (profile?.profile_slug) {
+      setSelectedProfileSlug(profile.profile_slug);
       setProfileSlug(profile.profile_slug);
+      setInputValue(profile.profile_slug);
       localStorage.setItem(`profile_slug_${user?.id || ''}`, profile.profile_slug);
     } else if (!profile) {
       const cached = localStorage.getItem(`profile_slug_${user?.id || localStorage.getItem(LAST_USER_ID) || ''}`);
       if (cached) {
+        setSelectedProfileSlug(cached);
         setProfileSlug(cached);
+        setInputValue(cached);
       }
     }
-  }, [user, profile]);
+  }, [user, profile, currentProfileSlug]);
 
   useEffect(() => {
     generateQRCode();
-  }, [profileSlug, useShortDomain]);
+  }, [profileSlug, useShortDomain, selectedProfileSlug]);
 
   useEffect(() => {
     const id = user?.id || localStorage.getItem(LAST_USER_ID);
@@ -83,9 +123,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     const domain = useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN;
     const baseUrl = `https://${domain}`;
 
-    // Use shorter URL format for better mobile QR code scanning
-    const qrData = profileSlug
-      ? `${baseUrl}/${profileSlug}`
+    // Use selected profile slug (prioritize selectedProfileSlug over local state)
+    const activeProfileSlug = selectedProfileSlug || profileSlug;
+    const qrData = activeProfileSlug
+      ? `${baseUrl}/${activeProfileSlug}`
       : `${baseUrl}/your-profile-slug`;
     
     QRCode.toCanvas(canvas, qrData, {
@@ -120,12 +161,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       return;
     }
 
-    const sanitized = formatProfileSlug(profileSlug);
+    const sanitized = formatProfileSlug(inputValue);
     if (!sanitized) {
       setError('Profile slug cannot be empty');
       return;
     }
     setProfileSlug(sanitized);
+    setInputValue(sanitized);
 
     setLoading(true);
     setError('');
@@ -160,8 +202,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const activeProfileSlug = selectedProfileSlug || profileSlug;
     const link = document.createElement('a');
-    link.download = `${profileSlug || 'mywardbulletin'}-qr.png`;
+    link.download = `${activeProfileSlug || 'mywardbulletin'}-qr.png`;
     link.href = canvas.toDataURL();
     link.click();
   };
@@ -185,29 +228,106 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* QR Code Section */}
-      <div className="bg-white rounded-xl p-4 sm:p-8 shadow-sm border border-gray-100 mb-4 sm:mb-6">
-        <div className="text-center">
-          <canvas
-            ref={canvasRef}
-            width={300}
-            height={300}
-            className="border-2 border-gray-200 rounded-xl mx-auto shadow-sm max-w-full h-auto"
-          />
-        </div>
-      </div>
+      {/* Profile & QR Code Section */}
+      {user && (
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile & QR Code</h3>
 
-      {/* Custom Link Section */}
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Custom Link</h3>
-        
+          {/* Profile Selector */}
+          {/* WIP - commented out
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Profile</label>
+            {sharedProfilesLoading ? (
+              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">Loading profiles...</div>
+            ) : (
+              <>
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                  value={selectedProfileSlug || ''}
+                  onChange={(e) => {
+                    if (e.target.value === 'create-profile-slug') {
+                      if (onCreateProfileSlug) {
+                        onCreateProfileSlug();
+                      }
+                    } else if (e.target.value && onProfileChange) {
+                      setSelectedProfileSlug(e.target.value);
+                      onProfileChange(e.target.value);
+                    }
+                  }}
+                >
+                  {profile?.profile_slug && (
+                    <option value={profile.profile_slug}>
+                      {profile.profile_slug} (Owner)
+                    </option>
+                  )}
+                  {sharedProfiles.map((sharedProfile) => (
+                    <option key={sharedProfile.profile_slug} value={sharedProfile.profile_slug}>
+                      {sharedProfile.profile_slug} ({sharedProfile.role})
+                    </option>
+                  ))}
+                  {!profile?.profile_slug && sharedProfiles.length === 0 && (
+                    <option value="" disabled>
+                      No profiles available
+                    </option>
+                  )}
+                  {!profile?.profile_slug && (
+                    <option value="create-profile-slug">
+                      Create Profile Slug
+                    </option>
+                  )}
+                </select>
+
+                <p className="text-xs text-gray-500 mt-2">
+                  Select which profile's QR code and bulletins to manage
+                </p>
+              </>
+            )}
+          </div>
+          */}
+
+          {/* QR Code Display */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">QR Code</label>
+            <div className="text-center">
+              <canvas
+                ref={canvasRef}
+                width={300}
+                height={300}
+                className="border-2 border-gray-200 rounded-xl mx-auto shadow-sm max-w-full h-auto"
+              />
+              {/* Display profile information below QR code */}
+              <div className="mt-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm font-medium text-gray-900">
+                  Profile: {selectedProfileSlug || profileSlug || 'Not set'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  URL: https://{useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/{selectedProfileSlug || profileSlug || 'your-profile-slug'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Link Management */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Custom Link</label>
+
         {isEditing ? (
           <div className="space-y-4">
             <div>
               <input
                 type="text"
-                value={profileSlug}
-                onChange={(e) => setProfileSlug(formatProfileSlug(e.target.value))}
+                value={inputValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Convert spaces to hyphens in real-time
+                  const withHyphens = value.replace(/\s+/g, '-');
+                  setInputValue(withHyphens);
+                }}
+                onBlur={(e) => {
+                  const formatted = formatProfileSlug(e.target.value);
+                  setInputValue(formatted);
+                  setProfileSlug(formatted);
+                }}
                 placeholder="e.g., sunset-hills-ward"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
               />
@@ -219,13 +339,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               <button
                 onClick={handleSaveProfileSlug}
                 disabled={loading}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
               <button
                 onClick={handleCancelEdit}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
               >
                 Cancel
               </button>
@@ -236,19 +356,17 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             <div className="flex items-center gap-3">
               <div className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <span className="text-sm font-medium text-gray-900">
-                  {profileSlug || 'Not set'}
+                  {selectedProfileSlug || profileSlug || 'Not set'}
                 </span>
               </div>
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-3 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                className="px-4 py-3 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors"
               >
                 Edit
               </button>
             </div>
-            
 
-            
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <label className="text-sm font-medium text-gray-700">Domain:</label>
               <select
@@ -260,75 +378,85 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 <option value="short">{SHORT_DOMAIN}</option>
               </select>
             </div>
+
+            {/* URL Actions */}
+            {(selectedProfileSlug || profileSlug) && (
+              <div className="space-y-3 pt-4 border-t border-gray-200">
+                {/* Share Profile Access - Only for owners */}
+                {/* WIP - commented out
+                {permissions.canManageShares && (
+                  <button
+                    onClick={() => setShowSharingModal(true)}
+                    className="w-full px-4 py-3 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    👥 Share Profile Access
+                  </button>
+                )}
+                */}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={downloadQRCode}
+                    className="w-full px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Download QR Code
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const activeProfileSlug = selectedProfileSlug || profileSlug;
+                      const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${activeProfileSlug}`;
+                      if (navigator.share) {
+                        navigator.share({
+                          title: 'Ward Bulletin',
+                          text: 'Check out our ward bulletin!',
+                          url: shareUrl
+                        });
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        toast.success('Share link copied to clipboard!');
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition-colors"
+                  >
+                    Share
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const activeProfileSlug = selectedProfileSlug || profileSlug;
+                      const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${activeProfileSlug}`;
+                      navigator.clipboard.writeText(shareUrl);
+                      toast.success('Share link copied to clipboard!');
+                    }}
+                    className="w-full px-4 py-3 bg-orange-600 text-white rounded-full font-medium hover:bg-orange-700 transition-colors"
+                  >
+                    Copy Link
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const activeProfileSlug = selectedProfileSlug || profileSlug;
+                      const submissionsUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/submit/${activeProfileSlug}`;
+                      navigator.clipboard.writeText(submissionsUrl);
+                      toast.success('Submissions link copied to clipboard!');
+                    }}
+                    className="w-full px-4 py-3 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition-colors"
+                  >
+                    Copy Submissions Link
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
-        
+
         {error && (
           <p className="text-sm text-red-600 mt-2">{error}</p>
         )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={downloadQRCode}
-            disabled={!profileSlug}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Download QR Code
-          </button>
-          
-          {profileSlug && (
-            <button
-              onClick={() => {
-                const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${profileSlug}`;
-                if (navigator.share) {
-                  navigator.share({
-                    title: 'Ward Bulletin',
-                    text: 'Check out our ward bulletin!',
-                    url: shareUrl
-                  });
-                } else {
-                  navigator.clipboard.writeText(shareUrl);
-                  toast.success('Share link copied to clipboard!');
-                }
-              }}
-              className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
-            >
-              Share
-            </button>
-          )}
-          
-          {profileSlug && (
-            <button
-              onClick={() => {
-                const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${profileSlug}`;
-                navigator.clipboard.writeText(shareUrl);
-                toast.success('Share link copied to clipboard!');
-              }}
-              className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors"
-            >
-              Copy Link
-            </button>
-          )}
-          
-          {profileSlug && (
-            <button
-              onClick={() => {
-                const submissionsUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/submit/${profileSlug}`;
-                navigator.clipboard.writeText(submissionsUrl);
-                toast.success('Submissions link copied to clipboard!');
-              }}
-              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
-            >
-              Copy Submissions Link
-            </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tips Section */}
       <div className="bg-blue-50 rounded-xl p-4 sm:p-6 border border-blue-100 mb-4 sm:mb-6">
@@ -345,17 +473,48 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       </div>
       
       {/* Bulletin Selector */}
-      {onActiveBulletinSelect && user && (
+          {onActiveBulletinSelect && user && (
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
           <BulletinSelector
             user={user}
             currentActiveBulletinId={currentActiveBulletinId || undefined}
             onBulletinSelect={onActiveBulletinSelect}
+            showScheduling={true}
+            bulletins={sharedProfileBulletins.length > 0 ? sharedProfileBulletins : undefined}
+            onLoadBulletin={onLoadBulletin}
+            onDeleteBulletin={onDeleteBulletin}
+            profileSlug={currentProfileSlug || undefined}
+            onClose={() => {
+              // Close the QR modal when Monthly Schedule is clicked
+              if (typeof onActiveBulletinSelect === 'function') {
+                onActiveBulletinSelect(null);
+              }
+            }}
+            onFixInconsistency={async () => {
+              if (!user) return;
+              try {
+                // Clear the active bulletin ID to force a fresh selection
+                await userService.updateActiveBulletinId(user.id, null);
+                onActiveBulletinSelect(null);
+                toast.success('Data inconsistency fixed. Please select a bulletin.');
+              } catch (error) {
+                toast.error('Failed to fix inconsistency: ' + (error as Error).message);
+              }
+            }}
           />
         </div>
       )}
+
+      {/* Profile Sharing Modal */}
+      {showSharingModal && (selectedProfileSlug || profileSlug) && (
+        <ProfileSharingModal
+          isOpen={showSharingModal}
+          onClose={() => setShowSharingModal(false)}
+          profileSlug={selectedProfileSlug || profileSlug}
+        />
+      )}
     </div>
   );
-};
+}
 
 export default QRCodeGenerator;

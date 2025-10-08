@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase, userService } from './supabase';
+import { supabase, userService, bulletinService } from './supabase';
 
 interface UserProfile {
   email: string;
@@ -59,6 +59,30 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     loadProfile();
   }, [session]);
+
+  // Check for scheduled bulletins that need activation when user logs in
+  useEffect(() => {
+    if (session?.user) {
+      const checkScheduledBulletins = async () => {
+        try {
+          const activatedCount = await bulletinService.checkAndActivateScheduledBulletins(session.user.id);
+          if (activatedCount > 0) {
+            console.log(`Activated ${activatedCount} scheduled bulletin(s)`);
+          }
+        } catch (error) {
+          console.error('Error checking scheduled bulletins:', error);
+        }
+      };
+
+      // Check immediately on login
+      checkScheduledBulletins();
+
+      // Check periodically (every 5 minutes) while user is active
+      const interval = setInterval(checkScheduledBulletins, 5 * 60 * 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [session?.user]);
 
   return (
     <SessionContext.Provider value={{ session, user: session?.user ?? null, profile }}>

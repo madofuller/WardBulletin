@@ -88,7 +88,7 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
           ))}
         </div>
         <div className="p-4 border-t border-gray-200 text-right">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700">
             Close
           </button>
         </div>

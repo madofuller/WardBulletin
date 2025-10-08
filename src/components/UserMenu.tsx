@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, LogOut, Save, FileText, Settings, MessageSquare } from 'lucide-react';
+import { User, LogOut, Save, FileText, Settings, MessageSquare, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface UserMenuProps {
@@ -11,6 +11,7 @@ interface UserMenuProps {
   onOpenProfile?: () => void;
   onOpenWardSettings?: () => void;
   onOpenReviewSubmissions?: () => void;
+  onOpenProfileSharing?: () => void;
   pendingSubmissionsCount?: number;
 }
 
@@ -23,6 +24,7 @@ export default function UserMenu({
   onOpenProfile,
   onOpenWardSettings,
   onOpenReviewSubmissions,
+  onOpenProfileSharing,
   pendingSubmissionsCount
 }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -118,18 +120,20 @@ export default function UserMenu({
                   <span className="text-sm">Profile Settings</span>
                 </button>
               )}
-              {onOpenWardSettings && (
+              {/* WIP - commented out
+              {onOpenProfileSharing && (
                 <button
                   onClick={() => {
-                    onOpenWardSettings();
+                    onOpenProfileSharing();
                     setIsOpen(false);
                   }}
                   className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <Settings className="w-4 h-4" />
-                  <span className="text-sm">Ward Settings</span>
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm">Share Profile</span>
                 </button>
               )}
+              */}
             </div>
             
             <div className="p-2 border-t border-gray-100">
