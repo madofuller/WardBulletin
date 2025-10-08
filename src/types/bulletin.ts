@@ -2,6 +2,7 @@ import { SongType } from '../lib/songService';
 
 export interface AnnouncementImage {
   imageId: string;
+  imageUrl?: string; // For custom Supabase images, store the public URL
   hideImageOnPrint?: boolean;
   size?: 'small' | 'medium' | 'large' | 'xlarge';
 }

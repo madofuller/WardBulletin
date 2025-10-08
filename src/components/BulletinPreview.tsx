@@ -3,7 +3,7 @@ import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { decodeHtml } from '../lib/decodeHtml';
 import { getSongUrl, getSongTitle } from '../lib/songService';
-import { getImageById } from '../data/images';
+import { getImageByIdSync, LDS_IMAGES } from '../data/images';
 
 
 import {
@@ -242,7 +242,7 @@ function AnnouncementItem({
       {imageId && imageId !== 'none' && !images && (
         <div className={`mt-3 ${hideImageOnPrint ? 'print:hidden' : ''}`}>
           {(() => {
-            const selectedImage = getImageById(imageId);
+            const selectedImage = getImageByIdSync(imageId);
             return selectedImage?.url ? (
               <img
                 src={selectedImage.url}
@@ -255,17 +255,18 @@ function AnnouncementItem({
           })()}
         </div>
       )}
-      
+
       {/* Multiple images support */}
       {images && images.length > 0 && (
         <div className="mt-3 space-y-3">
           {images.map((img: any, index: number) => {
-            const selectedImage = getImageById(img.imageId);
-            return selectedImage?.url ? (
+            // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
+            const imageUrl = img.imageUrl || getImageByIdSync(img.imageId)?.url;
+            return imageUrl ? (
               <div key={index} className={`${img.hideImageOnPrint ? 'print:hidden' : ''}`}>
                 <img
-                  src={selectedImage.url}
-                  alt={selectedImage.name}
+                  src={imageUrl}
+                  alt="Announcement Image"
                   className="max-w-full h-auto rounded-lg shadow-sm w-full"
                   style={{ ...getImageSizeStyle(img.size), objectFit: 'contain' }}
                   loading="lazy"
@@ -337,7 +338,7 @@ export default function BulletinPreview({
   /* ------------------------------- Memoized -------------------------------- */
 
   const selectedImage = useMemo(
-    () => (data.imageId && data.imageId !== 'none' ? getImageById(data.imageId) : null),
+    () => (data.imageId && data.imageId !== 'none' ? getImageByIdSync(data.imageId) : null),
     [data.imageId]
   );
 
@@ -530,6 +531,9 @@ export default function BulletinPreview({
                   {item.type === 'testimony' && (
                     <div className="text-center py-2">
                       <p className="font-bold text-lg text-gray-900">Bearing of Testimonies</p>
+                      {item.note && (
+                        <p className="text-sm text-gray-700 italic mt-1">{item.note}</p>
+                      )}
                     </div>
                   )}
                   {item.type === 'sacrament' && data.meetingType === 'sacrament' && (
@@ -1055,7 +1059,7 @@ export default function BulletinPreview({
                 {a.imageId && a.imageId !== 'none' && !a.hideImageOnPrint && (
                   <div className="mb-2">
                     {(() => {
-                      const selectedImage = getImageById(a.imageId);
+                      const selectedImage = getImageByIdSync(a.imageId);
                       return selectedImage?.url ? (
                         <img
                           src={selectedImage.url}
