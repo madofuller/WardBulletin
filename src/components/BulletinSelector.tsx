@@ -77,6 +77,7 @@ export default function BulletinSelector({
 
   const formatDate = (dateString: string) => {
     // Fix timezone issue by creating date in local timezone
+    if (!dateString) return 'No date';
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { 
@@ -287,7 +288,7 @@ export default function BulletinSelector({
               <span>
                 {bulletin.status === 'scheduled' && bulletin.scheduled_date
                   ? `Scheduled: ${formatDate(bulletin.scheduled_date.split('T')[0])}`
-                  : `Meeting: ${formatDate(bulletin.date)}`
+                  : `Meeting: ${formatDate(bulletin.date || bulletin.meeting_date)}`
                 }
               </span>
             </div>
