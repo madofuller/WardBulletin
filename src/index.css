@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Print preview styles - show print styles in preview modal */
+.print-preview {
+  /* Force print styles to be visible in preview */
+}
+
+.print-preview .print\:\!text-xl {
+  font-size: 1.25rem !important;
+}
+
+.print-preview .print\:\!text-2xl {
+  font-size: 1.5rem !important;
+}
+
+.print-preview .print\:\!text-3xl {
+  font-size: 1.875rem !important;
+}
+
+.print-preview .print\:\!text-4xl {
+  font-size: 2.25rem !important;
+}
+
+.print-preview .print\:\!text-black {
+  color: black !important;
+}
+
+.print-preview .print\:\!text-sm {
+  font-size: 0.875rem !important;
+}
+
+.print-preview .print\:\!text-base {
+  font-size: 1rem !important;
+}
+
+.print-preview .print\:\!text-lg {
+  font-size: 1.125rem !important;
+}
+
+.print-preview .print\:\!max-h-96 {
+  max-height: 24rem !important;
+}
+
+.print-preview .print\:\!rounded-lg {
+  border-radius: 0.5rem !important;
+}
+
+.print-preview .print\:\!shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
 body {
   @apply bg-background font-sans text-gray-900 min-h-screen;
 }

@@ -3,6 +3,7 @@ import { SongType } from '../lib/songService';
 export interface AnnouncementImage {
   imageId: string;
   hideImageOnPrint?: boolean;
+  size?: 'small' | 'medium' | 'large' | 'xlarge';
 }
 
 export interface Announcement {
@@ -103,6 +104,8 @@ export interface UnitMissionaryEntry {
 // Legacy type alias for backward compatibility
 export type WardMissionaryEntry = UnitMissionaryEntry;
 
+export type BulletinStatus = 'draft' | 'scheduled' | 'active' | 'archived';
+
 export interface BulletinData {
   wardName: string; // Will display as appropriate unit name based on terminology
   date: string;
@@ -122,4 +125,11 @@ export interface BulletinData {
   wardMissionaries: UnitMissionaryEntry[]; // Using new interface
   imageId?: string; // ID of selected image from LDS_IMAGES or custom images
   imagePosition?: { x: number; y: number }; // Image positioning coordinates
+  showQRCodeOnPrint?: boolean; // Whether to show QR code on printed bulletin
+  showImagesOnPrint?: boolean; // Whether to show images on printed bulletin
+  // Scheduling fields
+  id?: string;
+  status?: BulletinStatus;
+  scheduledDate?: string; // ISO string
+  autoActivate?: boolean;
 }

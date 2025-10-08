@@ -158,7 +158,7 @@ export default function AnnouncementSubmissionPage() {
           </p>
           <button
             onClick={() => setSubmitStatus("idle")}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition-colors"
           >
             Submit Another Announcement
           </button>
@@ -227,7 +227,7 @@ export default function AnnouncementSubmissionPage() {
                 <button
                   type="button"
                   onClick={addAnnouncement}
-                  className="inline-flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm w-full sm:w-auto"
+                  className="inline-flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-sm w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Add Announcement
@@ -242,7 +242,7 @@ export default function AnnouncementSubmissionPage() {
                       <button
                         type="button"
                         onClick={() => removeAnnouncement(announcement.id)}
-                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-full transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -313,7 +313,7 @@ export default function AnnouncementSubmissionPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {isSubmitting ? (
                   <>

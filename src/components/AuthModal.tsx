@@ -6,11 +6,13 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: () => void;
+  mode?: 'signin' | 'signup';
+  prefillEmail?: string;
 }
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefillEmail }: AuthModalProps) {
+  const [isSignUp, setIsSignUp] = useState(mode === 'signup');
+  const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +26,20 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     });
     return () => subscription.unsubscribe();
   }, [isOpen]);
+
+  // Update email when prefillEmail changes
+  useEffect(() => {
+    if (prefillEmail) {
+      setEmail(prefillEmail);
+    }
+  }, [prefillEmail]);
+
+  // Update signup mode when mode prop changes
+  useEffect(() => {
+    if (mode) {
+      setIsSignUp(mode === 'signup');
+    }
+  }, [mode]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,10 +104,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
       style={{ display: isOpen ? 'flex' : 'none' }}
     >
-      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-md w-full mx-2 sm:mx-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-900">
             {isSignUp ? 'Create Account' : 'Sign In'}
@@ -163,22 +179,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <button
-            onClick={handleToggleSignUp}
-            className="text-blue-600 hover:text-blue-700 text-sm"
-          >
-            {isSignUp 
-              ? 'Already have an account? Sign in' 
-              : "Don't have an account? Create one"
-            }
-          </button>
+          {!mode && (
+            <button
+              onClick={handleToggleSignUp}
+              className="text-blue-600 hover:text-blue-700 text-sm"
+            >
+              {isSignUp 
+                ? 'Already have an account? Sign in' 
+                : "Don't have an account? Create one"
+              }
+            </button>
+          )}
+          {mode === 'signup' && (
+            <p className="text-sm text-gray-500">
+              You must create an account with the invited email to accept this invitation.
+            </p>
+          )}
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
