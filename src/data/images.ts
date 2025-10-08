@@ -1,3 +1,6 @@
+import { uploadImage, deleteImage, getUserImages } from '../lib/imageStorage';
+import { supabase } from '../lib/supabase';
+
 // Preloaded LDS-themed images for bulletin headers
 export const LDS_IMAGES = [
   {
@@ -129,14 +132,26 @@ export interface CustomImage {
 // Combined image type
 export type ImageData = typeof LDS_IMAGES[0] | CustomImage;
 
-// Storage key for custom images
-const CUSTOM_IMAGES_KEY = 'custom_bulletin_images';
-
-// Get custom images from localStorage
-export const getCustomImages = (): CustomImage[] => {
+// Get custom images from Supabase Storage
+export const getCustomImages = async (userId?: string): Promise<CustomImage[]> => {
   try {
-    const stored = localStorage.getItem(CUSTOM_IMAGES_KEY);
-    return stored ? JSON.parse(stored) : [];
+    // If no userId provided, try to get current user
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      userId = user.id;
+    }
+
+    const storedImages = await getUserImages(userId);
+
+    // Convert StoredImage to CustomImage format
+    return storedImages.map(img => ({
+      id: img.id,
+      name: img.name,
+      url: img.url,
+      isCustom: true as const,
+      uploadDate: img.createdAt
+    }));
   } catch (error) {
     console.error('Error loading custom images:', error);
     return [];
@@ -174,65 +189,90 @@ const compressImage = (base64: string, quality: number = 0.8): Promise<string> =
   });
 };
 
-// Save custom image to localStorage with compression and quota management
-export const saveCustomImage = async (image: CustomImage): Promise<void> => {
+// Save custom image to Supabase Storage with compression
+export const saveCustomImage = async (image: CustomImage, userId?: string): Promise<CustomImage> => {
   try {
+    // If no userId provided, get current user
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User must be authenticated to upload images');
+      userId = user.id;
+    }
+
     // Compress the image first
     const compressedBase64 = await compressImage(image.url);
-    const compressedImage = { ...image, url: compressedBase64 };
-    
-    const existing = getCustomImages();
-    const updated = [...existing, compressedImage];
-    
-    // Try to save with compression
-    try {
-      localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify(updated));
-      return;
-    } catch (quotaError) {
-      console.warn('Quota exceeded, attempting to clear old images');
-      
-      // If still too large, remove oldest images (keep last 10)
-      const recentImages = existing.slice(-10);
-      const finalUpdated = [...recentImages, compressedImage];
-      
-      try {
-        localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify(finalUpdated));
-        console.log('Cleared old images to make space');
-        return;
-      } catch (finalError) {
-        // If still too large, try with even more compression
-        const highlyCompressedBase64 = await compressImage(image.url, 0.5);
-        const highlyCompressedImage = { ...image, url: highlyCompressedBase64 };
-        const minimalUpdated = [...recentImages.slice(-5), highlyCompressedImage];
-        
-        localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify(minimalUpdated));
-        console.log('Used high compression to fit in storage');
-      }
-    }
+
+    // Upload to Supabase Storage and get public URL
+    const publicUrl = await uploadImage(
+      image.id,
+      image.name,
+      compressedBase64,
+      userId
+    );
+
+    // Return the image with the new public URL
+    return {
+      ...image,
+      url: publicUrl
+    };
   } catch (error) {
     console.error('Error saving custom image:', error);
-    throw new Error('Failed to save custom image. File may be too large or storage quota exceeded.');
+    throw new Error('Failed to save custom image. Please try again.');
   }
 };
 
-// Delete custom image from localStorage
-export const deleteCustomImage = (imageId: string): void => {
+// Delete custom image from Supabase Storage
+export const deleteCustomImage = async (imageId: string, userId?: string): Promise<void> => {
   try {
-    const existing = getCustomImages();
-    const updated = existing.filter(img => img.id !== imageId);
-    localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify(updated));
+    // If no userId provided, get current user
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User must be authenticated to delete images');
+      userId = user.id;
+    }
+
+    await deleteImage(imageId, userId);
   } catch (error) {
     console.error('Error deleting custom image:', error);
+    throw error;
   }
 };
 
 // Get all images (preset + custom)
-export const getAllImages = (): ImageData[] => {
-  const customImages = getCustomImages();
+export const getAllImages = async (userId?: string): Promise<ImageData[]> => {
+  const customImages = await getCustomImages(userId);
   return [...LDS_IMAGES, ...customImages];
 };
 
-export const getImageById = (id: string): ImageData => {
-  const allImages = getAllImages();
-  return allImages.find(img => img.id === id) || LDS_IMAGES[0];
+export const getImageById = async (id: string, userId?: string): Promise<ImageData> => {
+  // Check preset images first
+  const presetImage = LDS_IMAGES.find(img => img.id === id);
+  if (presetImage) return presetImage;
+
+  // Check custom images
+  const customImages = await getCustomImages(userId);
+  const customImage = customImages.find(img => img.id === id);
+
+  return customImage || LDS_IMAGES[0];
+};
+
+// Synchronous version for rendering - checks LDS images only
+// For custom images, the URL should already be in the Supabase public URL format
+export const getImageByIdSync = (id: string): ImageData => {
+  // Check preset images first
+  const presetImage = LDS_IMAGES.find(img => img.id === id);
+  if (presetImage) return presetImage;
+
+  // If it's a Supabase Storage URL (custom image), return a placeholder that will render the URL
+  // This works because announcement.images already have the URL stored
+  if (id.startsWith('custom-')) {
+    return {
+      id,
+      name: 'Custom Image',
+      url: '', // URL will be taken from announcement.images object
+      description: 'Custom uploaded image'
+    };
+  }
+
+  return LDS_IMAGES[0];
 };

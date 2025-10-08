@@ -979,6 +979,9 @@ export const bulletinService = {
     const image = tokenResults[14];
     const imagePosition = tokenResults[15];
 
+    const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
+
+    // Debug logging
     const result = {
       id: data.id,
       user_id: data.created_by,
@@ -991,7 +994,7 @@ export const bulletinService = {
       imageId: image || 'none',
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       bishopric_message: bishopric || '',
-      announcements: announcements ? JSON.parse(announcements) : [],
+      announcements: parsedAnnouncements,
       meetings: meetings ? JSON.parse(meetings) : [],
       special_events: events ? JSON.parse(events) : [],
       agenda: agenda ? JSON.parse(agenda) : [],

@@ -25,9 +25,10 @@ interface BulletinFormProps {
   data: BulletinData;
   onChange: (data: BulletinData) => void;
   profileSlug?: string;
+  userId?: string;
 }
 
-export default function BulletinForm({ data, onChange, profileSlug }: BulletinFormProps) {
+export default function BulletinForm({ data, onChange, profileSlug, userId }: BulletinFormProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
@@ -38,10 +39,24 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
   });
   const [organistLabel, setOrganistLabel] = useState<'Organist' | 'Pianist'>(data.leadership.organistLabel || 'Organist');
   const [choristerLabel, setChoristerLabel] = useState<'Chorister' | 'Music Leader'>(data.leadership.choristerLabel || 'Chorister');
-  const [allImages, setAllImages] = useState(getAllImages());
+  const [allImages, setAllImages] = useState<any[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRecurringAnnouncements, setShowRecurringAnnouncements] = useState(false);
-  
+
+  // Load images on mount
+  useEffect(() => {
+    const loadImages = async () => {
+      const images = await getAllImages(userId);
+      setAllImages(images);
+    };
+    loadImages();
+  }, [userId]);
+
+  // Helper to get image by ID from loaded images
+  const getImageFromCache = (imageId: string) => {
+    return allImages.find(img => img.id === imageId) || LDS_IMAGES[0];
+  };
+
   const updateField = (field: keyof BulletinData, value: any) => {
     onChange({ ...data, [field]: value });
   };
@@ -51,7 +66,8 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
       id: Date.now().toString(),
       title: '',
       content: '',
-      category: 'general'
+      category: 'general',
+      images: [] // Initialize empty images array
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
   };
@@ -311,9 +327,10 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
   }, [showAddSection]);
 
   // Image handlers
-  const handleImageUploaded = (imageId: string) => {
+  const handleImageUploaded = async (imageId: string, imageUrl: string) => {
     updateField('imageId', imageId);
-    setAllImages(getAllImages()); // Refresh the images list
+    const images = await getAllImages(userId);
+    setAllImages(images); // Refresh the images list
     setImageError(null);
     toast.success('Image uploaded successfully!');
   };
@@ -323,17 +340,22 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
     toast.error(error);
   };
 
-  const handleDeleteCustomImage = (imageId: string) => {
+  const handleDeleteCustomImage = async (imageId: string) => {
     if (confirm('Are you sure you want to delete this custom image?')) {
-      deleteCustomImage(imageId);
-      setAllImages(getAllImages()); // Refresh the images list
-      
-      // If the deleted image was selected, reset to 'none'
-      if (data.imageId === imageId) {
-        updateField('imageId', 'none');
+      try {
+        await deleteCustomImage(imageId, userId);
+        const images = await getAllImages(userId);
+        setAllImages(images); // Refresh the images list
+
+        // If the deleted image was selected, reset to 'none'
+        if (data.imageId === imageId) {
+          updateField('imageId', 'none');
+        }
+
+        toast.success('Custom image deleted.');
+      } catch (error) {
+        toast.error('Failed to delete image.');
       }
-      
-      toast.success('Custom image deleted.');
     }
   };
 
@@ -675,7 +697,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                 <div className="p-3 border border-gray-300 rounded-lg bg-white">
                   {data.imageId && data.imageId !== 'none' ? (
                     (() => {
-                      const selectedImage = getImageById(data.imageId);
+                      const selectedImage = getImageFromCache(data.imageId);
                       return selectedImage.url ? (
                         <div className="flex items-center gap-3">
                           <img
@@ -833,9 +855,9 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-base font-medium text-gray-700 mb-2">Chorister</label>
-                <div className="flex items-center gap-2 mb-2">
-                  <span 
-                    className={`text-sm font-medium cursor-pointer px-3 py-1 rounded-full border transition-colors ${choristerLabel === 'Chorister' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                <div className="flex items-center gap-1.5 mb-2 h-[34px]">
+                  <span
+                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Chorister' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setChoristerLabel('Chorister');
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Chorister' });
@@ -843,8 +865,8 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                   >
                     Chorister
                   </span>
-                  <span 
-                    className={`text-xs font-medium cursor-pointer px-3 py-1 rounded-full border transition-colors ${choristerLabel === 'Music Leader' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                  <span
+                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Music Leader' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setChoristerLabel('Music Leader');
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Music Leader' });
@@ -859,7 +881,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                     value={data.leadership.chorister}
                     onChange={(e) => updateField('leadership', { ...data.leadership, chorister: e.target.value })}
                     placeholder={`e.g., Debbie Hanes (${choristerLabel})`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
@@ -873,9 +895,9 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
               </div>
               <div>
                 <label className="block text-base font-medium text-gray-700 mb-2">Organist</label>
-                <div className="flex items-center gap-2 mb-2">
-                  <span 
-                    className={`text-sm font-medium cursor-pointer px-3 py-1 rounded-full border transition-colors ${organistLabel === 'Organist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                <div className="flex items-center gap-1.5 mb-2 h-[34px]">
+                  <span
+                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Organist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setOrganistLabel('Organist');
                       updateField('leadership', { ...data.leadership, organistLabel: 'Organist' });
@@ -883,8 +905,8 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                   >
                     Organist
                   </span>
-                  <span 
-                    className={`text-sm font-medium cursor-pointer px-3 py-1 rounded-full border transition-colors ${organistLabel === 'Pianist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                  <span
+                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Pianist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setOrganistLabel('Pianist');
                       updateField('leadership', { ...data.leadership, organistLabel: 'Pianist' });
@@ -899,7 +921,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                     value={data.leadership.organist}
                     onChange={(e) => updateField('leadership', { ...data.leadership, organist: e.target.value })}
                     placeholder={`e.g., Tom Webster (${organistLabel})`}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
@@ -912,7 +934,9 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prelude Music</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">Prelude Music</label>
+                {/* Add spacing to match toggle button height for alignment */}
+                <div className="h-[34px] mb-2"></div>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
@@ -1497,7 +1521,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                         {announcement.imageId && announcement.imageId !== 'none' && (!announcement.images || announcement.images.length === 0) && (
                           <div className="flex items-center gap-3 p-2 bg-white rounded border">
                             {(() => {
-                              const selectedImage = getImageById(announcement.imageId);
+                              const selectedImage = getImageFromCache(announcement.imageId);
                               return selectedImage.url ? (
                                 <img
                                   src={selectedImage.url}
@@ -1507,7 +1531,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                               ) : null;
                             })()}
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{getImageById(announcement.imageId).name}</p>
+                              <p className="text-sm font-medium text-gray-900">{getImageFromCache(announcement.imageId).name}</p>
                               <div className="flex items-center gap-2">
                                 <label className="flex items-center text-xs">
                                   <input
@@ -1532,7 +1556,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                         
                         {/* Multiple images */}
                         {announcement.images && announcement.images.map((img, index) => {
-                          const selectedImage = getImageById(img.imageId);
+                          const selectedImage = getImageFromCache(img.imageId);
                           return selectedImage?.url ? (
                             <div key={index} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border">
                               {/* Drag handle and reorder buttons */}
@@ -1622,11 +1646,20 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                     
                     {/* Add new image */}
                     <div className="mb-3">
-                      <ImageUpload 
-                        onImageUploaded={(imageId) => {
-                          const newImage = { imageId, hideImageOnPrint: false, size: 'medium' as const };
+                      <ImageUpload
+                        onImageUploaded={async (imageId, imageUrl) => {
+                          const newImage = {
+                            imageId,
+                            imageUrl, // Store the Supabase public URL
+                            hideImageOnPrint: false,
+                            size: 'medium' as const
+                          };
                           const currentImages = announcement.images || [];
                           updateAnnouncement(announcement.id, 'images', [...currentImages, newImage]);
+
+                          // Refresh the images list to show the newly uploaded image
+                          const images = await getAllImages(userId);
+                          setAllImages(images);
                         }}
                         onError={handleImageError}
                       />
@@ -1642,7 +1675,12 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                           <div
                             key={image.id}
                             onClick={() => {
-                              const newImage = { imageId: image.id, hideImageOnPrint: false, size: 'medium' as const };
+                              const newImage = {
+                                imageId: image.id,
+                                imageUrl: image.url, // Store the URL for Supabase images
+                                hideImageOnPrint: false,
+                                size: 'medium' as const
+                              };
                               const currentImages = announcement.images || [];
                               updateAnnouncement(announcement.id, 'images', [...currentImages, newImage]);
                             }}
