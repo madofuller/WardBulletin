@@ -87,8 +87,8 @@ export default function ConfirmationModal({
   }, [isOpen, onClose]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-2 sm:mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -114,13 +114,13 @@ export default function ConfirmationModal({
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
           >
             {finalCancelText}
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-4 py-2 rounded-lg transition-colors ${styles.button}`}
+            className={`px-4 py-2 rounded-full transition-colors ${styles.button}`}
           >
             {finalConfirmText}
           </button>

@@ -2,8 +2,10 @@ import React from 'react';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
 import TerminologyToggle from './TerminologyToggle';
+import BulletinActions from './BulletinActions';
 import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
 import { getUnitLabel } from '../lib/terminology';
+import { BulletinData } from '../types/bulletin';
 
 export default function Header({
   user,
@@ -23,7 +25,37 @@ export default function Header({
   setShowMobileMenu,
   hideExportPDF = false,
   hideQRCode = false,
-  onlyNewBulletin = false
+  onlyNewBulletin = false,
+  // New props for bulletin actions
+  bulletinData,
+  onMakeActive,
+  onScheduleBulletin,
+  onSaveAsTemplate,
+  currentBulletinStatus
+}: {
+  user: any;
+  loading: boolean;
+  currentBulletinId: string | null;
+  hasUnsavedChanges: boolean;
+  showQRCode: boolean;
+  setShowQRCode: (show: boolean) => void;
+  setShowAuthModal: (show: boolean) => void;
+  handleNewBulletin: () => void;
+  handleExportPDF: () => void;
+  handleSaveBulletin: () => void;
+  handleViewSavedBulletins: () => void;
+  setUser: (user: any) => void;
+  setShowProfile: (show: boolean) => void;
+  showMobileMenu: boolean;
+  setShowMobileMenu: (show: boolean) => void;
+  hideExportPDF?: boolean;
+  hideQRCode?: boolean;
+  onlyNewBulletin?: boolean;
+  bulletinData?: BulletinData;
+  onMakeActive?: () => void;
+  onScheduleBulletin?: (scheduledDate: string) => void;
+  onSaveAsTemplate?: () => void;
+  currentBulletinStatus?: string;
 }) {
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
@@ -41,7 +73,7 @@ export default function Header({
             <TerminologyToggle />
             <button
               onClick={handleNewBulletin}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Bulletin
@@ -49,31 +81,28 @@ export default function Header({
             {!onlyNewBulletin && !hideExportPDF && (
               <button
                 onClick={handleExportPDF}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF
               </button>
             )}
-            {!onlyNewBulletin && user && (
-              <button
-                onClick={handleSaveBulletin}
-                disabled={loading}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Plus className="w-4 h-4 mr-2" />
-                )}
-                {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
-              </button>
+            {!onlyNewBulletin && bulletinData && onMakeActive && onScheduleBulletin && onSaveAsTemplate && (
+              <BulletinActions
+                user={user}
+                bulletinData={bulletinData}
+                onMakeActive={onMakeActive}
+                onSchedule={onScheduleBulletin}
+                onSaveAsTemplate={onSaveAsTemplate}
+                loading={loading}
+                currentStatus={currentBulletinStatus}
+              />
             )}
             {!onlyNewBulletin && !hideQRCode && (
               <button
                 onClick={() => setShowQRCode(!showQRCode)}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                title="Manage your permanent QR code"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                title="View your permanent QR code that shows your active bulletin"
               >
                 <QrCode className="w-4 h-4 mr-2" />
                 My QR Code
@@ -91,7 +120,7 @@ export default function Header({
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                 title="Sign In"
               >
                 <LogIn className="w-4 h-4 mr-2" />
@@ -125,7 +154,7 @@ export default function Header({
                   handleNewBulletin();
                   setShowMobileMenu(false);
                 }}
-                className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Bulletin
@@ -136,7 +165,7 @@ export default function Header({
                     handleExportPDF();
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export PDF
@@ -149,7 +178,7 @@ export default function Header({
                     setShowMobileMenu(false);
                   }}
                   disabled={loading}
-                  className="w-full flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -165,7 +194,7 @@ export default function Header({
                     setShowQRCode(!showQRCode);
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
                   My QR Code
@@ -178,7 +207,7 @@ export default function Header({
                       handleViewSavedBulletins();
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                   >
                     My Bulletins
                   </button>
@@ -187,7 +216,7 @@ export default function Header({
                       setUser(null);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                   >
                     Sign Out
                   </button>
@@ -198,7 +227,7 @@ export default function Header({
                     setShowAuthModal(true);
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
                   Sign In

@@ -593,7 +593,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
     <div className="space-y-8 font-sans">
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-4" aria-label="Main tabs">
-        <ul className="flex flex-col gap-3 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+        <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
           {['program', 'announcements', 'unitinfo'].map(tab => (
             <li key={tab} role="presentation" className="w-full sm:w-auto">
               <button
@@ -601,7 +601,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                 role="tab"
                 aria-selected={activeTab === tab}
                 aria-controls={`tab-panel-${tab}`}
-                className={`w-full sm:w-auto px-6 sm:px-8 py-4 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-lg
+                className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base sm:text-lg
                   ${activeTab === tab
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
@@ -1373,7 +1373,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                 <div className="flex flex-row items-center space-x-2">
                   <button onClick={() => moveAgendaItem(idx, -1)} disabled={idx === 0} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↑</button>
                   <button onClick={() => moveAgendaItem(idx, 1)} disabled={idx === data.agenda.length - 1} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↓</button>
-                  <button onClick={() => updateField('agenda', data.agenda.filter(ag => ag.id !== item.id))} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-lg text-sm">Remove</button>
+                  <button onClick={() => updateField('agenda', data.agenda.filter(ag => ag.id !== item.id))} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-full text-sm">Remove</button>
                 </div>
               </div>
             ))}
@@ -1487,7 +1487,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                   />
                   
                   {/* Announcement Image Section */}
-                  <div className="mt-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="mt-4 p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Announcement Images (Optional)</label>
                     
                     {/* Display current images */}
@@ -1534,16 +1534,16 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                         {announcement.images && announcement.images.map((img, index) => {
                           const selectedImage = getImageById(img.imageId);
                           return selectedImage?.url ? (
-                            <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border">
+                            <div key={index} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border">
                               {/* Drag handle and reorder buttons */}
-                              <div className="flex flex-col items-center gap-1">
+                              <div className="flex flex-col items-center gap-1 flex-shrink-0">
                                 <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
                                 <div className="flex flex-col gap-1">
                                   <button
                                     type="button"
                                     onClick={() => moveImage(announcement.id, index, -1)}
                                     disabled={index === 0}
-                                    className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-xs sm:text-sm"
                                     title="Move up"
                                   >
                                     ↑
@@ -1552,7 +1552,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                                     type="button"
                                     onClick={() => moveImage(announcement.id, index, 1)}
                                     disabled={index === (announcement.images?.length || 0) - 1}
-                                    className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-xs sm:text-sm"
                                     title="Move down"
                                   >
                                     ↓
@@ -1563,31 +1563,52 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                               <img
                                 src={selectedImage.url}
                                 alt={selectedImage.name}
-                                className="w-16 h-16 object-cover rounded border"
+                                className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded border flex-shrink-0"
                               />
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{selectedImage.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <label className="flex items-center text-xs">
-                                    <input
-                                      type="checkbox"
-                                      checked={img.hideImageOnPrint || false}
-                                      onChange={(e) => {
-                                        const updatedImages = [...(announcement.images || [])];
-                                        updatedImages[index] = { ...updatedImages[index], hideImageOnPrint: e.target.checked };
-                                        updateAnnouncement(announcement.id, 'images', updatedImages);
-                                      }}
-                                      className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
-                                    <span className="ml-1">Hide from print</span>
-                                  </label>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{selectedImage.name}</p>
+                                <div className="flex flex-col gap-2 mt-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <label className="flex items-center text-xs">
+                                      <input
+                                        type="checkbox"
+                                        checked={img.hideImageOnPrint || false}
+                                        onChange={(e) => {
+                                          const updatedImages = [...(announcement.images || [])];
+                                          updatedImages[index] = { ...updatedImages[index], hideImageOnPrint: e.target.checked };
+                                          updateAnnouncement(announcement.id, 'images', updatedImages);
+                                        }}
+                                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                      />
+                                      <span className="ml-1">Hide from print</span>
+                                    </label>
+                                    
+                                    <label className="flex items-center text-xs">
+                                      <span className="mr-1">Size:</span>
+                                      <select
+                                        value={img.size || 'medium'}
+                                        onChange={(e) => {
+                                          const updatedImages = [...(announcement.images || [])];
+                                          updatedImages[index] = { ...updatedImages[index], size: e.target.value as 'small' | 'medium' | 'large' | 'xlarge' };
+                                          updateAnnouncement(announcement.id, 'images', updatedImages);
+                                        }}
+                                        className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0 max-w-32"
+                                      >
+                                        <option value="small">Small (120px)</option>
+                                        <option value="medium">Medium (200px)</option>
+                                        <option value="large">Large (300px)</option>
+                                        <option value="xlarge">X-Large (400px)</option>
+                                      </select>
+                                    </label>
+                                  </div>
+                                  
                                   <button
                                     type="button"
                                     onClick={() => {
                                       const updatedImages = (announcement.images || []).filter((_, i) => i !== index);
                                       updateAnnouncement(announcement.id, 'images', updatedImages);
                                     }}
-                                    className="text-red-600 hover:text-red-800 text-xs"
+                                    className="text-red-600 hover:text-red-800 text-xs self-start"
                                   >
                                     Remove
                                   </button>
@@ -1603,7 +1624,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                     <div className="mb-3">
                       <ImageUpload 
                         onImageUploaded={(imageId) => {
-                          const newImage = { imageId, hideImageOnPrint: false };
+                          const newImage = { imageId, hideImageOnPrint: false, size: 'medium' as const };
                           const currentImages = announcement.images || [];
                           updateAnnouncement(announcement.id, 'images', [...currentImages, newImage]);
                         }}
@@ -1621,7 +1642,7 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                           <div
                             key={image.id}
                             onClick={() => {
-                              const newImage = { imageId: image.id, hideImageOnPrint: false };
+                              const newImage = { imageId: image.id, hideImageOnPrint: false, size: 'medium' as const };
                               const currentImages = announcement.images || [];
                               updateAnnouncement(announcement.id, 'images', [...currentImages, newImage]);
                             }}
@@ -1646,25 +1667,27 @@ export default function BulletinForm({ data, onChange, profileSlug }: BulletinFo
                   </div>
                 </div>
                 <div className="flex flex-col items-end space-y-2 sm:space-y-0 sm:ml-4 sm:flex-row sm:items-center sm:space-x-2">
-                  <div className="flex flex-row items-center space-x-2">
-                    <button onClick={() => moveAnnouncement(idx, -1)} disabled={idx === 0} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↑</button>
-                    <button onClick={() => moveAnnouncement(idx, 1)} disabled={idx === data.announcements.length - 1} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↓</button>
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => moveAnnouncement(idx, -1)} disabled={idx === 0} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg sm:text-xl rounded-lg hover:bg-gray-100 transition-colors">↑</button>
+                    <button onClick={() => moveAnnouncement(idx, 1)} disabled={idx === data.announcements.length - 1} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg sm:text-xl rounded-lg hover:bg-gray-100 transition-colors">↓</button>
                   </div>
                   <button
                     type="button"
                     onClick={() => convertToRecurring(announcement)}
-                    className="ml-2 p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                     title="Convert to recurring announcement"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => removeAnnouncement(announcement.id)}
-                    className="ml-2 p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
+                </div>
                 </div>
               </div>
             ))}

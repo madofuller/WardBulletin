@@ -182,9 +182,25 @@ function AnnouncementItem({
   html: string;
   imageId?: string;
   hideImageOnPrint?: boolean;
-  images?: Array<{ imageId: string; hideImageOnPrint?: boolean }>;
+  images?: Array<{ imageId: string; hideImageOnPrint?: boolean; size?: 'small' | 'medium' | 'large' | 'xlarge' }>;
 }) {
   // H1 audience, H2 title, content styled as "H3-ish"
+  
+  const getImageSizeStyle = (size?: 'small' | 'medium' | 'large' | 'xlarge') => {
+    switch (size) {
+      case 'small':
+        return { maxHeight: '120px' };
+      case 'medium':
+        return { maxHeight: '200px' };
+      case 'large':
+        return { maxHeight: '300px' };
+      case 'xlarge':
+        return { maxHeight: '400px' };
+      default:
+        return { maxHeight: '200px' }; // Default to medium
+    }
+  };
+  
   return (
     <article className="border-l-4 border-[#edf4ff] pl-4">
       <h3 className="text-xl sm:text-2xl text-gray-900">{audience}</h3>
@@ -232,7 +248,7 @@ function AnnouncementItem({
                 src={selectedImage.url}
                 alt={selectedImage.name}
                 className="max-w-full h-auto rounded-lg shadow-sm w-full"
-                style={{ maxHeight: '200px', objectFit: 'contain' }}
+                style={{ ...getImageSizeStyle('medium'), objectFit: 'contain' }}
                 loading="lazy"
               />
             ) : null;
@@ -251,7 +267,7 @@ function AnnouncementItem({
                   src={selectedImage.url}
                   alt={selectedImage.name}
                   className="max-w-full h-auto rounded-lg shadow-sm w-full"
-                  style={{ maxHeight: '200px', objectFit: 'contain' }}
+                  style={{ ...getImageSizeStyle(img.size), objectFit: 'contain' }}
                   loading="lazy"
                 />
               </div>
@@ -269,7 +285,8 @@ export default function BulletinPreview({
   data,
   hideTabs = false,
   hideImageControls = false,
-  onImagePositionChange
+  onImagePositionChange,
+  onThemeSelectClick,
 }: BulletinPreviewProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
 
@@ -354,7 +371,7 @@ export default function BulletinPreview({
       {/* Tabs */}
       {!hideTabs && (
         <nav className="flex justify-center print:hidden mb-4 mt-4" aria-label="Main tabs">
-          <ul className="flex flex-col gap-3 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+          <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
             {(['program', 'announcements', 'unitinfo'] as const).map(tab => (
               <li key={tab} role="presentation" className={`w-full sm:w-auto ${tab === 'unitinfo' && !hasWardInfo(data) ? 'hidden sm:block' : ''}`}>
                 <button
@@ -362,7 +379,7 @@ export default function BulletinPreview({
                   role="tab"
                   aria-selected={activeTab === tab}
                   aria-controls={`tab-panel-${tab}`}
-                  className={`w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base
+                  className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base sm:text-base
                     ${activeTab === tab
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
@@ -511,9 +528,9 @@ export default function BulletinPreview({
                     </>
                   )}
                   {item.type === 'testimony' && (
-                    <DottedLine rightAlign={item.note}>
-                      <span>Testimony Meeting</span>
-                    </DottedLine>
+                    <div className="text-center py-2">
+                      <p className="font-bold text-lg text-gray-900">Bearing of Testimonies</p>
+                    </div>
                   )}
                   {item.type === 'sacrament' && data.meetingType === 'sacrament' && (
                     <>
@@ -682,7 +699,7 @@ export default function BulletinPreview({
               <p className="text-green-800 mb-2">Have an announcement to share?</p>
               <a
                 href={`/submit/${bulletinId}`}
-                className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-full hover:bg-green-700 transition-colors"
               >
                 📝 Submit Announcement
               </a>
@@ -921,9 +938,14 @@ export default function BulletinPreview({
                   </>
                 )}
                 {item.type === 'testimony' && (
-                  <DottedLine rightAlign={item.note}>
-                    <span>Testimony Meeting</span>
-                  </DottedLine>
+                  <div className="text-center py-3 my-2">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 shadow-sm">
+                      <p className="font-bold text-lg text-gray-800 tracking-wide">Bearing of Testimonies</p>
+                      {item.note && (
+                        <p className="text-sm text-gray-600 mt-1 italic">{item.note}</p>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {item.type === 'sacrament' && (
                   <>

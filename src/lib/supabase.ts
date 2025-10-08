@@ -1,21 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
 
+// Environment variables are loaded securely
+
 // Get Supabase configuration from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Validate that required environment variables are set
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase configuration missing. Please check your environment variables.')
+  console.error('Supabase configuration missing!'); console.error('supabaseUrl:', supabaseUrl); console.error('supabaseAnonKey:', supabaseAnonKey); throw new Error('Supabase configuration is required')
 }
 
 // Create Supabase client
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
   return !!(supabaseUrl && supabaseAnonKey)
 }
+
+// Create profile sharing service instance
+import { createProfileSharingService } from './profileSharingService'
+export const profileSharingService = createProfileSharingService(supabase)
 // Database types
 export interface Database {
   public: {
@@ -55,6 +61,9 @@ export interface Database {
           view_permission: string
           created_by: string | null
           expires_at: string | null
+          status: 'draft' | 'scheduled' | 'active' | 'archived'
+          scheduled_date: string | null
+          auto_activate: boolean
           created_at: string
         }
         Insert: {
@@ -65,6 +74,9 @@ export interface Database {
           view_permission?: string
           created_by?: string | null
           expires_at?: string | null
+          status?: 'draft' | 'scheduled' | 'active' | 'archived'
+          scheduled_date?: string | null
+          auto_activate?: boolean
           created_at?: string
         }
         Update: {
@@ -75,6 +87,9 @@ export interface Database {
           view_permission?: string
           created_by?: string | null
           expires_at?: string | null
+          status?: 'draft' | 'scheduled' | 'active' | 'archived'
+          scheduled_date?: string | null
+          auto_activate?: boolean
           created_at?: string
         }
       }
@@ -101,6 +116,70 @@ export interface Database {
           value?: string
           visibility?: string
           created_by?: string | null
+          created_at?: string
+        }
+      }
+      profile_shares: {
+        Row: {
+          id: string
+          profile_slug: string
+          owner_id: string
+          shared_with_id: string
+          role: 'owner' | 'editor' | 'viewer'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          profile_slug: string
+          owner_id: string
+          shared_with_id: string
+          role?: 'owner' | 'editor' | 'viewer'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          profile_slug?: string
+          owner_id?: string
+          shared_with_id?: string
+          role?: 'owner' | 'editor' | 'viewer'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      profile_invitations: {
+        Row: {
+          id: string
+          profile_slug: string
+          owner_id: string
+          invited_email: string
+          role: 'editor' | 'viewer'
+          token: string
+          expires_at: string
+          accepted_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_slug: string
+          owner_id: string
+          invited_email: string
+          role?: 'editor' | 'viewer'
+          token: string
+          expires_at: string
+          accepted_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_slug?: string
+          owner_id?: string
+          invited_email?: string
+          role?: 'editor' | 'viewer'
+          token?: string
+          expires_at?: string
+          accepted_at?: string | null
           created_at?: string
         }
       }
@@ -173,11 +252,60 @@ export const tokenService = {
         .eq('created_by', userId)
         .single();
 
-      if (error) return null;
+      if (error) {
+        // Log specific error types for debugging
+        if (error.code === 'PGRST116') {
+          // No rows returned - this is expected for missing tokens
+          return null;
+        }
+        console.warn(`Token fetch error for key "${key}":`, error);
+        return null;
+      }
       return data?.value || null;
     } catch (err: any) {
-      console.error('Token fetch error:', err);
+      // Check for specific HTTP error codes
+      if (err.message?.includes('406') || err.status === 406) {
+        console.warn(`HTTP 406 error fetching token "${key}" - likely rate limited or RLS issue`);
+      } else if (err.message?.includes('429') || err.status === 429) {
+        console.warn(`Rate limit exceeded fetching token "${key}"`);
+      } else {
+        console.error('Unexpected token fetch error:', err);
+      }
       return null;
+    }
+  },
+
+  async getTokensBatch(userId: string, keys: string[]): Promise<Record<string, string>> {
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('tokens')
+          .select('key, value')
+          .eq('created_by', userId)
+          .in('key', keys),
+        15000
+      );
+
+      if (error) {
+        console.warn('Batch token fetch error:', error);
+        return {};
+      }
+
+      const tokenMap: Record<string, string> = {};
+      (data || []).forEach(token => {
+        tokenMap[token.key] = token.value;
+      });
+
+      return tokenMap;
+    } catch (err: any) {
+      if (err.message?.includes('406') || err.status === 406) {
+        console.warn('HTTP 406 error in batch token fetch - likely rate limited or RLS issue');
+      } else if (err.message?.includes('429') || err.status === 429) {
+        console.warn('Rate limit exceeded in batch token fetch');
+      } else {
+        console.error('Unexpected batch token fetch error:', err);
+      }
+      return {};
     }
   }
 };
@@ -270,7 +398,7 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise
 
 // Bulletin service functions
 export const bulletinService = {
-  async saveBulletin(bulletinData: any, userId: string, bulletinId?: string) {
+  async saveBulletin(bulletinData: any, userId: string, bulletinId?: string, profileSlug?: string) {
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -283,6 +411,14 @@ export const bulletinService = {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !sessionData?.session) {
       throw new Error('No valid Supabase session. Please sign in again.');
+    }
+
+    // Check permissions if saving to a shared profile
+    if (profileSlug) {
+      const permissions = await profileSharingService.getUserPermissions(profileSlug, userId);
+      if (!permissions.canEdit) {
+        throw new Error('You do not have permission to edit bulletins for this profile');
+      }
     }
 
     let slug: string;
@@ -307,12 +443,14 @@ export const bulletinService = {
     const bulletinRecord = {
       id: bulletinId || `bulletin-${Date.now()}`,
       slug,
+      profile_slug: profileSlug || null,
       meeting_date: bulletinData.date,
       meeting_type: bulletinData.meetingType,
       created_by: userId,
       created_at: new Date().toISOString(),
       ward_name: bulletinData.wardName,
       theme: bulletinData.theme || '',
+      userTheme: bulletinData.userTheme || '',
       bishopric_message: bulletinData.bishopricMessage || '',
       announcements: bulletinData.announcements || [],
       meetings: bulletinData.meetings || [],
@@ -333,6 +471,7 @@ export const bulletinService = {
       const tokens = [
         { key: `bulletin-${slug}-ward_name`, value: bulletinData.wardName || '', created_by: userId },
         { key: `bulletin-${slug}-theme`, value: bulletinData.theme || '', created_by: userId },
+        { key: `bulletin-${slug}-userTheme`, value: bulletinData.userTheme || '', created_by: userId },
         { key: `bulletin-${slug}-bishopric`, value: bulletinData.bishopricMessage || '', created_by: userId },
         { key: `bulletin-${slug}-announcements`, value: JSON.stringify(bulletinData.announcements || []), created_by: userId },
         { key: `bulletin-${slug}-meetings`, value: JSON.stringify(bulletinData.meetings || []), created_by: userId },
@@ -368,7 +507,11 @@ export const bulletinService = {
       slug,
       meeting_date: bulletinData.date,
       meeting_type: bulletinData.meetingType,
-      created_by: userId
+      created_by: userId,
+      status: bulletinData.status || 'draft',
+      scheduled_date: bulletinData.scheduledDate || null,
+      auto_activate: bulletinData.autoActivate || false,
+      profile_slug: profileSlug || null
     };
 
     try {
@@ -432,17 +575,47 @@ export const bulletinService = {
   getFromLocalStorage(): any[] {
     try {
       const stored = localStorage.getItem('mywardbulletin_bulletins');
-      console.log('Raw local storage data:', stored);
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.warn('Failed to read from local storage:', error);
       return [];
     }
   },
+  async getBulletinsByProfileSlug(profileSlug: string) {
+    try {
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        throw refreshError;
+      }
+    } catch (refreshErr) {
+      throw refreshErr;
+    }
+
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from('bulletins')
+          .select('*')
+          .eq('profile_slug', profileSlug)
+          .order('created_at', { ascending: false }),
+        10000
+      );
+
+      if (error) {
+        console.error('Error fetching bulletins by profile slug:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (timeoutError) {
+      console.warn('getBulletinsByProfileSlug timed out, returning empty array');
+      return [];
+    }
+  },
+
   async getUserBulletins(userId: string) {
     // Always try to get bulletins from local storage first
     const localBulletins = this.getFromLocalStorage().filter(b => b.created_by === userId);
-    console.log('Local bulletins for user:', userId, localBulletins);
 
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
@@ -461,7 +634,7 @@ export const bulletinService = {
           .order('created_at', { ascending: false }),
         20000
       );
-      
+
       if (error) {
         if (error.message.includes('infinite recursion')) {
           // Return empty array if RLS recursion occurs
@@ -470,99 +643,164 @@ export const bulletinService = {
         }
         throw error;
       }
-      
-      // Fetch bulletin data from tokens for each bulletin
-      const bulletinsWithData = await Promise.all(
-        data.map(async (bulletin) => {
-          try {
-            // Only fetch image tokens if they're not in the database record
-            const tokenPromises = [
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-ward_name`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-theme`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-bishopric`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-announcements`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-meetings`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-events`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-agenda`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-prayers`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-music`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-leadership`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-wardLeadership`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-missionaries`),
-              tokenService.getToken(userId, `bulletin-${bulletin.slug}-wardMissionaries`),
-            ];
-            
-            // Always fetch image tokens since they're not in database record
-            tokenPromises.push(tokenService.getToken(userId, `bulletin-${bulletin.slug}-image`));
-            tokenPromises.push(tokenService.getToken(userId, `bulletin-${bulletin.slug}-imagePosition`));
-            
-            const tokenResults = await Promise.all(tokenPromises);
-            const [wardName, theme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 13);
-            
-            // Handle image tokens (always fetched)
-            const image = tokenResults[13];
-            const imagePosition = tokenResults[14];
 
-            return {
-              id: bulletin.id,
-              user_id: bulletin.created_by,
-              ward_name: wardName || '',
-              date: bulletin.meeting_date,
-              meeting_type: bulletin.meeting_type,
-              theme: theme || '',
-              bishopric_message: bishopric || '',
-              announcements: announcements ? JSON.parse(announcements) : [],
-              meetings: meetings ? JSON.parse(meetings) : [],
-              special_events: events ? JSON.parse(events) : [],
-              agenda: agenda ? JSON.parse(agenda) : [],
-              prayers: prayers ? JSON.parse(prayers) : {},
-              music_program: music ? JSON.parse(music) : {},
-              leadership: leadership ? JSON.parse(leadership) : {},
-              wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
-              missionaries: missionaries ? JSON.parse(missionaries) : [],
-              wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
-              imageId: image || 'none',
-              imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
-              created_at: bulletin.created_at,
-              updated_at: bulletin.created_at
-            };
-          } catch (tokenError: any) {
-            if (tokenError?.message && tokenError.message.includes('timed out')) {
-              // If token retrieval times out, return bulletin with minimal data
-              return {
-                id: bulletin.id,
-                user_id: bulletin.created_by,
-                ward_name: '',
-                date: bulletin.meeting_date,
-                meeting_type: bulletin.meeting_type,
-                theme: '',
-                bishopric_message: '',
-                announcements: [],
-                meetings: [],
-                special_events: [],
-                agenda: [],
-                prayers: {},
-                music_program: {},
-                leadership: {},
-                wardLeadership: [],
-                missionaries: [],
-                wardMissionaries: [],
-                imageId: bulletin.image_id || 'none',
-                imagePosition: bulletin.image_position || { x: 50, y: 50 },
-                created_at: bulletin.created_at,
-                updated_at: bulletin.created_at
-              };
+      if (!data || data.length === 0) {
+        // If no database bulletins, just return local bulletins
+        return localBulletins;
+      }
+
+      // Batch fetch all tokens for all bulletins with chunking to avoid URL length limits
+      try {
+        const allTokenKeys: string[] = [];
+        const bulletinSlugMap = new Map();
+
+        // Build list of all token keys we need and map bulletins by slug
+        data.forEach(bulletin => {
+          bulletinSlugMap.set(bulletin.slug, bulletin);
+          const tokenKeys = [
+            `bulletin-${bulletin.slug}-ward_name`,
+            `bulletin-${bulletin.slug}-theme`,
+            `bulletin-${bulletin.slug}-userTheme`,
+            `bulletin-${bulletin.slug}-bishopric`,
+            `bulletin-${bulletin.slug}-announcements`,
+            `bulletin-${bulletin.slug}-meetings`,
+            `bulletin-${bulletin.slug}-events`,
+            `bulletin-${bulletin.slug}-agenda`,
+            `bulletin-${bulletin.slug}-prayers`,
+            `bulletin-${bulletin.slug}-music`,
+            `bulletin-${bulletin.slug}-leadership`,
+            `bulletin-${bulletin.slug}-wardLeadership`,
+            `bulletin-${bulletin.slug}-missionaries`,
+            `bulletin-${bulletin.slug}-wardMissionaries`,
+            `bulletin-${bulletin.slug}-image`,
+            `bulletin-${bulletin.slug}-imagePosition`
+          ];
+          allTokenKeys.push(...tokenKeys);
+        });
+
+        // Chunk token keys to avoid URL length limits (max ~50 tokens per request)
+        const CHUNK_SIZE = 50;
+        const tokenChunks: string[][] = [];
+        for (let i = 0; i < allTokenKeys.length; i += CHUNK_SIZE) {
+          tokenChunks.push(allTokenKeys.slice(i, i + CHUNK_SIZE));
+        }
+
+        // Fetch tokens in chunks
+        const allTokens: any[] = [];
+        for (const chunk of tokenChunks) {
+          try {
+            const { data: chunkTokens, error: chunkError } = await withTimeout(
+              supabase
+                .from('tokens')
+                .select('key, value')
+                .eq('created_by', userId)
+                .in('key', chunk),
+              10000
+            );
+
+            if (chunkError) {
+              console.warn('Token chunk fetch failed:', chunkError);
+              continue; // Skip this chunk and try the next one
             }
-            throw tokenError;
+
+            if (chunkTokens) {
+              allTokens.push(...chunkTokens);
+            }
+          } catch (chunkErr) {
+            console.warn('Error fetching token chunk:', chunkErr);
+            continue; // Skip this chunk and try the next one
           }
-        })
-      );
-      
-      // Merge database bulletins with local storage bulletins (prefer database)
-      const dbBulletinIds = new Set(bulletinsWithData.map(b => b.id));
-      const uniqueLocalBulletins = localBulletins.filter(b => !dbBulletinIds.has(b.id));
-      
-      return [...bulletinsWithData, ...uniqueLocalBulletins];
+        }
+
+        // Create a map of tokens for quick lookup
+        const tokenMap = new Map();
+        allTokens.forEach(token => {
+          tokenMap.set(token.key, token.value);
+        });
+
+        // Build bulletins with token data
+        const bulletinsWithData = data.map(bulletin => {
+          const getToken = (suffix: string) => tokenMap.get(`bulletin-${bulletin.slug}-${suffix}`) || null;
+
+          const safeJsonParse = (value: string | null, fallback: any) => {
+            if (!value) return fallback;
+            try {
+              return JSON.parse(value);
+            } catch {
+              return fallback;
+            }
+          };
+
+          return {
+            id: bulletin.id,
+            user_id: bulletin.created_by,
+            ward_name: getToken('ward_name') || '',
+            date: bulletin.meeting_date,
+            meeting_type: bulletin.meeting_type,
+            theme: getToken('theme') || '',
+            userTheme: getToken('userTheme') || '',
+            bishopric_message: getToken('bishopric') || '',
+            announcements: safeJsonParse(getToken('announcements'), []),
+            meetings: safeJsonParse(getToken('meetings'), []),
+            special_events: safeJsonParse(getToken('events'), []),
+            agenda: safeJsonParse(getToken('agenda'), []),
+            prayers: safeJsonParse(getToken('prayers'), {}),
+            music_program: safeJsonParse(getToken('music'), {}),
+            leadership: safeJsonParse(getToken('leadership'), {}),
+            wardLeadership: safeJsonParse(getToken('wardLeadership'), []),
+            missionaries: safeJsonParse(getToken('missionaries'), []),
+            wardMissionaries: safeJsonParse(getToken('wardMissionaries'), []),
+            imageId: getToken('image') || 'none',
+            imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
+            created_at: bulletin.created_at,
+            updated_at: bulletin.created_at,
+            status: bulletin.status || 'draft',
+            scheduled_date: bulletin.scheduled_date
+          };
+        });
+
+        // Merge database bulletins with local storage bulletins (prefer database)
+        const dbBulletinIds = new Set(bulletinsWithData.map(b => b.id));
+        const uniqueLocalBulletins = localBulletins.filter(b => !dbBulletinIds.has(b.id));
+
+        return [...bulletinsWithData, ...uniqueLocalBulletins];
+
+      } catch (tokenError: any) {
+        console.warn('Token processing failed, falling back to basic bulletin data:', tokenError);
+        // Return bulletins with basic data only
+        const basicBulletins = data.map(bulletin => ({
+          id: bulletin.id,
+          user_id: bulletin.created_by,
+          ward_name: '',
+          date: bulletin.meeting_date,
+          meeting_type: bulletin.meeting_type,
+          theme: '',
+          userTheme: '',
+          bishopric_message: '',
+          announcements: [],
+          meetings: [],
+          special_events: [],
+          agenda: [],
+          prayers: {},
+          music_program: {},
+          leadership: {},
+          wardLeadership: [],
+          missionaries: [],
+          wardMissionaries: [],
+          imageId: 'none',
+          imagePosition: { x: 50, y: 50 },
+          created_at: bulletin.created_at,
+          updated_at: bulletin.created_at,
+          status: bulletin.status || 'draft',
+          scheduled_date: bulletin.scheduled_date
+        }));
+
+        const dbBulletinIds = new Set(basicBulletins.map(b => b.id));
+        const uniqueLocalBulletins = localBulletins.filter(b => !dbBulletinIds.has(b.id));
+
+        return [...basicBulletins, ...uniqueLocalBulletins];
+      }
+
     } catch (error: any) {
       if (error.message === 'Operation timed out') {
         console.warn('getUserBulletins timed out, returning local bulletins');
@@ -596,6 +834,7 @@ export const bulletinService = {
     const tokenPromises = [
       tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
       tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-userTheme`),
       tokenService.getToken(userId, `bulletin-${data.slug}-bishopric`),
       tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
       tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
@@ -614,11 +853,11 @@ export const bulletinService = {
     tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imagePosition`));
     
     const tokenResults = await Promise.all(tokenPromises);
-    const [wardName, theme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 13);
+    const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 14);
     
     // Handle image tokens (always fetched)
-    const image = tokenResults[13];
-    const imagePosition = tokenResults[14];
+    const image = tokenResults[14];
+    const imagePosition = tokenResults[15];
 
     return {
       id: data.id,
@@ -628,6 +867,7 @@ export const bulletinService = {
       date: data.meeting_date,
       meeting_type: data.meeting_type,
       theme: theme || '',
+      userTheme: userTheme || '',
       bishopric_message: bishopric || '',
       announcements: announcements ? JSON.parse(announcements) : [],
       meetings: meetings ? JSON.parse(meetings) : [],
@@ -655,13 +895,17 @@ export const bulletinService = {
           .from('users')
           .select('id, active_bulletin_id')
           .eq('profile_slug', profileSlug)
-          .single()
+          .maybeSingle(), // Use maybeSingle to handle not found case properly
+        5000 // Shorter timeout for user lookup to avoid long waits
       ));
     } catch (timeoutError) {
-      throw timeoutError;
+      // If timeout occurs during user lookup, it's likely the profile doesn't exist
+      throw new Error('Bulletin not found');
     }
-    
-    if (userError) throw userError;
+
+    if (userError || !userData) {
+      throw new Error('Bulletin not found');
+    }
     
     let bulletinId = userData.active_bulletin_id;
     
@@ -710,6 +954,7 @@ export const bulletinService = {
     const tokenPromises = [
       tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
       tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-userTheme`),
       tokenService.getToken(userId, `bulletin-${data.slug}-bishopric`),
       tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
       tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
@@ -728,11 +973,11 @@ export const bulletinService = {
     tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imagePosition`));
     
     const tokenResults = await Promise.all(tokenPromises);
-    const [wardName, theme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 13);
+    const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 14);
     
     // Handle image tokens (always fetched)
-    const image = tokenResults[13];
-    const imagePosition = tokenResults[14];
+    const image = tokenResults[14];
+    const imagePosition = tokenResults[15];
 
     const result = {
       id: data.id,
@@ -742,6 +987,7 @@ export const bulletinService = {
       date: data.meeting_date,
       meeting_type: data.meeting_type,
       theme: theme || '',
+      userTheme: userTheme || '',
       imageId: image || 'none',
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       bishopric_message: bishopric || '',
@@ -783,13 +1029,26 @@ export const bulletinService = {
     // For database bulletins, proceed with database deletion
 
     try {
-      // Get bulletin info first to clean up tokens
+      // Get bulletin info first to check permissions and clean up tokens
       const bulletin = await supabase
         .from('bulletins')
-        .select('slug, created_by')
+        .select('slug, created_by, profile_slug')
         .eq('id', bulletinId)
-        .eq('created_by', userId)
         .single();
+
+      if (!bulletin.data) {
+        throw new Error('Bulletin not found');
+      }
+
+      // Check permissions if bulletin belongs to a shared profile
+      if (bulletin.data.profile_slug) {
+        const permissions = await profileSharingService.getUserPermissions(bulletin.data.profile_slug, userId);
+        if (!permissions.canEdit && bulletin.data.created_by !== userId) {
+          throw new Error('You do not have permission to delete bulletins for this profile');
+        }
+      } else if (bulletin.data.created_by !== userId) {
+        throw new Error('You do not have permission to delete this bulletin');
+      }
       
       if (bulletin.data) {
         // Delete associated tokens
@@ -814,6 +1073,194 @@ export const bulletinService = {
         return;
       }
       throw error;
+    }
+  },
+
+  async updateBulletinSchedule(bulletinId: string, userId: string, scheduleData: {
+    scheduledDate: string;
+    status: 'scheduled';
+    autoActivate?: boolean;
+  }) {
+    const { error } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .update({
+          status: scheduleData.status,
+          scheduled_date: scheduleData.scheduledDate,
+          auto_activate: scheduleData.autoActivate !== undefined ? scheduleData.autoActivate : true
+        })
+        .eq('id', bulletinId)
+        .eq('created_by', userId),
+      10000
+    );
+
+    if (error) throw error;
+  },
+
+  async bulkScheduleBulletins(schedules: Array<{bulletinId: string; scheduledDate: string}>, userId: string) {
+    const results = [];
+    
+    for (const schedule of schedules) {
+      try {
+        await this.updateBulletinSchedule(schedule.bulletinId, userId, {
+          scheduledDate: schedule.scheduledDate,
+          status: 'scheduled'
+        });
+        results.push({ bulletinId: schedule.bulletinId, success: true });
+      } catch (error) {
+        results.push({ 
+          bulletinId: schedule.bulletinId, 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+    
+    return results;
+  },
+
+  async updateBulletinStatus(bulletinId: string, userId: string, status: 'draft' | 'scheduled' | 'active' | 'archived') {
+    // If making a bulletin active, first archive ALL other active bulletins for this user
+    if (status === 'active') {
+      const { error: archiveError } = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({ status: 'archived' })
+          .eq('created_by', userId)
+          .eq('status', 'active'),
+        10000
+      );
+      
+      if (archiveError) throw archiveError;
+    }
+
+    // Update the specific bulletin's status
+    const { error } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .update({ status })
+        .eq('id', bulletinId)
+        .eq('created_by', userId),
+      10000
+    );
+
+    if (error) throw error;
+
+    // If making a bulletin active, also update the user's active_bulletin_id
+    if (status === 'active') {
+      const { error: userUpdateError } = await withTimeout(
+        supabase
+          .from('users')
+          .update({ active_bulletin_id: bulletinId })
+          .eq('id', userId),
+        10000
+      );
+      
+      if (userUpdateError) throw userUpdateError;
+    }
+  },
+
+  async getScheduledBulletins() {
+    // Get current local time in ISO format (without timezone conversion)
+    const now = new Date();
+    const localTimeString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    
+    const { data, error } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .select('id, created_by, scheduled_date, auto_activate')
+        .eq('status', 'scheduled')
+        .eq('auto_activate', true)
+        .lte('scheduled_date', localTimeString),
+      10000
+    );
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async activateScheduledBulletin(bulletinId: string, userId: string) {
+    // First archive ALL other active bulletins for this user (keep historical record)
+    const { error: archiveError } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .update({ status: 'archived' })
+        .eq('created_by', userId)
+        .eq('status', 'active'),
+      10000
+    );
+    
+    if (archiveError) throw archiveError;
+
+    // Then activate the specific bulletin and disable auto_activate to prevent re-activation
+    const { error } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .update({ 
+          status: 'active',
+          auto_activate: false  // Disable auto-activation to prevent re-activation
+        })
+        .eq('id', bulletinId)
+        .eq('created_by', userId),
+      10000
+    );
+
+    if (error) throw error;
+
+    // Also update the user's active_bulletin_id
+    const { error: userUpdateError } = await withTimeout(
+      supabase
+        .from('users')
+        .update({ active_bulletin_id: bulletinId })
+        .eq('id', userId),
+      10000
+    );
+    
+    if (userUpdateError) throw userUpdateError;
+  },
+
+  async getUserAccessibleProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
+    // Get owned profiles
+    const { data: ownedProfiles } = await supabase
+      .from('users')
+      .select('profile_slug')
+      .eq('id', userId)
+      .not('profile_slug', 'is', null);
+
+    // Get shared profiles
+    const { data: sharedProfiles } = await supabase
+      .from('profile_shares')
+      .select('profile_slug, role')
+      .eq('shared_with_id', userId);
+
+    const owned = (ownedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: 'owner' }));
+    const shared = (sharedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: p.role }));
+
+    return [...owned, ...shared];
+  },
+
+  // Client-side function to check and activate scheduled bulletins
+  async checkAndActivateScheduledBulletins(userId: string) {
+    try {
+      // Get bulletins that should be activated (using local timezone)
+      const scheduledBulletins = await this.getScheduledBulletins();
+
+      for (const bulletin of scheduledBulletins) {
+        // Only activate bulletins owned by this user
+        if (bulletin.created_by === userId) {
+          try {
+            await this.activateScheduledBulletin(bulletin.id, userId);
+            console.log(`Activated scheduled bulletin: ${bulletin.id} at local time: ${new Date().toLocaleString()}`);
+          } catch (error) {
+            console.error(`Failed to activate bulletin ${bulletin.id}:`, error);
+          }
+        }
+      }
+
+      return scheduledBulletins.length;
+    } catch (error) {
+      console.error('Error checking scheduled bulletins:', error);
+      return 0;
     }
   }
 };

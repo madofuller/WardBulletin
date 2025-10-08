@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat } from 'lucide-react';
+import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import { getCurrentUnitType } from '../lib/config';
 import jsPDF from 'jspdf';
@@ -13,10 +13,15 @@ import AuthModal from '../components/AuthModal';
 import UserMenu from '../components/UserMenu';
 import SavedBulletinsModal from '../components/SavedBulletinsModal';
 import TemplatesModal from '../components/TemplatesModal';
+import ThemeModal from '../components/ThemeModal';
+import PrintPreviewModal from '../components/PrintPreviewModal';
 import ProfileModal from '../components/ProfileModal';
 import PublicBulletinView from '../components/PublicBulletinView';
 import SubmissionReviewModal from '../components/SubmissionReviewModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import BulletinScheduler from '../components/BulletinScheduler';
+// import ProfileSharingModal from '../components/ProfileSharingModal'; // WIP - commented out
+import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
@@ -25,7 +30,9 @@ import Logo from '../components/Logo';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { useSession } from '../lib/SessionContext';
-import { handleError, NetworkError, DatabaseError, withErrorHandling, withRetry } from '../lib/errorHandler';
+import { themes } from '../data/themes';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 function decodeJwtExp(token: string) {
@@ -43,22 +50,75 @@ function EditorApp() {
   const [publicBulletinData, setPublicBulletinData] = useState<any>(null);
   const [publicError, setPublicError] = useState('');
   const { user, profile } = useSession();
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [activeBulletinId, setActiveBulletinId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      setActiveBulletinId(profile.active_bulletin_id || null);
-    } else {
-      setActiveBulletinId(null);
+  // Get the current profile slug (from URL or user's profile)
+  const currentProfileSlug = slug || profile?.profile_slug;
+
+  // Get active bulletin ID for the current profile
+  const getActiveBulletinForCurrentProfile = async (profileSlug: string) => {
+    try {
+      const { data: profileData } = await supabase
+        .from('users')
+        .select('active_bulletin_id')
+        .eq('profile_slug', profileSlug)
+        .single();
+      
+      return profileData?.active_bulletin_id || null;
+    } catch (error) {
+      console.error('Failed to get active bulletin for profile:', error);
+      return null;
     }
-  }, [profile]);
+  };
+
+  useEffect(() => {
+    const updateActiveBulletinId = async () => {
+      if (currentProfileSlug) {
+        // If we're on a shared profile, get its active bulletin
+        if (currentProfileSlug !== profile?.profile_slug) {
+          const activeId = await getActiveBulletinForCurrentProfile(currentProfileSlug);
+          setActiveBulletinId(activeId);
+        } else {
+          // If we're on our own profile, use the profile's active bulletin
+          setActiveBulletinId(profile?.active_bulletin_id || null);
+        }
+      } else {
+        setActiveBulletinId(null);
+      }
+    };
+    
+    updateActiveBulletinId();
+  }, [currentProfileSlug, profile]);
+
+  // Handle invitation state from InvitePage
+  useEffect(() => {
+    if (location.state?.showAuth) {
+      setAuthModalMode(location.state.mode);
+      setAuthModalPrefillEmail(location.state.prefillEmail);
+      setShowAuthModal(true);
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup' | undefined>(undefined);
+  const [authModalPrefillEmail, setAuthModalPrefillEmail] = useState<string | undefined>(undefined);
   const [showSavedBulletins, setShowSavedBulletins] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showPrintPreviewModal, setShowPrintPreviewModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSubmissionReview, setShowSubmissionReview] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
+  // const [showProfileSharing, setShowProfileSharing] = useState(false); // WIP - commented out
   const [pendingSubmissionsCount, setPendingSubmissionsCount] = useState(0);
   const [currentBulletinId, setCurrentBulletinId] = useState<string | null>(null);
+  const [showCreateProfileSlug, setShowCreateProfileSlug] = useState(false);
+  const [newProfileSlug, setNewProfileSlug] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(() => {
     // If we loaded a draft during initialization, mark as having unsaved changes
@@ -134,9 +194,9 @@ function EditorApp() {
 
   async function populateWithRecurringAnnouncements(bulletin: BulletinData): Promise<BulletinData> {
     try {
-      if (!profile?.profile_slug) return bulletin;
+      if (!currentProfileSlug) return bulletin;
       
-      const recurringAnnouncements = await recurringAnnouncementsService.getAnnouncementsForNewBulletin(profile.profile_slug);
+      const recurringAnnouncements = await recurringAnnouncementsService.getAnnouncementsForNewBulletin(currentProfileSlug);
       
       if (recurringAnnouncements.length > 0) {
         const newAnnouncements = recurringAnnouncements.map(announcement => ({
@@ -172,9 +232,13 @@ function EditorApp() {
     const currentUnitType = getCurrentUnitType();
     return {
       wardName: getDefault('wardName', ''),
-      date: new Date().toISOString().split('T')[0],
+      date: (() => {
+        const today = new Date();
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      })(),
       meetingType: getMeetingTypeForUnit(currentUnitType),
       theme: '',
+      userTheme: '',
       bishopricMessage: '',
       announcements: [],
       meetings: [],
@@ -382,6 +446,7 @@ function EditorApp() {
     date: bulletin.date,
     meetingType: bulletin.meeting_type,
     theme: bulletin.theme || '',
+    userTheme: bulletin.userTheme || '',
     bishopricMessage: bulletin.bishopric_message || '',
     announcements: bulletin.announcements || [],
     meetings: bulletin.meetings || [],
@@ -558,16 +623,27 @@ function EditorApp() {
         return;
       }
       
-      const bulletinId = activeBulletinId;
       try {
-        if (bulletinId) {
-          const bulletin = await bulletinService.getBulletinById(bulletinId);
-          const data = convertDbBulletinToData(bulletin);
-          setBulletinData(data);
-          setCurrentBulletinId(bulletin.id);
-          setHasUnsavedChanges(false);
-          // Only clear draft if we successfully loaded a bulletin
-          localStorage.removeItem(DRAFT_KEY);
+        if (currentProfileSlug) {
+          // If we're on a shared profile, get its active bulletin
+          if (currentProfileSlug !== profile?.profile_slug) {
+            const bulletin = await bulletinService.getLatestBulletinByProfileSlug(currentProfileSlug);
+            if (bulletin) {
+              const data = convertDbBulletinToData(bulletin);
+              setBulletinData(data);
+              setCurrentBulletinId(bulletin.id);
+              setHasUnsavedChanges(false);
+              localStorage.removeItem(DRAFT_KEY);
+            }
+          } else if (activeBulletinId) {
+            // If we're on our own profile, use the active bulletin ID
+            const bulletin = await bulletinService.getBulletinById(activeBulletinId);
+            const data = convertDbBulletinToData(bulletin);
+            setBulletinData(data);
+            setCurrentBulletinId(bulletin.id);
+            setHasUnsavedChanges(false);
+            localStorage.removeItem(DRAFT_KEY);
+          }
         }
       } catch (err) {
         console.error('Failed to load initial bulletin:', err);
@@ -578,7 +654,22 @@ function EditorApp() {
       }
     };
     fetchInitialBulletin();
-  }, [user, activeBulletinId]);
+  }, [user, activeBulletinId, currentProfileSlug]);
+
+  const handleCreateProfileSlug = async () => {
+    if (!newProfileSlug.trim() || !user) return;
+    
+    try {
+      await userService.updateProfileSlug(user.id, newProfileSlug.trim());
+      toast.success('Profile slug created successfully!');
+      setShowCreateProfileSlug(false);
+      setNewProfileSlug('');
+      // Refresh the page to load the new profile
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create profile slug');
+    }
+  };
 
   const handleBackToEditor = () => {
     setCurrentView('editor');
@@ -595,6 +686,15 @@ function EditorApp() {
       setShowAuthModal(true);
       return;
     }
+
+    // Check if there are actually changes to save
+    if (!hasUnsavedChanges) {
+      toast.info('No changes to save', {
+        toastId: 'no-changes-to-save'
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
@@ -621,7 +721,8 @@ function EditorApp() {
         const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
           bulletinData,
           user.id,
-          currentBulletinId || undefined
+          currentBulletinId || undefined,
+          currentProfileSlug || undefined
         ));
         return savedBulletin;
       })();
@@ -637,8 +738,8 @@ function EditorApp() {
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
       
-      // Update active bulletin ID to persist the selection
-      await handleActiveBulletinSelect(savedBulletin.id);
+      // Invalidate query cache to refresh saved bulletins modal
+      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id, currentProfileSlug] });
       
       toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
         toastId: 'bulletin-save-success'
@@ -663,6 +764,62 @@ function EditorApp() {
         console.error('Local save also failed:', localError);
         toast.error('Error saving bulletin: ' + (error as Error).message);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMakeActive = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Auto-save the bulletin if it hasn't been saved yet
+      if (!currentBulletinId) {
+        const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
+          bulletinData,
+          user.id,
+          undefined
+        ));
+        setCurrentBulletinId(savedBulletin.id);
+        setHasUnsavedChanges(false);
+
+        // Make the newly saved bulletin active
+        await handleActiveBulletinSelect(savedBulletin.id);
+      } else {
+        // Make existing bulletin active
+        await handleActiveBulletinSelect(currentBulletinId);
+      }
+
+      toast.success('Bulletin is now active on your QR code!');
+    } catch (error) {
+      toast.error('Error making bulletin active: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handleSaveAsTemplate = async () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const templateData = {
+        name: `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`,
+        data: bulletinData
+      };
+      await templateService.saveTemplate(templateData, user.id);
+      toast.success('Bulletin saved as template!');
+    } catch (error) {
+      toast.error('Error saving template: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -738,6 +895,7 @@ function EditorApp() {
           setCurrentBulletinId(bulletin.id);
           setHasUnsavedChanges(false);
           setShowSavedBulletins(false);
+          setShowQRCode(false);
         },
         variant: 'warning'
       });
@@ -802,6 +960,7 @@ function EditorApp() {
     setCurrentBulletinId(bulletin.id);
     setHasUnsavedChanges(false);
     setShowSavedBulletins(false);
+    setShowQRCode(false);
   };
 
   const handleTemplateSelect = (template: Template | null) => {
@@ -825,15 +984,52 @@ function EditorApp() {
     }
   };
 
+  const handleScheduleBulletin = async (scheduledDate: string) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let bulletinId = currentBulletinId;
+
+      // Auto-save the bulletin if it hasn't been saved yet
+      if (!bulletinId) {
+        const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
+          bulletinData,
+          user.id,
+          undefined
+        ));
+        setCurrentBulletinId(savedBulletin.id);
+        setHasUnsavedChanges(false);
+        bulletinId = savedBulletin.id;
+      }
+
+      await bulletinService.updateBulletinSchedule(bulletinId, user.id, {
+        scheduledDate,
+        status: 'scheduled',
+        autoActivate: true
+      });
+
+      toast.success(`Bulletin scheduled for ${new Date(scheduledDate).toLocaleDateString()}`);
+      setShowScheduler(false);
+    } catch (error: any) {
+      toast.error('Error scheduling bulletin: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Check for pending submissions
   const checkPendingSubmissions = async () => {
-    if (!supabase || !profile?.profile_slug) return;
+    if (!supabase || !currentProfileSlug) return;
     
     try {
       const { data, error } = await supabase
         .from('announcement_submissions')
         .select('id')
-        .eq('profile_slug', profile.profile_slug)
+        .eq('profile_slug', currentProfileSlug)
         .eq('status', 'pending');
       
       if (!error && data) {
@@ -846,12 +1042,12 @@ function EditorApp() {
 
   // Check for pending submissions when user or profile changes
   useEffect(() => {
-    if (user && profile?.profile_slug) {
+    if (user && currentProfileSlug) {
       checkPendingSubmissions();
     } else {
       setPendingSubmissionsCount(0);
     }
-  }, [user, profile?.profile_slug]);
+  }, [user, currentProfileSlug]);
 
   const handleNewBulletin = () => {
     if (hasUnsavedChanges) {
@@ -871,13 +1067,39 @@ function EditorApp() {
 
   const handleActiveBulletinSelect = async (bulletinId: string | null) => {
     if (!user) return;
-    
+
     try {
-      await userService.updateActiveBulletinId(user.id, bulletinId);
-      setActiveBulletinId(bulletinId);
+      if (bulletinId) {
+        // Make the bulletin active by updating its status
+        await bulletinService.updateBulletinStatus(bulletinId, user.id, 'active');
+        setActiveBulletinId(bulletinId);
+
+        // Invalidate queries to refresh the saved bulletins modal
+        const queryKey = currentProfileSlug && currentProfileSlug !== profile?.profile_slug
+          ? ['shared-profile-bulletins', currentProfileSlug]
+          : ['user-bulletins', user.id];
+        queryClient.invalidateQueries({ queryKey });
+      } else {
+        // Clear the active bulletin
+        await userService.updateActiveBulletinId(user.id, null);
+        setActiveBulletinId(null);
+
+        // Invalidate queries to refresh the saved bulletins modal
+        const queryKey = currentProfileSlug && currentProfileSlug !== profile?.profile_slug
+          ? ['shared-profile-bulletins', currentProfileSlug]
+          : ['user-bulletins', user.id];
+        queryClient.invalidateQueries({ queryKey });
+      }
     } catch (error) {
       console.error('Error updating active bulletin:', error);
       toast.error('Error updating active bulletin: ' + (error as Error).message);
+    }
+  };
+
+  const handleProfileChange = (newProfileSlug: string) => {
+    // Navigate to the selected profile
+    if (newProfileSlug) {
+      navigate(`/profile/${newProfileSlug}`);
     }
   };
 
@@ -1007,6 +1229,8 @@ function EditorApp() {
         console.error('Error generating PDF:', error);
         toast.error('There was an error generating the PDF. Please try again.');
       }
+    } else {
+      toast.error('PDF export failed: Missing page references. Please try again.');
     }
   };
 
@@ -1056,7 +1280,7 @@ function EditorApp() {
               <UnitTypeSelector />
               <button
                 onClick={handleNewBulletin}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Bulletin
@@ -1066,17 +1290,16 @@ function EditorApp() {
               
               <button
                 onClick={handleExportPDF}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF
               </button>
-              
 
-              
+
               <button
                 onClick={() => setShowQRCode(!showQRCode)}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                 title="Share your QR code"
               >
                 <QrCode className="w-4 h-4 mr-2" />
@@ -1086,13 +1309,14 @@ function EditorApp() {
               {user && pendingSubmissionsCount > 0 && (
                 <button
                   onClick={() => setShowSubmissionReview(true)}
-                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-colors"
                   title="Review announcement submissions"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Review Submissions ({pendingSubmissionsCount})
                 </button>
               )}
+              
               
                 {user ? (
                   <UserMenu
@@ -1105,12 +1329,13 @@ function EditorApp() {
                     hasUnsavedChanges={hasUnsavedChanges}
                     onOpenProfile={() => setShowProfile(true)}
                     onOpenReviewSubmissions={() => setShowSubmissionReview(true)}
+                    // onOpenProfileSharing={() => setShowProfileSharing(true)} // WIP - commented out
                     pendingSubmissionsCount={pendingSubmissionsCount}
                   />
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                   title="Sign In"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
@@ -1146,7 +1371,7 @@ function EditorApp() {
                     handleNewBulletin();
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   New Bulletin
@@ -1159,7 +1384,7 @@ function EditorApp() {
                     handleExportPDF();
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export PDF
@@ -1172,7 +1397,7 @@ function EditorApp() {
                     setShowQRCode(!showQRCode);
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
                   Share
@@ -1186,7 +1411,7 @@ function EditorApp() {
                           setShowSubmissionReview(true);
                           setShowMobileMenu(false);
                         }}
-                        className="w-full flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                        className="w-full flex items-center px-4 py-2 bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-colors"
                       >
                         <MessageSquare className="w-4 h-4 mr-2" />
                         Review Submissions ({pendingSubmissionsCount})
@@ -1197,7 +1422,7 @@ function EditorApp() {
                         handleViewSavedBulletins();
                         setShowMobileMenu(false);
                       }}
-                      className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                     >
                       My Bulletins
                     </button>
@@ -1206,7 +1431,7 @@ function EditorApp() {
                           await supabase?.auth.signOut();
                           setShowMobileMenu(false);
                         }}
-                        className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                       >
                       Sign Out
                     </button>
@@ -1217,7 +1442,7 @@ function EditorApp() {
                       setShowAuthModal(true);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
                     Sign In
@@ -1229,40 +1454,67 @@ function EditorApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Form Section */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Create Your Bulletin</h2>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Create Your Bulletin</h2>
               <BulletinForm 
                 data={bulletinData} 
                 onChange={handleBulletinDataChange} 
-                profileSlug={profile?.profile_slug || undefined}
+                profileSlug={currentProfileSlug || undefined}
               />
             </div>
           </div>
 
           {/* Preview Section */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                Bulletin Preview
+          <div className="space-y-4 sm:space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-3 sm:space-y-0">
+                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                  Bulletin Preview
                 </h2>
-                {currentBulletinId && (
-                  <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2 mb-2">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                      Saved Bulletin
-                    </span>
-                    {hasUnsavedChanges && (
-                      <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
-                        Unsaved Changes
-                      </span>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <button
+                    onClick={() => setShowPrintPreviewModal(true)}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 transition-colors text-sm sm:text-base"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Print Preview</span>
+                    <span className="sm:hidden">Print</span>
+                  </button>
+                  <button
+                    onClick={() => setShowThemeModal(true)}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 transition-colors text-sm sm:text-base"
+                  >
+                    <Paintbrush className="w-4 h-4 mr-2" />
+                    {bulletinData.userTheme ? (
+                      <>
+                        <span className="hidden sm:inline">Theme: </span>
+                        <span className="sm:hidden">Theme: </span>
+                        <span style={{ fontFamily: themes.find(t => t.name === bulletinData.userTheme)?.fontFamily }}>
+                          {bulletinData.userTheme.length > 8 ? bulletinData.userTheme.substring(0, 8) + '...' : bulletinData.userTheme}
+                        </span>
+                      </>
+                    ) : (
+                      'Theme'
                     )}
-                  </div>
-                )}
+                  </button>
+                </div>
               </div>
+              {currentBulletinId && (
+                <div className="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2 mb-4">
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                    Saved Bulletin
+                  </span>
+                  {hasUnsavedChanges && (
+                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                      Unsaved Changes
+                    </span>
+                  )}
+                </div>
+              )}
               <div ref={bulletinRef}>
                 <BulletinPreview 
                   data={bulletinData} 
@@ -1278,40 +1530,35 @@ function EditorApp() {
                   }}
                 />
               </div>
-              {user && currentBulletinId && activeBulletinId !== currentBulletinId && (
-                <button
-                  onClick={() => handleActiveBulletinSelect(currentBulletinId)}
-                  className="mt-4 w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Set This Bulletin as QR Code Bulletin
-                </button>
+
+              {/* New streamlined bulletin actions */}
+              {user && (
+                <div className="mt-6 flex justify-center">
+                  <BulletinActions
+                    user={user}
+                    bulletinData={bulletinData}
+                    onMakeActive={handleMakeActive}
+                    onSaveAsTemplate={handleSaveAsTemplate}
+                    loading={loading}
+                    currentStatus={bulletinData.status || (currentBulletinId === activeBulletinId ? 'active' : 'draft')}
+                  />
+                </div>
               )}
-              <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                {user && (
-                  <button
-                    onClick={handleSaveBulletin}
-                    disabled={loading}
-                    className="w-full sm:w-auto inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    ) : (
-                      <Plus className="w-4 h-4 mr-2" />
-                    )}
-                    {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
-                  </button>
-                )}
+
+              {/* Save Bulletin button */}
+              <div className="mt-4 flex justify-center">
                 <button
-                  onClick={() => {
-                    const name = prompt('Template name?');
-                    if (name) {
-                      templateService.saveTemplate(name, bulletinData);
-                      toast.success('Template saved');
-                    }
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  onClick={handleSaveBulletin}
+                  disabled={loading}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  title="Save this bulletin to your collection"
                 >
-                  Save as Template
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <Plus className="w-4 h-4 mr-2" />
+                  )}
+                  {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
                 </button>
               </div>
             </div>
@@ -1342,15 +1589,20 @@ function EditorApp() {
                   <QRCodeGenerator
                     currentActiveBulletinId={activeBulletinId}
                     onActiveBulletinSelect={handleActiveBulletinSelect}
+                    currentProfileSlug={currentProfileSlug}
+                    onProfileChange={handleProfileChange}
+                    onCreateProfileSlug={() => setShowCreateProfileSlug(true)}
                     onProfileSlugUpdate={() => {
                       // Optionally refresh or show success message
                     }}
+                    onLoadBulletin={handleLoadSavedBulletin}
+                    onDeleteBulletin={handleDeleteSavedBulletin}
                     isOpen={showQRCode}
                   />
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-600 mb-4">Sign in to create your permanent QR code</p>
-                  <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Sign In</button>
+                  <button onClick={() => setShowAuthModal(true)} className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">Sign In</button>
                 </div>
               )}
             </div>
@@ -1360,15 +1612,23 @@ function EditorApp() {
         {/* Auth Modal */}
         <AuthModal
           isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
+          onClose={() => {
+            setShowAuthModal(false);
+            setAuthModalMode(undefined);
+            setAuthModalPrefillEmail(undefined);
+          }}
           onAuthSuccess={async () => {
             setShowAuthModal(false);
+            setAuthModalMode(undefined);
+            setAuthModalPrefillEmail(undefined);
             const draft = await robustService.restoreDraftAfterAuth();
             if (draft) {
               setBulletinData(draft);
               await handleSaveBulletin();
             }
           }}
+          mode={authModalMode}
+          prefillEmail={authModalPrefillEmail}
         />
 
         {/* Saved Bulletins Modal */}
@@ -1377,6 +1637,9 @@ function EditorApp() {
           onClose={() => setShowSavedBulletins(false)}
           onLoadBulletin={handleLoadSavedBulletin}
           onDeleteBulletin={handleDeleteSavedBulletin}
+          profileSlug={currentProfileSlug && currentProfileSlug !== profile?.profile_slug ? currentProfileSlug : undefined}
+          onActiveBulletinChange={handleActiveBulletinSelect}
+          currentActiveBulletinId={activeBulletinId || undefined}
         />
 
         {/* Templates Modal */}
@@ -1384,6 +1647,16 @@ function EditorApp() {
           isOpen={showTemplates}
           onClose={() => setShowTemplates(false)}
           onSelect={handleTemplateSelect}
+        />
+
+        <ThemeModal
+          isOpen={showThemeModal}
+          onClose={() => setShowThemeModal(false)}
+          onSelectTheme={(theme) => {
+            handleBulletinDataChange({ ...bulletinData, userTheme: theme.name });
+            setShowThemeModal(false);
+          }}
+          currentUserTheme={bulletinData.userTheme}
         />
 
         {/* Profile Modal */}
@@ -1396,11 +1669,27 @@ function EditorApp() {
           }}
         />
 
+        {/* Scheduler Modal */}
+        <BulletinScheduler
+          isOpen={showScheduler}
+          onClose={() => setShowScheduler(false)}
+          onSchedule={handleScheduleBulletin}
+        />
+
+        {/* Profile Sharing Modal */}
+        {/* WIP - commented out
+        <ProfileSharingModal
+          isOpen={showProfileSharing}
+          onClose={() => setShowProfileSharing(false)}
+          profileSlug={currentProfileSlug || ''}
+        />
+        */}
+
         {/* Submission Review Modal */}
         <SubmissionReviewModal
           isOpen={showSubmissionReview}
           onClose={() => setShowSubmissionReview(false)}
-          profileSlug={profile?.profile_slug || ''}
+          profileSlug={currentProfileSlug || ''}
           onSubmissionApproved={(submission) => {
             // Convert submission to announcement format
             const newAnnouncement = {
@@ -1455,16 +1744,60 @@ function EditorApp() {
           variant={confirmationModal.variant}
         />
 
+        <PrintPreviewModal
+          isOpen={showPrintPreviewModal}
+          onClose={() => setShowPrintPreviewModal(false)}
+          bulletinData={bulletinData}
+          onUpdateData={handleBulletinDataChange}
+        />
+
         {/* Hidden print layout for PDF export */}
         <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <BulletinPrintLayout
             data={{
               ...bulletinData,
-              profileSlug: profile?.profile_slug || 'your-profile-slug'
+              profileSlug: currentProfileSlug || 'your-profile-slug'
             }}
             refs={{ page1: printPage1Ref, page2: printPage2Ref }}
           />
         </div>
+        {/* Create Profile Slug Modal */}
+        {showCreateProfileSlug && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Create Profile Slug</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                A profile slug is a unique identifier for your profile (e.g., "sunset-hills-ward").
+                This will be used in URLs and for sharing your profile with others.
+              </p>
+              <input
+                type="text"
+                value={newProfileSlug}
+                onChange={(e) => setNewProfileSlug(e.target.value)}
+                placeholder="Enter profile slug (e.g., sunset-hills-ward)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+              />
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowCreateProfileSlug(false);
+                    setNewProfileSlug('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateProfileSlug}
+                  disabled={!newProfileSlug.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Footer */}

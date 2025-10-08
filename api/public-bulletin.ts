@@ -2,9 +2,17 @@ import { createClient } from '@supabase/supabase-js';
 import { defaultRateLimiter } from './rate-limit';
 import { securityMonitor, validateProfileSlug } from '../src/lib/security';
 
-// Hardcoded Supabase configuration - replace with your actual values
-const supabaseUrl = 'https://mbhllitfppuhosjzirgh.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iaGxsaXRmcHB1aG9zanppcmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MzA5MjUsImV4cCI6MjA2ODAwNjkyNX0.XUwI_bOzyBRDGHWtkUeRhoWffDesg3KFqHQbaXdM71Y';
+// Get Supabase configuration from environment variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Validate that required environment variables are set
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase configuration missing!');
+  console.error('supabaseUrl:', supabaseUrl ? 'SET' : 'MISSING');
+  console.error('supabaseAnonKey:', supabaseAnonKey ? 'SET' : 'MISSING');
+  throw new Error('Supabase configuration is required');
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -42,15 +50,18 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  // Get the user by profile_slug
-  const { data: userData, error: userError } = await withTimeout(
-    supabase
-      .from('users')
-      .select('id, active_bulletin_id')
-      .eq('profile_slug', profileSlug)
-      .single()
-  );
+
   try {
+    // Get the user by profile_slug with a short timeout for fast 404s
+    const { data: userData, error: userError } = await withTimeout(
+      supabase
+        .from('users')
+        .select('id, active_bulletin_id')
+        .eq('profile_slug', profileSlug)
+        .maybeSingle(), // Use maybeSingle to handle not found case properly
+      5000 // Shorter timeout for user lookup
+    );
+
     if (userError || !userData) {
       return res.status(404).json({ error: 'Bulletin not found' });
     }
