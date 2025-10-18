@@ -156,9 +156,13 @@ export default function SavedBulletinsModal({
     try {
       await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
       
-      // Invalidate the correct query key based on whether we're on a shared profile
-      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
-      queryClient.invalidateQueries({ queryKey });
+      // Invalidate ALL relevant queries to ensure real-time sync across all components
+      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+      if (profileSlug) {
+        queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins', profileSlug] });
+      }
+      // Also invalidate any profile-related queries
+      queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
 
       const statusLabels = {
         draft: 'Saved',
