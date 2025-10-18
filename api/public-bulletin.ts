@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   }
   
   // Security: Add input validation
-  const { profileSlug } = req.query;
+  const { profileSlug, t } = req.query; // t is cache-busting timestamp parameter (ignored)
   if (!profileSlug || typeof profileSlug !== 'string') {
     securityMonitor.logInputValidationFailure(profileSlug as string, { reason: 'missing_or_invalid_type' });
     return res.status(400).json({ error: 'Invalid profile slug' });
@@ -47,9 +47,15 @@ export default async function handler(req, res) {
   }
   
   // Security: Add rate limiting headers
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+  // FIX: Aggressive cache-busting for mobile browsers to prevent old bulletin caching
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
+  
+  // REVERT: To revert this fix, change the Cache-Control back to:
+  // res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=30');
 
   try {
     // Get the user by profile_slug with a short timeout for fast 404s
@@ -65,7 +71,7 @@ export default async function handler(req, res) {
     if (userError || !userData) {
       return res.status(404).json({ error: 'Bulletin not found' });
     }
-    
+
     let bulletinId = userData.active_bulletin_id;
     if (!bulletinId) {
       const { data: latestBulletin, error: latestError } = await withTimeout(
@@ -94,7 +100,7 @@ export default async function handler(req, res) {
     if (error || !data) {
       return res.status(404).json({ error: 'Bulletin not found' });
     }
-    
+
     return res.status(200).json(data);
   } catch (error) {
     console.error('API Error:', error);

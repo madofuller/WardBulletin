@@ -47,6 +47,248 @@ function formatDate(dateString: string): string {
   }
 }
 
+// Function to shorten mission names for better display
+function shortenMissionName(missionName: string): string {
+  if (!missionName) return missionName;
+  
+  let shortened = missionName;
+  
+  // Special handling for very long mission names
+  if (shortened.includes('Joseph Smith Memorial Building')) {
+    return 'JSM Building';
+  }
+  if (shortened.includes('Missionary Training Center')) {
+    return shortened.replace(/Missionary Training Center/gi, 'MTC');
+  }
+  if (shortened.includes('Temple Square')) {
+    return shortened.replace(/Temple Square/gi, 'Temple Sq');
+  }
+  
+  // Remove "Mission" at the end
+  shortened = shortened.replace(/\s+Mission$/i, '');
+  
+  // Remove common words to save space
+  shortened = shortened.replace(/\bMemorial\b/gi, 'Mem.');
+  shortened = shortened.replace(/\bBuilding\b/gi, 'Bldg');
+  shortened = shortened.replace(/\bCenter\b/gi, 'Ctr');
+  shortened = shortened.replace(/\bUniversity\b/gi, 'Univ');
+  shortened = shortened.replace(/\bInstitute\b/gi, 'Inst');
+  
+  // Country abbreviations
+  const countryAbbreviations: Record<string, string> = {
+    'Australia': 'AUS',
+    'United States': 'USA',
+    'United Kingdom': 'UK',
+    'Canada': 'CAN',
+    'France': 'FRA',
+    'Germany': 'GER',
+    'Italy': 'ITA',
+    'Spain': 'SPA',
+    'Sweden': 'SWE',
+    'Norway': 'NOR',
+    'Denmark': 'DEN',
+    'Finland': 'FIN',
+    'Netherlands': 'NED',
+    'Belgium': 'BEL',
+    'Switzerland': 'SUI',
+    'Austria': 'AUT',
+    'Portugal': 'POR',
+    'Greece': 'GRE',
+    'Turkey': 'TUR',
+    'Russia': 'RUS',
+    'Ukraine': 'UKR',
+    'Poland': 'POL',
+    'Czech Republic': 'CZE',
+    'Hungary': 'HUN',
+    'Romania': 'ROM',
+    'Bulgaria': 'BUL',
+    'Croatia': 'CRO',
+    'Serbia': 'SER',
+    'Slovenia': 'SLO',
+    'Slovakia': 'SVK',
+    'Estonia': 'EST',
+    'Latvia': 'LAT',
+    'Lithuania': 'LIT',
+    'Belarus': 'BEL',
+    'Moldova': 'MOL',
+    'Georgia': 'GEO',
+    'Armenia': 'ARM',
+    'Azerbaijan': 'AZE',
+    'Kazakhstan': 'KAZ',
+    'Uzbekistan': 'UZB',
+    'Kyrgyzstan': 'KGZ',
+    'Tajikistan': 'TJK',
+    'Turkmenistan': 'TKM',
+    'Mongolia': 'MON',
+    'Japan': 'JPN',
+    'South Korea': 'S. Korea',
+    'North Korea': 'N. Korea',
+    'China': 'CHN',
+    'Taiwan': 'TWN',
+    'Hong Kong': 'HK',
+    'Macau': 'MAC',
+    'Philippines': 'PHI',
+    'Thailand': 'THA',
+    'Vietnam': 'VIE',
+    'Cambodia': 'CAM',
+    'Laos': 'LAO',
+    'Myanmar': 'MYA',
+    'Malaysia': 'MAL',
+    'Singapore': 'SIN',
+    'Indonesia': 'IND',
+    'Bangladesh': 'BAN',
+    'Sri Lanka': 'SRI',
+    'Nepal': 'NEP',
+    'Pakistan': 'PAK',
+    'Afghanistan': 'AFG',
+    'Iran': 'IRN',
+    'Iraq': 'IRQ',
+    'Syria': 'SYR',
+    'Lebanon': 'LEB',
+    'Jordan': 'JOR',
+    'Israel': 'ISR',
+    'Palestine': 'PAL',
+    'Saudi Arabia': 'SAU',
+    'United Arab Emirates': 'UAE',
+    'Qatar': 'QAT',
+    'Kuwait': 'KUW',
+    'Bahrain': 'BAH',
+    'Oman': 'OMA',
+    'Yemen': 'YEM',
+    'Egypt': 'EGY',
+    'Libya': 'LIB',
+    'Tunisia': 'TUN',
+    'Algeria': 'ALG',
+    'Morocco': 'MAR',
+    'Sudan': 'SUD',
+    'Ethiopia': 'ETH',
+    'Eritrea': 'ERI',
+    'Somalia': 'SOM',
+    'Djibouti': 'DJI',
+    'Uganda': 'UGA',
+    'Tanzania': 'TAN',
+    'Rwanda': 'RWA',
+    'Burundi': 'BUR',
+    'Malawi': 'MAL',
+    'Zambia': 'ZAM',
+    'Zimbabwe': 'ZIM',
+    'Botswana': 'BOT',
+    'Namibia': 'NAM',
+    'Lesotho': 'LES',
+    'Eswatini': 'SWA',
+    'Madagascar': 'MAD',
+    'Mauritius': 'MAU',
+    'Seychelles': 'SEY',
+    'Comoros': 'COM',
+    'Cape Verde': 'CPV',
+    'São Tomé and Príncipe': 'STP',
+    'Equatorial Guinea': 'GNQ',
+    'Gabon': 'GAB',
+    'Congo': 'CON',
+    'Central African Republic': 'CAR',
+    'Chad': 'CHA',
+    'Cameroon': 'CMR',
+    'Niger': 'NER',
+    'Mali': 'MAL',
+    'Burkina Faso': 'BFA',
+    'Senegal': 'SEN',
+    'Gambia': 'GAM',
+    'Guinea-Bissau': 'GNB',
+    'Guinea': 'GUI',
+    'Sierra Leone': 'SLE',
+    'Liberia': 'LBR',
+    'Ivory Coast': 'CIV',
+    'Togo': 'TOG',
+    'Benin': 'BEN',
+    'Ghana': 'GHA',
+    'Nigeria': 'NIG',
+    'Mauritania': 'MRT',
+    'Western Sahara': 'ESH',
+    'South Africa': 'S. Africa',
+    'New Zealand': 'NZ',
+    'Brazil': 'BRA',
+    'Argentina': 'ARG',
+    'Chile': 'CHI',
+    'Peru': 'PER',
+    'Colombia': 'COL',
+    'Venezuela': 'VEN',
+    'Ecuador': 'ECU',
+    'Bolivia': 'BOL',
+    'Paraguay': 'PAR',
+    'Uruguay': 'URU',
+    'Guyana': 'GUY',
+    'Suriname': 'SUR',
+    'French Guiana': 'FGU'
+  };
+  
+  // US State abbreviations
+  const stateAbbreviations: Record<string, string> = {
+    'Alabama': 'AL',
+    'Alaska': 'AK',
+    'Arizona': 'AZ',
+    'Arkansas': 'AR',
+    'California': 'CA',
+    'Colorado': 'CO',
+    'Connecticut': 'CT',
+    'Delaware': 'DE',
+    'Florida': 'FL',
+    'Georgia': 'GA',
+    'Hawaii': 'HI',
+    'Idaho': 'ID',
+    'Illinois': 'IL',
+    'Indiana': 'IN',
+    'Iowa': 'IA',
+    'Kansas': 'KS',
+    'Kentucky': 'KY',
+    'Louisiana': 'LA',
+    'Maine': 'ME',
+    'Maryland': 'MD',
+    'Massachusetts': 'MA',
+    'Michigan': 'MI',
+    'Minnesota': 'MN',
+    'Mississippi': 'MS',
+    'Missouri': 'MO',
+    'Montana': 'MT',
+    'Nebraska': 'NE',
+    'Nevada': 'NV',
+    'New Hampshire': 'NH',
+    'New Jersey': 'NJ',
+    'New Mexico': 'NM',
+    'New York': 'NY',
+    'North Carolina': 'NC',
+    'North Dakota': 'ND',
+    'Ohio': 'OH',
+    'Oklahoma': 'OK',
+    'Oregon': 'OR',
+    'Pennsylvania': 'PA',
+    'Rhode Island': 'RI',
+    'South Carolina': 'SC',
+    'South Dakota': 'SD',
+    'Tennessee': 'TN',
+    'Texas': 'TX',
+    'Utah': 'UT',
+    'Vermont': 'VT',
+    'Virginia': 'VA',
+    'Washington': 'WA',
+    'West Virginia': 'WV',
+    'Wisconsin': 'WI',
+    'Wyoming': 'WY',
+    'District of Columbia': 'DC'
+  };
+  
+  // Apply country abbreviations
+  for (const [country, abbrev] of Object.entries(countryAbbreviations)) {
+    shortened = shortened.replace(new RegExp(`\\b${country}\\b`, 'gi'), abbrev);
+  }
+  
+  // Apply US state abbreviations
+  for (const [state, abbrev] of Object.entries(stateAbbreviations)) {
+    shortened = shortened.replace(new RegExp(`\\b${state}\\b`, 'gi'), abbrev);
+  }
+  
+  return shortened;
+}
+
 const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> } }>(({ data, refs }, ref) => {
   const { user, profile } = useSession();
 
@@ -87,10 +329,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                  {/* Back Cover (left) - Unit Information */}
           <div className="w-1/2 px-8 py-6 flex flex-col justify-between text-left print:!text-sm print:!text-black pr-16">
            {/* Scrollable content area - reserves space for QR code if enabled */}
-           <div className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 180px)' : '100%' }}>
-             {/* Unit Leadership Table */}
+           <div className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
+              {/* Unit Leadership Table */}
               {filteredWardLeadership.length > 0 && (
-                <div className="w-full mb-3">
+                <div className="w-full mb-2">
                   <h2 className="text-lg font-bold mb-2 print:!text-lg print:!text-black w-full text-center">{getUnitLeadershipLabel().toUpperCase()}</h2>
                    <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                      <tbody>
@@ -113,7 +355,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries Table */}
               {filteredMissionaries.length > 0 && (
-                <div className="w-full mb-3">
+                <div className="w-full mb-2">
                   <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">MISSIONARIES</h3>
                   <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                     <tbody>
@@ -135,33 +377,48 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries from our ward */}
               {filteredWardMissionaries.length > 0 && (
-                <div className="w-full mb-3">
-                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">{getUnitMissionariesLabel().toUpperCase()}</h3>
-                  <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
-                    <tbody>
-                      {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 20).map((missionary: any, idx: number) => (
-                        <tr key={idx} className="py-0">
-                          <td className="py-0 font-semibold text-xs pr-1 whitespace-nowrap" style={{ width: '20%' }}>{missionary.name}</td>
-                          <td className="py-0 text-xs pr-1" style={{ width: '50%' }}>
-                            {missionary.mission ? (
-                              <span>📍 {missionary.mission}</span>
-                            ) : (
-                              <span className="text-gray-400">No mission assigned</span>
-                            )}
-                          </td>
-                          <td className="py-0 text-right text-xs whitespace-nowrap" style={{ width: '30%' }}>
-                            {missionary.email ? (
-                              <span>✉️ {missionary.email}</span>
-                            ) : (
-                              <span className="text-gray-400">No email</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredWardMissionaries.length > 20 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 20} more ward missionaries</p>
+                <div className="w-full mb-1">
+                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{getUnitMissionariesLabel().toUpperCase()}</h3>
+                  {(() => {
+                    const missionaryCount = filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).length;
+                    // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
+                    let fontSize = '9px';
+                    if (missionaryCount <= 3) {
+                      fontSize = '11px';
+                    } else if (missionaryCount <= 6) {
+                      fontSize = '10px';
+                    } else if (missionaryCount <= 10) {
+                      fontSize = '9px';
+                    } else {
+                      fontSize = '8px';
+                    }
+                    
+                    return (
+                      <div className="space-y-1" style={{ fontSize }}>
+                        {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).map((missionary: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center py-0">
+                        <div className="font-semibold" style={{ width: '25%' }}>
+                          {missionary.name}
+                        </div>
+                        <div className="text-center flex-1 px-2">
+                          {missionary.mission && (
+                            <span className="text-gray-600">{missionary.mission}</span>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0" style={{ minWidth: '120px' }}>
+                          {missionary.email ? (
+                            <span className="text-gray-700">{missionary.email}</span>
+                          ) : (
+                            <span className="text-gray-400">No email</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                      </div>
+                    );
+                  })()}
+                  {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
+                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} more ward missionaries</p>
                   )}
                 </div>
               )}

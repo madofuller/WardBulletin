@@ -87,15 +87,6 @@ export default function BulletinSelector({
     });
   };
 
-  // Debug logging - must be before any early returns
-  useEffect(() => {
-    if (allBulletins.length > 0) {
-      console.log('BulletinSelector - currentActiveBulletinId:', currentActiveBulletinId);
-      console.log('BulletinSelector - allBulletins:', allBulletins.map(b => ({ id: b.id, status: b.status, ward_name: b.ward_name })));
-      const activeBulletin = allBulletins.find(b => b.id === currentActiveBulletinId);
-      console.log('BulletinSelector - activeBulletin:', activeBulletin);
-    }
-  }, [allBulletins, currentActiveBulletinId]);
 
 
   if (loading) {
@@ -129,8 +120,10 @@ export default function BulletinSelector({
   }
 
   // Separate bulletins by status for better organization
-  // Only show bulletins as active if they are BOTH status='active' AND the currentActiveBulletinId
-  const activeBulletins = allBulletins.filter(b => b.status === 'active' && currentActiveBulletinId === b.id);
+  // Show the currently active bulletin - prefer currentActiveBulletinId, but also show any bulletin with status='active'
+  const activeBulletins = allBulletins.filter(b =>
+    b.status === 'active' || b.id === currentActiveBulletinId
+  );
   const scheduledBulletins = allBulletins
     .filter(b => b.status === 'scheduled')
     .sort((a, b) => {
@@ -140,8 +133,16 @@ export default function BulletinSelector({
       if (!b.scheduled_date) return -1;
       return a.scheduled_date.localeCompare(b.scheduled_date);
     });
-  const draftBulletins = allBulletins.filter(b => !b.status || b.status === 'draft');
-  const archivedBulletins = allBulletins.filter(b => b.status === 'archived');
+  const draftBulletins = allBulletins.filter(b =>
+    (!b.status || b.status === 'draft') &&
+    b.id !== currentActiveBulletinId &&
+    b.status !== 'active' &&
+    b.status !== 'scheduled'
+  );
+  const archivedBulletins = allBulletins.filter(b =>
+    b.status === 'archived' &&
+    b.id !== currentActiveBulletinId
+  );
   
   // Handle data inconsistency: if currentActiveBulletinId doesn't match any bulletin's status
   const inconsistentActiveBulletin = currentActiveBulletinId && 
@@ -397,6 +398,19 @@ export default function BulletinSelector({
             </h5>
             <div className="space-y-2">
               {activeBulletins.map(bulletin => renderBulletinCard(bulletin))}
+            </div>
+          </div>
+        )}
+
+        {/* No Active Bulletin Warning */}
+        {activeBulletins.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800">No Active Bulletin</p>
+                <p className="text-xs text-yellow-700">Select a bulletin below to make it active for your QR code.</p>
+              </div>
             </div>
           </div>
         )}

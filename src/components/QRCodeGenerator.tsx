@@ -125,9 +125,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
     // Use selected profile slug (prioritize selectedProfileSlug over local state)
     const activeProfileSlug = selectedProfileSlug || profileSlug;
+    // Add cache-busting parameter to prevent mobile browser caching
+    const timestamp = Date.now();
     const qrData = activeProfileSlug
-      ? `${baseUrl}/${activeProfileSlug}`
-      : `${baseUrl}/your-profile-slug`;
+      ? `${baseUrl}/${activeProfileSlug}?t=${timestamp}`
+      : `${baseUrl}/your-profile-slug?t=${timestamp}`;
     
     QRCode.toCanvas(canvas, qrData, {
       width: 300, // Increased size for better mobile scanning

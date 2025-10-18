@@ -1083,21 +1083,39 @@ function EditorApp() {
         await bulletinService.updateBulletinStatus(bulletinId, user.id, 'active');
         setActiveBulletinId(bulletinId);
 
-        // Invalidate queries to refresh the saved bulletins modal
-        const queryKey = currentProfileSlug && currentProfileSlug !== profile?.profile_slug
-          ? ['shared-profile-bulletins', currentProfileSlug]
-          : ['user-bulletins', user.id];
-        queryClient.invalidateQueries({ queryKey });
+        // Invalidate ALL relevant queries to ensure real-time sync across all components
+        queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+        if (currentProfileSlug && currentProfileSlug !== profile?.profile_slug) {
+          queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins', currentProfileSlug] });
+        }
+        // Also invalidate any profile-related queries
+        queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
+        
+        // Force refresh the activeBulletinId state to ensure UI consistency
+        setTimeout(async () => {
+          if (currentProfileSlug !== profile?.profile_slug) {
+            const activeId = await getActiveBulletinForCurrentProfile(currentProfileSlug);
+            setActiveBulletinId(activeId);
+          } else {
+            // Refresh profile data to get updated active_bulletin_id
+            const updatedProfile = await userService.getUserProfile(user.id);
+            if (updatedProfile && updatedProfile.length > 0) {
+              setActiveBulletinId(updatedProfile[0].active_bulletin_id || null);
+            }
+          }
+        }, 100); // Small delay to ensure database update is complete
       } else {
         // Clear the active bulletin
         await userService.updateActiveBulletinId(user.id, null);
         setActiveBulletinId(null);
 
-        // Invalidate queries to refresh the saved bulletins modal
-        const queryKey = currentProfileSlug && currentProfileSlug !== profile?.profile_slug
-          ? ['shared-profile-bulletins', currentProfileSlug]
-          : ['user-bulletins', user.id];
-        queryClient.invalidateQueries({ queryKey });
+        // Invalidate ALL relevant queries to ensure real-time sync across all components
+        queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+        if (currentProfileSlug && currentProfileSlug !== profile?.profile_slug) {
+          queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins', currentProfileSlug] });
+        }
+        // Also invalidate any profile-related queries
+        queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
       }
     } catch (error) {
       console.error('Error updating active bulletin:', error);

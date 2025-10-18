@@ -384,6 +384,17 @@ export const LDS_HYMNS: Record<number, string> = {
   1039: "Because",
   1040: "His Voice as the Sound",
   1041: "O Lord, Who Gave Thy Life for Me",
+  1042: "Thou Gracious God, Whose Mercy Lends",
+  1043: "Help Us Remember",
+  1044: "How Did the Savior Minister?",
+  1045: "Jesus Is the Way",
+  1046: "Can You Count the Stars in Heaven?",
+  1047: "He Cares for Me",
+  1048: "Our Prayer to Thee",
+  1049: "Joseph Prayed in Faith",
+  1050: "Stand by Me",
+  1051: "This Day Is a Good Day, Lord",
+  
   
   // Easter and Christmas (1201–1207)
   1201: "Hail the Day That Sees Him Rise",
@@ -392,7 +403,9 @@ export const LDS_HYMNS: Record<number, string> = {
   1204: "Star Bright",
   1205: "Let Easter Anthems Ring",
   1206: "Were You There?",
-  1207: "Still, Still, Still"
+  1207: "Still, Still, Still",
+  1208: "Go Tell It on the Mountain",
+  1209: "Little Baby in a Manger"
 };
 
 export const getHymnTitle = (number: number): string => {
