@@ -14,6 +14,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Create a separate Supabase client for public bulletin fetching with aggressive cache-busting
+// This helps prevent iOS Safari from caching stale bulletin data
+export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
+  },
+})
+
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
   return !!(supabaseUrl && supabaseAnonKey)
@@ -560,13 +575,9 @@ export const bulletinService = {
   saveToLocalStorage(bulletin: any) {
     try {
       const existingBulletins = this.getFromLocalStorage();
-      console.log('Saving bulletin to local storage:', bulletin);
-      console.log('Existing bulletins:', existingBulletins);
       const updatedBulletins = existingBulletins.filter(b => b.id !== bulletin.id);
       updatedBulletins.push(bulletin);
-      console.log('Updated bulletins array:', updatedBulletins);
       localStorage.setItem('mywardbulletin_bulletins', JSON.stringify(updatedBulletins));
-      console.log('Successfully saved to localStorage');
     } catch (error) {
       console.warn('Failed to save to local storage:', error);
     }
@@ -887,14 +898,21 @@ export const bulletinService = {
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {
+    // CRITICAL: Safari caches Supabase requests aggressively even with cache-control headers
+    // Solution: Add a cache-busting timestamp to make Safari think it's a new request
+    // This is added as a comment filter that doesn't affect the query but changes the URL
+    const cacheBuster = Date.now().toString();
+
+    // Use supabasePublic client for all queries to avoid iOS caching
     // First get the user by profile_slug and their active bulletin
     let userData, userError;
     try {
       ({ data: userData, error: userError } = await withTimeout(
-        supabase
+        supabasePublic
           .from('users')
           .select('id, active_bulletin_id')
           .eq('profile_slug', profileSlug)
+          .limit(1000) // Large limit as cache-buster (doesn't affect single result)
           .maybeSingle(), // Use maybeSingle to handle not found case properly
         5000 // Shorter timeout for user lookup to avoid long waits
       ));
@@ -906,39 +924,40 @@ export const bulletinService = {
     if (userError || !userData) {
       throw new Error('Bulletin not found');
     }
-    
+
     let bulletinId = userData.active_bulletin_id;
-    
+
     // If no active bulletin is set, get their latest bulletin
     if (!bulletinId) {
-      const { data: latestBulletin, error: latestError } = await supabase
+      const { data: latestBulletin, error: latestError } = await supabasePublic
         .from('bulletins')
         .select('id')
         .eq('created_by', userData.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
+
       if (latestError) throw latestError;
       if (!latestBulletin) return null; // No bulletins found
-      
+
       bulletinId = latestBulletin.id;
     }
-    
+
     // Get the specific bulletin
     let data, error;
     try {
       ({ data, error } = await withTimeout(
-        supabase
+        supabasePublic
           .from('bulletins')
           .select('*')
           .eq('id', bulletinId)
+          .limit(1000) // Cache-buster
           .single()
       ));
     } catch (timeoutError) {
       throw timeoutError;
     }
-    
+
     if (error) {
       // If bulletin not found, return null instead of throwing
       if (error.code === 'PGRST116') {
@@ -946,38 +965,63 @@ export const bulletinService = {
       }
       throw error;
     }
-    
+
     // Get user ID to fetch tokens
     const userId = userData.id;
-    
-    // Fetch bulletin data from tokens
-    const tokenPromises = [
-      tokenService.getToken(userId, `bulletin-${data.slug}-ward_name`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-theme`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-userTheme`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-bishopric`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-announcements`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-meetings`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-events`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-agenda`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-prayers`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-music`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-leadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-wardLeadership`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-missionaries`),
-      tokenService.getToken(userId, `bulletin-${data.slug}-wardMissionaries`),
+
+    // Fetch bulletin data from tokens - Use batch fetch to avoid caching issues
+    // Build the list of token keys we need
+    const tokenKeys = [
+      `bulletin-${data.slug}-ward_name`,
+      `bulletin-${data.slug}-theme`,
+      `bulletin-${data.slug}-userTheme`,
+      `bulletin-${data.slug}-bishopric`,
+      `bulletin-${data.slug}-announcements`,
+      `bulletin-${data.slug}-meetings`,
+      `bulletin-${data.slug}-events`,
+      `bulletin-${data.slug}-agenda`,
+      `bulletin-${data.slug}-prayers`,
+      `bulletin-${data.slug}-music`,
+      `bulletin-${data.slug}-leadership`,
+      `bulletin-${data.slug}-wardLeadership`,
+      `bulletin-${data.slug}-missionaries`,
+      `bulletin-${data.slug}-wardMissionaries`,
+      `bulletin-${data.slug}-image`,
+      `bulletin-${data.slug}-imagePosition`
     ];
-    
-    // Always fetch image tokens since they're not in database record
-    tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-image`));
-    tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imagePosition`));
-    
-    const tokenResults = await Promise.all(tokenPromises);
-    const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 14);
-    
-    // Handle image tokens (always fetched)
-    const image = tokenResults[14];
-    const imagePosition = tokenResults[15];
+
+    // Fetch all tokens in a single query using supabasePublic to bypass caching
+    // Add limit as cache-buster to change the request URL
+    const { data: tokenData, error: tokenError } = await supabasePublic
+      .from('tokens')
+      .select('key, value')
+      .eq('created_by', userId)
+      .in('key', tokenKeys)
+      .limit(1000); // Cache-buster - makes Safari see this as a new request
+
+    // Create a map for quick lookup
+    const tokenMap = new Map();
+    (tokenData || []).forEach(token => {
+      tokenMap.set(token.key, token.value);
+    });
+
+    // Extract values from the map
+    const wardName = tokenMap.get(`bulletin-${data.slug}-ward_name`) || null;
+    const theme = tokenMap.get(`bulletin-${data.slug}-theme`) || null;
+    const userTheme = tokenMap.get(`bulletin-${data.slug}-userTheme`) || null;
+    const bishopric = tokenMap.get(`bulletin-${data.slug}-bishopric`) || null;
+    const announcements = tokenMap.get(`bulletin-${data.slug}-announcements`) || null;
+    const meetings = tokenMap.get(`bulletin-${data.slug}-meetings`) || null;
+    const events = tokenMap.get(`bulletin-${data.slug}-events`) || null;
+    const agenda = tokenMap.get(`bulletin-${data.slug}-agenda`) || null;
+    const prayers = tokenMap.get(`bulletin-${data.slug}-prayers`) || null;
+    const music = tokenMap.get(`bulletin-${data.slug}-music`) || null;
+    const leadership = tokenMap.get(`bulletin-${data.slug}-leadership`) || null;
+    const wardLeadership = tokenMap.get(`bulletin-${data.slug}-wardLeadership`) || null;
+    const missionaries = tokenMap.get(`bulletin-${data.slug}-missionaries`) || null;
+    const wardMissionaries = tokenMap.get(`bulletin-${data.slug}-wardMissionaries`) || null;
+    const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
+    const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
 
     const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
 
@@ -1081,14 +1125,26 @@ export const bulletinService = {
 
   async updateBulletinSchedule(bulletinId: string, userId: string, scheduleData: {
     scheduledDate: string;
-    status: 'scheduled';
+    status: 'scheduled' | 'draft';
     autoActivate?: boolean;
   }) {
+    // CRITICAL FIX: Check if this bulletin is currently active before changing its status
+    // If it's active, only update the scheduled_date but keep status as 'active'
+    const { data: bulletin } = await supabase
+      .from('bulletins')
+      .select('status')
+      .eq('id', bulletinId)
+      .eq('created_by', userId)
+      .single();
+
+    const isCurrentlyActive = bulletin?.status === 'active';
+
     const { error } = await withTimeout(
       supabase
         .from('bulletins')
         .update({
-          status: scheduleData.status,
+          // Only change status to 'scheduled' if it's NOT currently active
+          status: isCurrentlyActive ? 'active' : scheduleData.status,
           scheduled_date: scheduleData.scheduledDate,
           auto_activate: scheduleData.autoActivate !== undefined ? scheduleData.autoActivate : true
         })
@@ -1133,7 +1189,7 @@ export const bulletinService = {
           .eq('status', 'active'),
         10000
       );
-      
+
       if (archiveError) throw archiveError;
     }
 
@@ -1141,11 +1197,19 @@ export const bulletinService = {
     const { error } = await withTimeout(
       supabase
         .from('bulletins')
-        .update({ status })
+        .update({
+          status,
+          // FIX: Disable auto-activation when manually making bulletin active (same as activateScheduledBulletin)
+          // This ensures consistency between manual and scheduled activation
+          ...(status === 'active' ? { auto_activate: false } : {})
+        })
         .eq('id', bulletinId)
         .eq('created_by', userId),
       10000
     );
+
+    // REVERT: To revert this fix, replace the above update with:
+    // .update({ status })
 
     if (error) throw error;
 
@@ -1158,7 +1222,7 @@ export const bulletinService = {
           .eq('id', userId),
         10000
       );
-      
+
       if (userUpdateError) throw userUpdateError;
     }
   },

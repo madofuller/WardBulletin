@@ -22,8 +22,8 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-6xl mx-2 sm:mx-4 h-full max-h-[95vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+      <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-7xl mx-2 sm:mx-4 h-full max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3 flex-shrink-0">
           <h3 className="text-lg sm:text-xl font-semibold">Print Preview</h3>
           <div className="flex items-center justify-between sm:space-x-4">
             <button
@@ -42,7 +42,7 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="flex-1 overflow-auto">
           <BulletinPrintLayout data={bulletinData} />
         </div>
       </div>
