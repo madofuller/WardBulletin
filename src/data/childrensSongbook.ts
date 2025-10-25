@@ -284,7 +284,8 @@ export const getChildrensSongUrl = (number: string): string => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
-  return `https://www.churchofjesuschrist.org/media/music/songs/${slug}?crumbs=childrens-songbook&lang=eng`;
+  // Use Gospel Library app format (opens in app instead of web browser)
+  return `https://www.churchofjesuschrist.org/study/manual/childrens-songbook/${slug}?lang=eng`;
 };
 
 export const isValidChildrensSongNumber = (number: string): boolean => {
