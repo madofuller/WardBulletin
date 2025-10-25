@@ -415,12 +415,7 @@ export const getHymnTitle = (number: number): string => {
 export const getHymnUrl = (number: number): string => {
   const title = LDS_HYMNS[number];
   if (!title) return '';
-  
-  // Special case for hymn 323
-  if (number === 323) {
-    return 'https://www.churchofjesuschrist.org/media/music/songs/rise-up-o-men-of-god-mens-choir?crumbs=hymns&lang=eng';
-  }
-  
+
   // Remove apostrophes and parentheses, then slugify: lowercase, replace non-alphanum with hyphens, collapse multiple hyphens
   const slug = title
     .toLowerCase()
@@ -429,12 +424,10 @@ export const getHymnUrl = (number: number): string => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
-  
-  // Add -women to URL for hymns 312-318
-  const womenSuffix = (number >= 312 && number <= 318) ? '-women' : '';
-  // Add -mens-choir to URL for hymns 326-335
-  const mensChoirSuffix = (number >= 326 && number <= 335) ? '-mens-choir' : '';
-  return `https://www.churchofjesuschrist.org/media/music/songs/${slug}${womenSuffix}${mensChoirSuffix}?crumbs=hymns&lang=eng`;
+
+  // Use Gospel Library app format (opens in app instead of web browser)
+  // Note: Special suffixes like -women and -mens-choir are not needed for Gospel Library URLs
+  return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
 };
 
 export const isValidHymnNumber = (number: number): boolean => {

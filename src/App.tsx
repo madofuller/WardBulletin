@@ -9,6 +9,7 @@ import ContactPage from './pages/ContactPage';
 import PublicBulletinPage from './pages/PublicBulletinPage';
 import AnnouncementSubmissionPage from './pages/AnnouncementSubmissionPage';
 import InvitePage from './pages/InvitePage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { bulletinScheduler } from './lib/bulletinScheduler';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/how-to-use" element={<HowToUsePage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
           <Route path="/:slug" element={<PublicBulletinPage />} />
         </Routes>
