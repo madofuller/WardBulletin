@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -9,18 +9,32 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    // Check if we have a valid session with the recovery token
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Invalid or expired reset link. Please request a new password reset.');
-      }
-    };
-    checkSession();
-  }, []);
+    // Check if this is a password recovery flow
+    const hashParams = new URLSearchParams(location.hash.substring(1));
+    const type = hashParams.get('type');
+
+    // If the URL contains type=recovery, it's a password reset flow
+    if (type === 'recovery') {
+      setIsRecoveryMode(true);
+
+      // Validate that we have a valid session with the recovery token
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setError('Invalid or expired reset link. Please request a new password reset.');
+        }
+      };
+      checkSession();
+    } else {
+      // Not a recovery flow, redirect to home
+      setError('Invalid password reset link. Please request a new password reset.');
+    }
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
