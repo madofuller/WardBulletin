@@ -32,9 +32,12 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // Don't update session state if this is a password recovery event
-      // This prevents auto-login and allows the reset password page to show
+      console.log('Auth state change:', event, newSession);
+
+      // If this is a password recovery event, redirect to reset password page
       if (event === 'PASSWORD_RECOVERY') {
+        console.log('Password recovery detected, redirecting to /reset-password');
+        window.location.href = '/reset-password' + window.location.hash;
         return;
       }
       setSession(newSession);
