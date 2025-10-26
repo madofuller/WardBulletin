@@ -425,8 +425,12 @@ export const getHymnUrl = (number: number): string => {
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
 
-  // Use Gospel Library app format (opens in app instead of web browser)
-  // Note: Special suffixes like -women and -mens-choir are not needed for Gospel Library URLs
+  // New hymns (1001+) use the "Hymns—For Home and Church" collection
+  if (number >= 1001) {
+    return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}?lang=eng`;
+  }
+
+  // Regular hymns (1-341) use the standard hymns manual
   return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
 };
 
