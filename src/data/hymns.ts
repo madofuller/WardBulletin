@@ -412,6 +412,21 @@ export const getHymnTitle = (number: number): string => {
   return LDS_HYMNS[number] || '';
 };
 
+// Map hymn numbers to their release batch
+const getHymnRelease = (number: number): number | null => {
+  // Release 1 (30 May 2024): 1001-1009, 1201-1204
+  if ((number >= 1001 && number <= 1009) || (number >= 1201 && number <= 1204)) return 1;
+  // Release 2 (12 September 2024): 1010-1018
+  if (number >= 1010 && number <= 1018) return 2;
+  // Release 3 (13 February 2025): 1019-1031, 1205-1206
+  if ((number >= 1019 && number <= 1031) || (number >= 1205 && number <= 1206)) return 3;
+  // Release 4 (12 June 2025): 1032-1041, 1207
+  if ((number >= 1032 && number <= 1041) || number === 1207) return 4;
+  // Release 5 (18 September 2025): 1042-1051, 1208-1209
+  if ((number >= 1042 && number <= 1051) || (number >= 1208 && number <= 1209)) return 5;
+  return null;
+};
+
 export const getHymnUrl = (number: number): string => {
   const title = LDS_HYMNS[number];
   if (!title) return '';
@@ -427,7 +442,9 @@ export const getHymnUrl = (number: number): string => {
 
   // New hymns (1001+) use the "Hymns—For Home and Church" collection
   if (number >= 1001) {
-    return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}?lang=eng`;
+    const release = getHymnRelease(number);
+    const releaseSuffix = release ? `-release-${release}` : '';
+    return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}${releaseSuffix}?lang=eng`;
   }
 
   // Regular hymns (1-341) use the standard hymns manual
