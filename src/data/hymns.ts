@@ -443,7 +443,9 @@ export const getHymnUrl = (number: number): string => {
   // New hymns (1001+) use the "Hymns—For Home and Church" collection
   if (number >= 1001) {
     const release = getHymnRelease(number);
-    const releaseSuffix = release ? `-release-${release}` : '';
+
+    // Only Release 3 needs the release suffix
+    const releaseSuffix = release === 3 ? `-release-${release}` : '';
     return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}${releaseSuffix}?lang=eng`;
   }
 
