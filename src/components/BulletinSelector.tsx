@@ -273,6 +273,12 @@ export default function BulletinSelector({
       return;
     }
 
+    // Check if bulletin is saved to database (not a local draft)
+    if (bulletinId.startsWith('local_')) {
+      toast.error('Please save this bulletin before changing its status');
+      return;
+    }
+
     // Check permissions - viewers cannot change bulletin status
     if (permissions && permissions.role === 'viewer') {
       toast.error('Viewers cannot change bulletin status. Contact the profile owner for editor access.');
@@ -300,6 +306,18 @@ export default function BulletinSelector({
 
       await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
 
+      // Refetch queries to ensure we have the latest data after status change
+      // This is especially important for shared users to see the correct active status
+      const refetchQueryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+      await queryClient.refetchQueries({ queryKey: refetchQueryKey });
+      
+      // Also refetch the other query key to ensure consistency
+      if (profileSlug) {
+        await queryClient.refetchQueries({ queryKey: ['user-bulletins', user.id] });
+      } else {
+        await queryClient.refetchQueries({ queryKey: ['shared-profile-bulletins'] });
+      }
+
       const statusLabels = {
         draft: 'Saved',
         scheduled: 'Scheduled',
@@ -313,9 +331,6 @@ export default function BulletinSelector({
       if (newStatus === 'active') {
         onBulletinSelect(bulletinId);
       }
-
-      // Don't invalidate - the optimistic update is already applied
-      // Data will naturally refresh on next mount/focus
     } catch (error: any) {
       // Revert optimistic update on error by invalidating
       const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
