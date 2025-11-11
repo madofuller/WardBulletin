@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { FULL_DOMAIN } from './config';
 
 export interface ProfileShare {
   id: string;
@@ -156,6 +157,19 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
   // Remove share
   async removeShare(shareId: string): Promise<void> {
+    // First get the share details so we can clean up invitations
+    const { data: share, error: fetchError } = await supabase
+      .from('profile_shares')
+      .select('shared_with_id, profile_slug')
+      .eq('id', shareId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching share:', fetchError);
+      throw new Error('Failed to find user access. Please try again.');
+    }
+
+    // Delete the share
     const { error } = await supabase
       .from('profile_shares')
       .delete()
@@ -165,33 +179,38 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       console.error('Error removing share:', error);
       throw new Error('Failed to remove user access. Please try again.');
     }
+
+    // Also delete ALL invitations (both pending and accepted) for this user/profile combination
+    // This allows them to be re-invited if needed
+    if (share) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', share.shared_with_id)
+        .single();
+
+      if (user?.email) {
+        // Delete all invitations (pending and accepted) to allow re-inviting
+        await supabase
+          .from('profile_invitations')
+          .delete()
+          .eq('profile_slug', share.profile_slug)
+          .eq('invited_email', user.email);
+      }
+    }
   },
 
   // Invite user by email
   async inviteUser(profileSlug: string, ownerId: string, email: string, role: 'editor' | 'viewer'): Promise<string> {
-    // First check if there's already an invitation for this email
-    const { data: existingInvitation, error: checkError } = await supabase
+    // First, delete ANY existing invitations for this email/profile to allow re-inviting
+    // This handles cases where user was removed and being re-invited
+    await supabase
       .from('profile_invitations')
-      .select('id, token, expires_at, accepted_at')
+      .delete()
       .eq('profile_slug', profileSlug)
-      .eq('invited_email', email)
-      .maybeSingle();
+      .eq('invited_email', email);
 
-    // If invitation exists and is still valid, return the existing token
-    if (existingInvitation && !existingInvitation.accepted_at) {
-      const expiresAt = new Date(existingInvitation.expires_at);
-      if (expiresAt > new Date()) {
-        return existingInvitation.token;
-      } else {
-        // Expired invitation - delete it and create a new one
-        await supabase
-          .from('profile_invitations')
-          .delete()
-          .eq('id', existingInvitation.id);
-      }
-    }
-
-    // Create new invitation
+    // Now create a fresh invitation
     const token = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
@@ -208,28 +227,16 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       });
 
     if (error) {
-      // If it's a duplicate key error, try to get the existing invitation
-      if (error.code === '23505') { // Unique constraint violation
-        const { data: existingToken } = await supabase
-          .from('profile_invitations')
-          .select('token')
-          .eq('profile_slug', profileSlug)
-          .eq('invited_email', email)
-          .maybeSingle();
-        
-        if (existingToken) {
-          return existingToken.token;
-        }
-      }
-      throw error;
+      console.error('Error creating invitation:', error);
+      throw new Error('Failed to create invitation. Please try again.');
     }
 
-    // Send invitation email
+    // Always send invitation email
     try {
       await this.sendInvitationEmail({
         invitedEmail: email,
         profileSlug,
-        invitationLink: `${window.location.origin}/invite/${token}`,
+        invitationLink: `https://${FULL_DOMAIN}/invite/${token}`,
         role,
         inviterName: await this.getInviterName(ownerId)
       });
@@ -237,7 +244,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       console.warn('Failed to send invitation email:', emailError);
       // Don't throw error - invitation was created successfully
     }
-    
+
     return token;
   },
 
@@ -320,31 +327,77 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       .single();
 
     if (fetchError || !invitation) {
+      console.error('Error fetching invitation:', fetchError);
       throw new Error('Invalid or expired invitation');
     }
 
     // Verify the accepting user's email matches the invited email
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('email')
       .eq('id', userId)
       .single();
 
-    if (!userData || userData.email !== invitation.invited_email) {
+    if (userError || !userData) {
+      console.error('Error fetching user data:', userError);
+      throw new Error('Failed to verify user account');
+    }
+
+    if (userData.email !== invitation.invited_email) {
       throw new Error('This invitation was sent to a different email address. Please sign in with the correct account.');
     }
 
-    // Create share
-    const { error: shareError } = await supabase
+    // Check if share already exists (user might be re-accepting)
+    const { data: existingShare, error: checkError } = await supabase
       .from('profile_shares')
-      .insert({
-        profile_slug: invitation.profile_slug,
-        owner_id: invitation.owner_id,
-        shared_with_id: userId,
-        role: invitation.role
-      });
+      .select('id, role')
+      .eq('profile_slug', invitation.profile_slug)
+      .eq('shared_with_id', userId)
+      .maybeSingle();
 
-    if (shareError) throw shareError;
+    if (checkError) {
+      console.error('Error checking existing share:', checkError);
+      throw new Error('Failed to check existing access');
+    }
+
+    // If share exists, update it (in case role changed) and mark invitation as accepted
+    if (existingShare) {
+      console.log('Share already exists, updating role if needed');
+      const { error: updateError } = await supabase
+        .from('profile_shares')
+        .update({ role: invitation.role })
+        .eq('id', existingShare.id);
+
+      if (updateError) {
+        console.error('Error updating existing share:', updateError);
+        throw new Error('Failed to update profile access');
+      }
+    } else {
+      // Create new share
+      const { data: newShare, error: shareError } = await supabase
+        .from('profile_shares')
+        .insert({
+          profile_slug: invitation.profile_slug,
+          owner_id: invitation.owner_id,
+          shared_with_id: userId,
+          role: invitation.role
+        })
+        .select()
+        .single();
+
+      if (shareError) {
+        console.error('Error creating share:', shareError);
+        // Check if it's a duplicate key error
+        if (shareError.code === '23505') {
+          // Duplicate key - share already exists, just mark invitation as accepted
+          console.log('Share already exists (duplicate key), marking invitation as accepted');
+        } else {
+          throw new Error(`Failed to create profile access: ${shareError.message}`);
+        }
+      } else {
+        console.log('Successfully created share:', newShare);
+      }
+    }
 
     // Mark invitation as accepted
     const { error: acceptError } = await supabase
@@ -352,7 +405,16 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       .update({ accepted_at: new Date().toISOString() })
       .eq('id', invitation.id);
 
-    if (acceptError) throw acceptError;
+    if (acceptError) {
+      console.error('Error marking invitation as accepted:', acceptError);
+      throw new Error('Failed to mark invitation as accepted');
+    }
+
+    console.log('Successfully accepted invitation:', {
+      profile_slug: invitation.profile_slug,
+      role: invitation.role,
+      userId
+    });
 
     return {
       role: invitation.role,
