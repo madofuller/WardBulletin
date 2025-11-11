@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Check, X, Clock, Plus, Trash2, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
+import { Calendar, Check, X, Clock, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { bulletinService } from '../lib/supabase';
 
 interface WeeklyScheduleItem {
   bulletinId: string;
@@ -13,7 +15,7 @@ interface WeeklyScheduleItem {
 interface WeeklySchedulerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSchedule: (schedules: WeeklyScheduleItem[]) => void;
+  onSchedule: (schedules: Array<{bulletinId: string; scheduledDate: string}>) => void;
   bulletins: Array<{
     id: string;
     ward_name: string;
@@ -32,19 +34,33 @@ export default function WeeklySchedulerModal({
   bulletins,
   userId
 }: WeeklySchedulerModalProps) {
+  const queryClient = useQueryClient();
   const [scheduleItems, setScheduleItems] = useState<WeeklyScheduleItem[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showBulletinSelector, setShowBulletinSelector] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [showNoBulletinsModal, setShowNoBulletinsModal] = useState(false);
 
+  // Safety check: ensure bulletins is an array (do this early)
+  const safeBulletins = Array.isArray(bulletins) ? bulletins : [];
+
+  // Refetch bulletins when modal opens to ensure fresh data (especially for shared profiles)
+  React.useEffect(() => {
+    if (isOpen && userId) {
+      // Don't refetch immediately - let the parent component handle it
+      // This prevents the modal from closing due to re-renders
+      console.log('WeeklySchedulerModal opened, bulletins count:', safeBulletins.length);
+    }
+  }, [isOpen, userId, safeBulletins.length]);
+
   const existingScheduledBulletins = React.useMemo(() => {
-    return bulletins.filter(b => {
+    return safeBulletins.filter(b => {
       // Defensive check: ensure bulletin exists and has required properties
       if (!b || !b.id) return false;
-      return (b.status || 'draft') === 'scheduled';
+      // Include bulletins that are scheduled OR have a scheduled_date (even if active)
+      return (b.status || 'draft') === 'scheduled' || (b.scheduled_date && b.scheduled_date.length > 0);
     });
-  }, [bulletins]);
+  }, [safeBulletins]);
   
   // Initialize with existing scheduled bulletins
   React.useEffect(() => {
@@ -58,13 +74,16 @@ export default function WeeklySchedulerModal({
         weekOf: bulletin.scheduled_date ? bulletin.scheduled_date.split('T')[0] : ''
       }));
       setScheduleItems(existingItems);
+    } else if (isOpen && existingScheduledBulletins.length === 0) {
+      // Clear schedule items if no scheduled bulletins when modal opens
+      setScheduleItems([]);
     }
   }, [isOpen, existingScheduledBulletins]);
 
   // Get available bulletins - show all bulletins that aren't already in the current schedule
   // When rescheduling, include the currently scheduled bulletin as an option
   const availableBulletins = React.useMemo(() => {
-    return bulletins.filter(b => {
+    return safeBulletins.filter(b => {
       // Defensive check: ensure bulletin exists and has required properties
       if (!b || !b.id) return false;
       
@@ -79,7 +98,7 @@ export default function WeeklySchedulerModal({
       // Show all bulletins except those already in the current schedule items
       return !scheduleItems.some(item => item.bulletinId === b.id);
     });
-  }, [bulletins, scheduleItems, selectedDate]);
+  }, [safeBulletins, scheduleItems, selectedDate]);
   
   const scheduledBulletinIds = React.useMemo(() => {
     return scheduleItems.map(item => item.bulletinId);
@@ -400,7 +419,7 @@ export default function WeeklySchedulerModal({
                 {getDaysInMonth(currentMonth).map((day, index) => (
                   <div
                     key={index}
-                    onClick={() => handleDayClick(day)}
+                    onClick={() => day && handleDayClick(day)}
                     className={`p-3 text-center text-sm border-r border-b border-gray-200 last:border-r-0 min-h-[60px] flex items-center justify-center touch-manipulation ${
                       day ? 'hover:bg-blue-50 cursor-pointer transition-colors active:bg-blue-100' : 'bg-gray-50'
                     }`}
@@ -636,11 +655,11 @@ export default function WeeklySchedulerModal({
                             <span className="font-medium">Type:</span>
                             <span className="ml-2">{bulletin.meeting_type}</span>
                           </div>
-                          {bulletin.theme && (
+                          {(bulletin as any).theme && (
                             <div className="flex items-center">
                               <span className="w-4 h-4 mr-2 text-gray-400">🎨</span>
                               <span className="font-medium">Theme:</span>
-                              <span className="ml-2">{bulletin.theme}</span>
+                              <span className="ml-2">{(bulletin as any).theme}</span>
                             </div>
                           )}
                         </div>

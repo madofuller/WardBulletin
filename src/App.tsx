@@ -28,6 +28,7 @@ export default function App() {
       <NetworkErrorHandler>
         <Routes>
           <Route path="/" element={<EditorApp />} />
+          <Route path="/profile/:slug" element={<EditorApp />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/how-to-use" element={<HowToUsePage />} />
           <Route path="/contact" element={<ContactPage />} />

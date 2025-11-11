@@ -20,7 +20,8 @@ import PublicBulletinView from '../components/PublicBulletinView';
 import SubmissionReviewModal from '../components/SubmissionReviewModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import BulletinScheduler from '../components/BulletinScheduler';
-// import ProfileSharingModal from '../components/ProfileSharingModal'; // WIP - commented out
+import ProfileSharingModal from '../components/ProfileSharingModal';
+import ChangelogModal from '../components/ChangelogModal';
 import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
 import templateService, { Template } from '../lib/templateService';
@@ -33,6 +34,7 @@ import { useSession } from '../lib/SessionContext';
 import { themes } from '../data/themes';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useProfileAccess } from '../hooks/useProfilePermissions';
 
 
 function decodeJwtExp(token: string) {
@@ -55,8 +57,10 @@ function EditorApp() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [activeBulletinId, setActiveBulletinId] = useState<string | null>(null);
+  const { sharedProfiles, loading: sharedProfilesLoading } = useProfileAccess();
 
   // Get the current profile slug (from URL or user's profile)
+  // If user has shared profiles and no slug is specified, default to first shared profile
   const currentProfileSlug = slug || profile?.profile_slug;
 
   // Get active bulletin ID for the current profile
@@ -94,6 +98,45 @@ function EditorApp() {
     updateActiveBulletinId();
   }, [currentProfileSlug, profile]);
 
+  // Redirect to shared profile if user has shared profiles but no slug specified
+  useEffect(() => {
+    if (!slug && !sharedProfilesLoading && sharedProfiles.length > 0 && user) {
+      // User has shared profiles but no slug - redirect to first shared profile
+      const firstSharedProfile = sharedProfiles[0];
+      navigate(`/profile/${firstSharedProfile.profile_slug}`, { replace: true });
+    }
+  }, [slug, sharedProfiles, sharedProfilesLoading, user, navigate]);
+
+  // Show changelog modal for new version - appears up to 3 times unless dismissed
+  useEffect(() => {
+    if (user) {
+      const CHANGELOG_VERSION = '2025.01'; // Update this when you want to show changelog again
+      const VIEW_COUNT_KEY = `changelog_views_${CHANGELOG_VERSION}`;
+      const DISMISSED_KEY = `changelog_dismissed_${CHANGELOG_VERSION}`;
+
+      const viewCount = parseInt(localStorage.getItem(VIEW_COUNT_KEY) || '0');
+      const isDismissed = localStorage.getItem(DISMISSED_KEY) === 'true';
+
+      // Show if not dismissed and viewed less than 3 times
+      if (!isDismissed && viewCount < 3) {
+        setShowChangelog(true);
+        // Increment view count
+        localStorage.setItem(VIEW_COUNT_KEY, String(viewCount + 1));
+      }
+    }
+  }, [user]);
+
+  const handleCloseChangelog = (dontShowAgain = false) => {
+    const CHANGELOG_VERSION = '2025.01';
+    const DISMISSED_KEY = `changelog_dismissed_${CHANGELOG_VERSION}`;
+
+    if (dontShowAgain) {
+      localStorage.setItem(DISMISSED_KEY, 'true');
+    }
+
+    setShowChangelog(false);
+  };
+
   // Handle invitation state from InvitePage
   useEffect(() => {
     if (location.state?.showAuth) {
@@ -114,7 +157,8 @@ function EditorApp() {
   const [showProfile, setShowProfile] = useState(false);
   const [showSubmissionReview, setShowSubmissionReview] = useState(false);
   const [showScheduler, setShowScheduler] = useState(false);
-  // const [showProfileSharing, setShowProfileSharing] = useState(false); // WIP - commented out
+  const [showProfileSharing, setShowProfileSharing] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const [pendingSubmissionsCount, setPendingSubmissionsCount] = useState(0);
   const [currentBulletinId, setCurrentBulletinId] = useState<string | null>(null);
   const [showCreateProfileSlug, setShowCreateProfileSlug] = useState(false);
@@ -1083,13 +1127,22 @@ function EditorApp() {
         await bulletinService.updateBulletinStatus(bulletinId, user.id, 'active');
         setActiveBulletinId(bulletinId);
 
-        // Invalidate ALL relevant queries to ensure real-time sync across all components
-        queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+        // Refetch queries instead of invalidating to preserve data during refetch
+        queryClient.refetchQueries({ 
+          queryKey: ['user-bulletins', user.id],
+          type: 'active'
+        });
         if (currentProfileSlug && currentProfileSlug !== profile?.profile_slug) {
-          queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins', currentProfileSlug] });
+          queryClient.refetchQueries({ 
+            queryKey: ['shared-profile-bulletins', currentProfileSlug],
+            type: 'active'
+          });
         }
-        // Also invalidate any profile-related queries
-        queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
+        // Also refetch profile-related queries
+        queryClient.refetchQueries({ 
+          queryKey: ['user-profile', user.id],
+          type: 'active'
+        });
         
         // Force refresh the activeBulletinId state to ensure UI consistency
         setTimeout(async () => {
@@ -1356,7 +1409,7 @@ function EditorApp() {
                     hasUnsavedChanges={hasUnsavedChanges}
                     onOpenProfile={() => setShowProfile(true)}
                     onOpenReviewSubmissions={() => setShowSubmissionReview(true)}
-                    // onOpenProfileSharing={() => setShowProfileSharing(true)} // WIP - commented out
+                    onOpenProfileSharing={() => setShowProfileSharing(true)}
                     pendingSubmissionsCount={pendingSubmissionsCount}
                   />
               ) : (
@@ -1705,13 +1758,17 @@ function EditorApp() {
         />
 
         {/* Profile Sharing Modal */}
-        {/* WIP - commented out
         <ProfileSharingModal
           isOpen={showProfileSharing}
           onClose={() => setShowProfileSharing(false)}
           profileSlug={currentProfileSlug || ''}
         />
-        */}
+
+        {/* Changelog Modal */}
+        <ChangelogModal
+          isOpen={showChangelog}
+          onClose={handleCloseChangelog}
+        />
 
         {/* Submission Review Modal */}
         <SubmissionReviewModal

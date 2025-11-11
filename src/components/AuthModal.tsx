@@ -54,6 +54,23 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
     setError('');
 
     try {
+      // Check if Supabase is configured
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('❌ Supabase configuration missing!');
+        console.error('URL:', supabaseUrl ? 'SET' : 'MISSING');
+        console.error('Key:', supabaseAnonKey ? 'SET' : 'MISSING');
+        throw new Error('Application configuration error. Please refresh the page and try again. If the problem persists, contact support.');
+      }
+      
+      // Log configuration status (without exposing sensitive data)
+      console.log('✅ Supabase configured:', {
+        url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+        key: supabaseAnonKey ? 'SET' : 'MISSING'
+      });
+
       if (isSignUp) {
         console.log('Attempting sign up...');
         const { error } = await supabase.auth.signUp({
@@ -93,7 +110,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
       onClose();
     } catch (error: any) {
       console.error('Authentication error:', error);
-      setError(error.message);
+      
+      // Handle network errors specifically
+      let errorMessage = error.message || 'An unexpected error occurred';
+      
+      // Check for network/fetch errors
+      if (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Network request failed') ||
+        errorMessage.includes('fetch failed') ||
+        errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('connection')
+      ) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again. If the problem persists, the service may be temporarily unavailable.';
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+        errorMessage = 'The request took too long. Please check your internet connection and try again.';
+      } else if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
+        errorMessage = 'Connection error. Please refresh the page and try again.';
+      } else if (error.status === 0 || error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -123,7 +162,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
       setSuccessMessage('Password reset email sent! Check your inbox for further instructions.');
     } catch (error: any) {
       console.error('Password reset error:', error);
-      setError(error.message);
+      
+      // Handle network errors specifically
+      let errorMessage = error.message || 'An unexpected error occurred';
+      
+      // Check for network/fetch errors
+      if (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Network request failed') ||
+        errorMessage.includes('fetch failed') ||
+        errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('connection')
+      ) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+        errorMessage = 'The request took too long. Please check your internet connection and try again.';
+      } else if (error.status === 0 || error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

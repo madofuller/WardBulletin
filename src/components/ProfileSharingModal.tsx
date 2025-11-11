@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Mail, Plus, Trash2, Edit, Eye, Crown, X, Copy, Check } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { profileSharingService } from '../lib/supabase';
@@ -16,7 +16,7 @@ export default function ProfileSharingModal({
   onClose,
   profileSlug
 }: ProfileSharingModalProps) {
-  const { user } = useSession();
+  const { user, profile } = useSession();
   const [shares, setShares] = useState<ProfileShare[]>([]);
   const [invitations, setInvitations] = useState<ProfileInvitation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -24,6 +24,15 @@ export default function ProfileSharingModal({
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'editor' | 'viewer'>('editor');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
+
+  // Determine current user's role
+  // If the profileSlug matches the user's own profile_slug, they are the owner
+  const isOwnerByProfile = profile?.profile_slug === profileSlug;
+  // Otherwise check if they're in the shares list with owner role
+  const currentUserRole = shares.find(share => share.shared_with_id === user?.id)?.role || (isOwnerByProfile ? 'owner' : 'viewer');
+  const isOwner = isOwnerByProfile || currentUserRole === 'owner';
+  const canInvite = isOwner; // Only owners can invite
 
   useEffect(() => {
     if (isOpen && profileSlug) {
@@ -48,12 +57,15 @@ export default function ProfileSharingModal({
   const handleInviteUser = async () => {
     if (!inviteEmail || !user) return;
 
+    // Check if user has permission to invite
+    if (!canInvite) {
+      toast.error('Only the profile owner can invite new users');
+      return;
+    }
+
     try {
-      const token = await profileSharingService.inviteUser(profileSlug, user.id, inviteEmail, inviteRole);
-      
-      // Create invitation link
-      const invitationLink = `${window.location.origin}/invite/${token}`;
-      
+      await profileSharingService.inviteUser(profileSlug, user.id, inviteEmail, inviteRole);
+
       toast.success(`Invitation sent to ${inviteEmail}! They should receive an email shortly.`);
       setInviteEmail('');
       setShowInviteForm(false);
@@ -74,12 +86,15 @@ export default function ProfileSharingModal({
   };
 
   const handleUpdateRole = async (shareId: string, newRole: 'editor' | 'viewer') => {
+    setChangingRole(shareId);
     try {
       await profileSharingService.updateShareRole(shareId, newRole);
-      toast.success('Role updated');
+      toast.success(`Role updated to ${newRole}`);
       loadSharesAndInvitations();
     } catch (error: any) {
       toast.error('Failed to update role: ' + error.message);
+    } finally {
+      setChangingRole(null);
     }
   };
 
@@ -155,33 +170,63 @@ export default function ProfileSharingModal({
                   Current Access ({shares.length})
                 </h3>
                 <div className="space-y-2">
-                  {shares.map((share) => (
-                    <div key={share.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {getRoleIcon(share.role)}
-                        <div>
-                          <div className="font-medium text-sm">
-                            {share.shared_user?.email || 'Unknown User'}
+                  {shares.map((share) => {
+                    const isCurrentUser = share.shared_with_id === user?.id;
+                    return (
+                      <div key={share.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3 flex-1">
+                          {getRoleIcon(share.role)}
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">
+                              {share.shared_user?.email || 'Unknown User'}
+                              {isCurrentUser && <span className="text-xs text-blue-600 ml-2">(You)</span>}
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className={`px-2 py-1 text-xs rounded ${getRoleColor(share.role)}`}>
+                                {share.role}
+                              </span>
+                              {share.role === 'viewer' && (
+                                <span className="text-xs text-gray-500">(Read-only)</span>
+                              )}
+                            </div>
                           </div>
-                          <span className={`px-2 py-1 text-xs rounded ${getRoleColor(share.role)}`}>
-                            {share.role}
-                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {share.role !== 'owner' && !isCurrentUser && (
+                            <>
+                              {/* Role Switcher */}
+                              <div className="relative">
+                                <select
+                                  value={share.role}
+                                  onChange={(e) => handleUpdateRole(share.id, e.target.value as 'editor' | 'viewer')}
+                                  disabled={changingRole === share.id}
+                                  className="text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <option value="editor">Editor</option>
+                                  <option value="viewer">Viewer</option>
+                                </select>
+                                {changingRole === share.id && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => handleRemoveShare(share.id)}
+                                className="text-red-500 hover:text-red-700 p-1"
+                                title="Remove access"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {isCurrentUser && (
+                            <span className="text-xs text-gray-500 italic">Cannot modify your own access</span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {share.role !== 'owner' && (
-                          <>
-                            <button
-                              onClick={() => handleRemoveShare(share.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -227,50 +272,66 @@ export default function ProfileSharingModal({
                 </div>
               )}
 
-              {/* Invite New User */}
-              {!showInviteForm ? (
-                <button
-                  onClick={() => setShowInviteForm(true)}
-                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-500 flex items-center justify-center"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Invite New User
-                </button>
-              ) : (
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <h4 className="font-medium text-gray-900 mb-3">Invite New User</h4>
-                  <div className="space-y-3">
-                    <input
-                      type="email"
-                      placeholder="Enter email address"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <select
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              {/* Invite New User - Only for owners */}
+              {canInvite && (
+                <>
+                  {!showInviteForm ? (
+                    <button
+                      onClick={() => setShowInviteForm(true)}
+                      className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-500 flex items-center justify-center"
                     >
-                      <option value="editor">Editor - Can create and edit bulletins</option>
-                      <option value="viewer">Viewer - Can only view bulletins</option>
-                    </select>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleInviteUser}
-                        disabled={!inviteEmail}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Send Invitation
-                      </button>
-                      <button
-                        onClick={() => setShowInviteForm(false)}
-                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                      >
-                        Cancel
-                      </button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Invite New User
+                    </button>
+                  ) : (
+                    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <h4 className="font-medium text-gray-900 mb-3">Invite New User</h4>
+                      <div className="space-y-3">
+                        <input
+                          type="email"
+                          placeholder="Enter email address"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <select
+                          value={inviteRole}
+                          onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="editor">Editor - Can create, edit, schedule, and delete bulletins</option>
+                          <option value="viewer">Viewer - Can only view bulletins (read-only)</option>
+                        </select>
+                        <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                          <strong>Viewer role:</strong> Perfect for stakeholders, leaders, or reviewers who need to see bulletins but shouldn't edit them. Viewers can see all content but cannot make changes.
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={handleInviteUser}
+                            disabled={!inviteEmail}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Send Invitation
+                          </button>
+                          <button
+                            onClick={() => setShowInviteForm(false)}
+                            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </>
+              )}
+
+              {/* Message for non-owners */}
+              {!canInvite && (
+                <div className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-center">
+                  <p className="text-sm text-gray-600">
+                    Only the profile owner can invite new users
+                  </p>
                 </div>
               )}
             </div>
