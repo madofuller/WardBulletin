@@ -1550,40 +1550,48 @@ export const bulletinService = {
     const profileOwnerId = bulletin.created_by;
     const profileSlug = bulletin.profile_slug;
 
-    // If making a bulletin active, first archive ALL other active bulletins
+    // If making a bulletin active, first archive ALL other active bulletins for this user
+    // The unique index enforces only one active bulletin per created_by, regardless of profile_slug
     if (status === 'active') {
+      // Archive ALL active bulletins for this user (regardless of profile_slug)
+      // This ensures we don't violate the unique_active_bulletin_per_user index
+      // For shared users, we can only archive bulletins in the same profile (RLS limitation)
+      // So we archive by profile_slug if available, otherwise by created_by
+      let archiveQuery = supabase
+        .from('bulletins')
+        .update({ status: 'archived' })
+        .eq('status', 'active')
+        .neq('id', bulletinId); // Don't archive the bulletin we're about to activate
+
       if (profileSlug) {
-        // Archive all active bulletins for this profile
-        const { error: archiveError } = await withTimeout(
-          supabase
-            .from('bulletins')
-            .update({ status: 'archived' })
-            .eq('profile_slug', profileSlug)
-            .eq('status', 'active')
-            .neq('id', bulletinId), // Don't archive the bulletin we're about to activate
-          10000
-        );
-
-        if (archiveError) throw archiveError;
+        // If bulletin has a profile_slug, only archive bulletins in the same profile
+        // This ensures RLS allows the update for shared users
+        archiveQuery = archiveQuery.eq('profile_slug', profileSlug);
       } else {
-        // Archive all active bulletins for this user (no profile_slug - backwards compatibility)
-        const { error: archiveError } = await withTimeout(
-          supabase
-            .from('bulletins')
-            .update({ status: 'archived' })
-            .eq('created_by', profileOwnerId)
-            .eq('status', 'active')
-            .neq('id', bulletinId) // Don't archive the bulletin we're about to activate
-            .is('profile_slug', null), // Only archive bulletins without profile_slug
-          10000
-        );
+        // If no profile_slug, archive all active bulletins for this user
+        // This works because the user owns these bulletins
+        archiveQuery = archiveQuery.eq('created_by', profileOwnerId);
+      }
 
-        if (archiveError) throw archiveError;
+      const { error: archiveError, data: archiveData } = await withTimeout(
+        archiveQuery,
+        10000
+      );
+
+      if (archiveError) {
+        console.error('Error archiving other active bulletins:', archiveError);
+        // If archiving fails due to RLS, try to continue anyway
+        // The unique index will prevent the update if there's still an active bulletin
+        // But we'll get a better error message from the update itself
+        if (!archiveError.message.includes('permission') && !archiveError.message.includes('policy')) {
+          throw archiveError;
+        }
+        console.warn('RLS blocked archiving other bulletins, continuing with activation attempt');
       }
     }
 
     // Update the specific bulletin's status - RLS policies will handle access control
-    const { error } = await withTimeout(
+    const { error, data: updateData } = await withTimeout(
       supabase
         .from('bulletins')
         .update({
@@ -1591,11 +1599,39 @@ export const bulletinService = {
           // Disable auto-activation when manually making bulletin active
           ...(status === 'active' ? { auto_activate: false } : {})
         })
-        .eq('id', bulletinId),
+        .eq('id', bulletinId)
+        .select('id, status'),
       10000
     );
 
-    if (error) throw error;
+    if (error) {
+      // Check if it's a unique constraint violation
+      if (error.message.includes('unique_active_bulletin_per_user') || 
+          error.message.includes('duplicate key') ||
+          error.code === '23505') {
+        throw new Error('Another bulletin is already active. Please archive it first or contact the profile owner.');
+      }
+      throw error;
+    }
+
+    // Verify the update succeeded
+    if (!updateData || updateData.length === 0) {
+      // Check if user has permission
+      if (profileSlug) {
+        // Check user's role for this profile
+        const { data: shareCheck } = await supabase
+          .from('profile_shares')
+          .select('role')
+          .eq('profile_slug', profileSlug)
+          .eq('shared_with_id', userId)
+          .maybeSingle();
+        
+        if (shareCheck && shareCheck.role === 'viewer') {
+          throw new Error('Viewers cannot change bulletin status. Please ask the profile owner to change your role to Editor.');
+        }
+      }
+      throw new Error('Failed to update bulletin status. You may not have permission to edit this bulletin.');
+    }
 
     // If making a bulletin active, update the profile owner's active_bulletin_id
     if (status === 'active') {
