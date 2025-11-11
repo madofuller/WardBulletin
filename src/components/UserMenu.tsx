@@ -47,11 +47,11 @@ export default function UserMenu({
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             <div className="p-3 border-b border-gray-100">
               <p className="text-sm font-medium text-gray-900">{user.email}</p>
               <p className="text-xs text-gray-500">Signed in</p>
@@ -120,7 +120,6 @@ export default function UserMenu({
                   <span className="text-sm">Profile Settings</span>
                 </button>
               )}
-              {/* WIP - commented out
               {onOpenProfileSharing && (
                 <button
                   onClick={() => {
@@ -133,7 +132,6 @@ export default function UserMenu({
                   <span className="text-sm">Share Profile</span>
                 </button>
               )}
-              */}
             </div>
             
             <div className="p-2 border-t border-gray-100">

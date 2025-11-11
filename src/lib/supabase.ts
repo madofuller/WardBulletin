@@ -11,8 +11,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase configuration missing!'); console.error('supabaseUrl:', supabaseUrl); console.error('supabaseAnonKey:', supabaseAnonKey); throw new Error('Supabase configuration is required')
 }
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create Supabase client with better error handling
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce'
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'zionboard-web'
+    }
+  }
+})
 
 // Create a separate Supabase client for public bulletin fetching with aggressive cache-busting
 // This helps prevent iOS Safari from caching stale bulletin data
@@ -32,6 +44,60 @@ export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
   return !!(supabaseUrl && supabaseAnonKey)
+}
+
+// Test Supabase connection
+export const testSupabaseConnection = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Try a simple health check query - just check if we can reach the API
+    // Use a query that will work even with empty tables
+    const { error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
+    
+    // If we get an error, check if it's a network error or a permission error
+    if (error) {
+      // PGRST116 = no rows returned (fine for health check)
+      // PGRST301 = permission denied (might be RLS, but API is reachable)
+      // Other errors likely indicate connection issues
+      if (error.code === 'PGRST116' || error.code === 'PGRST301') {
+        // API is reachable, just no data or permission issue
+        return { success: true };
+      }
+      
+      // Check for network errors in the message
+      const errorMessage = error.message || '';
+      if (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        errorMessage.includes('Network request failed') ||
+        errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('connection')
+      ) {
+        return { success: false, error: 'Unable to connect to the server. Please check your internet connection.' };
+      }
+      
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    const errorMessage = error.message || 'Connection test failed';
+    
+    // Check for network errors
+    if (
+      errorMessage.includes('Failed to fetch') ||
+      errorMessage.includes('NetworkError') ||
+      errorMessage.includes('Network request failed') ||
+      errorMessage.toLowerCase().includes('network') ||
+      errorMessage.toLowerCase().includes('connection')
+    ) {
+      return { success: false, error: 'Unable to connect to the server. Please check your internet connection.' };
+    }
+    
+    return { success: false, error: errorMessage };
+  }
 }
 
 // Create profile sharing service instance
@@ -230,6 +296,26 @@ async function getUserProfileSlug(userId: string): Promise<string | null> {
   }
 }
 
+// Helper function to get user's organization_id
+// NOTE: Organization system not yet implemented - returning null for now
+// This function exists for future migration but currently returns null
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function getUserOrganizationId(_userId: string): Promise<string | null> {
+  // Organization system not implemented yet - return null
+  // When organizations are implemented, this will query users.organization_id
+  return null;
+}
+
+// Helper function to get all organizations the user is a member of
+// NOTE: Organization system not yet implemented - returning empty array for now
+// This function exists for future migration but currently returns []
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function getUserOrganizations(_userId: string): Promise<string[]> {
+  // Organization system not implemented yet - return empty array
+  // When organizations are implemented, this will query organization_members table
+  return [];
+}
+
 // Token service functions
 export const tokenService = {
   async saveToken(userId: string, key: string, value: string) {
@@ -258,13 +344,15 @@ export const tokenService = {
     return data;
   },
 
-  async getToken(userId: string, key: string): Promise<string | null> {
+  async getToken(_userId: string, key: string): Promise<string | null> {
     try {
+      // NOTE: We don't filter by created_by here - RLS policies handle access control
+      // This allows shared users to see tokens for bulletins they have access to
+      // _userId parameter kept for backward compatibility but not used for filtering
       const { data, error } = await supabase
         .from('tokens')
         .select('value')
         .eq('key', key)
-        .eq('created_by', userId)
         .single();
 
       if (error) {
@@ -290,13 +378,15 @@ export const tokenService = {
     }
   },
 
-  async getTokensBatch(userId: string, keys: string[]): Promise<Record<string, string>> {
+  async getTokensBatch(_userId: string, keys: string[]): Promise<Record<string, string>> {
     try {
+      // NOTE: We don't filter by created_by here - RLS policies handle access control
+      // This allows shared users to see tokens for bulletins they have access to
+      // _userId parameter kept for backward compatibility but not used for filtering
       const { data, error } = await withTimeout(
         supabase
           .from('tokens')
           .select('key, value')
-          .eq('created_by', userId)
           .in('key', keys),
         15000
       );
@@ -363,14 +453,25 @@ export const userService = {
     // Check if the profile slug is available
     const isAvailable = await this.checkProfileSlugAvailability(sanitized, userId);
     if (!isAvailable) {
-      throw new Error('This profile slug is already taken. Please choose another.');
+      // Check if it's owned by this user (shouldn't happen, but just in case)
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('profile_slug', sanitized)
+        .maybeSingle();
+
+      if (existingUser && existingUser.id === userId) {
+        throw new Error('This is already your profile slug. No changes needed.');
+      }
+
+      throw new Error('This profile slug is already taken by another user. Please choose another.');
     }
 
     const { error } = await supabase
       .from('users')
       .update({ profile_slug: sanitized })
       .eq('id', userId);
-    
+
     if (error) throw error;
   },
 
@@ -428,12 +529,10 @@ export const bulletinService = {
       throw new Error('No valid Supabase session. Please sign in again.');
     }
 
-    // Check permissions if saving to a shared profile
-    if (profileSlug) {
-      const permissions = await profileSharingService.getUserPermissions(profileSlug, userId);
-      if (!permissions.canEdit) {
-        throw new Error('You do not have permission to edit bulletins for this profile');
-      }
+    // Get user's profile_slug for bulletin association
+    let effectiveProfileSlug = profileSlug;
+    if (!effectiveProfileSlug) {
+      effectiveProfileSlug = await getUserProfileSlug(userId);
     }
 
     let slug: string;
@@ -458,7 +557,7 @@ export const bulletinService = {
     const bulletinRecord = {
       id: bulletinId || `bulletin-${Date.now()}`,
       slug,
-      profile_slug: profileSlug || null,
+      profile_slug: effectiveProfileSlug || null,
       meeting_date: bulletinData.date,
       meeting_type: bulletinData.meetingType,
       created_by: userId,
@@ -526,7 +625,7 @@ export const bulletinService = {
       status: bulletinData.status || 'draft',
       scheduled_date: bulletinData.scheduledDate || null,
       auto_activate: bulletinData.autoActivate || false,
-      profile_slug: profileSlug || null
+      profile_slug: effectiveProfileSlug || null
     };
 
     try {
@@ -593,6 +692,7 @@ export const bulletinService = {
     }
   },
   async getBulletinsByProfileSlug(profileSlug: string) {
+    console.log(`🔍 getBulletinsByProfileSlug called for profile: ${profileSlug}`);
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -617,7 +717,133 @@ export const bulletinService = {
         return [];
       }
 
-      return data || [];
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // Fetch tokens for all bulletins (same logic as getUserBulletins)
+      const allTokenKeys: string[] = [];
+      data.forEach(bulletin => {
+        allTokenKeys.push(
+          `bulletin-${bulletin.slug}-ward_name`,
+          `bulletin-${bulletin.slug}-theme`,
+          `bulletin-${bulletin.slug}-userTheme`,
+          `bulletin-${bulletin.slug}-bishopric`,
+          `bulletin-${bulletin.slug}-announcements`,
+          `bulletin-${bulletin.slug}-meetings`,
+          `bulletin-${bulletin.slug}-events`,
+          `bulletin-${bulletin.slug}-agenda`,
+          `bulletin-${bulletin.slug}-prayers`,
+          `bulletin-${bulletin.slug}-music`,
+          `bulletin-${bulletin.slug}-leadership`,
+          `bulletin-${bulletin.slug}-wardLeadership`,
+          `bulletin-${bulletin.slug}-missionaries`,
+          `bulletin-${bulletin.slug}-wardMissionaries`,
+          `bulletin-${bulletin.slug}-image`,
+          `bulletin-${bulletin.slug}-imagePosition`
+        );
+      });
+
+      // Get current user ID for token fetching
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || '';
+
+      // Fetch tokens in chunks (same logic as getUserBulletins)
+      const CHUNK_SIZE = 50;
+      const tokenChunks: string[][] = [];
+      for (let i = 0; i < allTokenKeys.length; i += CHUNK_SIZE) {
+        tokenChunks.push(allTokenKeys.slice(i, i + CHUNK_SIZE));
+      }
+
+      const tokenMap = new Map<string, string>();
+      
+      for (const chunk of tokenChunks) {
+        try {
+          // Query tokens - RLS will filter to show tokens user has access to
+          const { data: chunkTokens, error: chunkError } = await withTimeout(
+            supabase
+              .from('tokens')
+              .select('key, value')
+              .in('key', chunk),
+            10000
+          );
+
+          if (chunkError) {
+            console.warn(`Error fetching tokens for chunk (${chunk.length} keys):`, chunkError);
+            // Fallback: try with created_by filter
+            const { data: fallbackTokens, error: fallbackError } = await withTimeout(
+              supabase
+                .from('tokens')
+                .select('key, value')
+                .eq('created_by', userId)
+                .in('key', chunk),
+              10000
+            );
+            if (!fallbackError && fallbackTokens) {
+              console.log(`✓ Fallback found ${fallbackTokens.length} tokens`);
+              fallbackTokens.forEach(token => {
+                tokenMap.set(token.key, token.value);
+              });
+            }
+            continue;
+          }
+
+          if (chunkTokens && chunkTokens.length > 0) {
+            console.log(`✓ Found ${chunkTokens.length} tokens via RLS for chunk`);
+            chunkTokens.forEach(token => {
+              tokenMap.set(token.key, token.value);
+            });
+          }
+        } catch (chunkErr) {
+          console.warn('Error fetching token chunk:', chunkErr);
+          continue;
+        }
+      }
+
+      console.log(`📊 Token summary for profile ${profileSlug}: Loaded ${tokenMap.size} tokens out of ${allTokenKeys.length} requested`);
+
+      // Build bulletins with token data (same logic as getUserBulletins)
+      const bulletinsWithData = data.map(bulletin => {
+        const getToken = (suffix: string) => tokenMap.get(`bulletin-${bulletin.slug}-${suffix}`) || null;
+
+        const safeJsonParse = (value: string | null, fallback: any) => {
+          if (!value) return fallback;
+          try {
+            return JSON.parse(value);
+          } catch {
+            return fallback;
+          }
+        };
+
+        return {
+          id: bulletin.id,
+          user_id: bulletin.created_by,
+          ward_name: getToken('ward_name') || '',
+          date: bulletin.meeting_date,
+          meeting_type: bulletin.meeting_type,
+          theme: getToken('theme') || '',
+          userTheme: getToken('userTheme') || '',
+          bishopric_message: getToken('bishopric') || '',
+          announcements: safeJsonParse(getToken('announcements'), []),
+          meetings: safeJsonParse(getToken('meetings'), []),
+          special_events: safeJsonParse(getToken('events'), []),
+          agenda: safeJsonParse(getToken('agenda'), []),
+          prayers: safeJsonParse(getToken('prayers'), {}),
+          music_program: safeJsonParse(getToken('music'), {}),
+          leadership: safeJsonParse(getToken('leadership'), {}),
+          wardLeadership: safeJsonParse(getToken('wardLeadership'), []),
+          missionaries: safeJsonParse(getToken('missionaries'), []),
+          wardMissionaries: safeJsonParse(getToken('wardMissionaries'), []),
+          imageId: getToken('image') || 'none',
+          imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
+          created_at: bulletin.created_at,
+          updated_at: bulletin.created_at,
+          status: bulletin.status || 'draft',
+          scheduled_date: bulletin.scheduled_date
+        };
+      });
+
+      return bulletinsWithData;
     } catch (timeoutError) {
       console.warn('getBulletinsByProfileSlug timed out, returning empty array');
       return [];
@@ -625,6 +851,7 @@ export const bulletinService = {
   },
 
   async getUserBulletins(userId: string) {
+    console.log(`🔍 getUserBulletins called for user: ${userId}`);
     // Always try to get bulletins from local storage first
     const localBulletins = this.getFromLocalStorage().filter(b => b.created_by === userId);
 
@@ -636,15 +863,55 @@ export const bulletinService = {
     } catch (refreshErr) {
       throw refreshErr;
     }
+
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('bulletins')
-          .select('*')
-          .eq('created_by', userId)
-          .order('created_at', { ascending: false }),
-        20000
-      );
+      // Get user's profile_slug
+      const userProfileSlug = await getUserProfileSlug(userId);
+      
+      // Get all profile_slugs the user has access to via profile_shares
+      const { data: sharedProfiles } = await supabase
+        .from('profile_shares')
+        .select('profile_slug')
+        .eq('shared_with_id', userId);
+      
+      // Build list of accessible profile slugs
+      const accessibleProfileSlugs: string[] = [];
+      if (userProfileSlug) {
+        accessibleProfileSlugs.push(userProfileSlug);
+      }
+      if (sharedProfiles) {
+        sharedProfiles.forEach(share => {
+          if (share.profile_slug && !accessibleProfileSlugs.includes(share.profile_slug)) {
+            accessibleProfileSlugs.push(share.profile_slug);
+          }
+        });
+      }
+
+      let data, error;
+
+      if (accessibleProfileSlugs.length > 0) {
+        // User has profile_slug or shared profiles - get bulletins for all accessible profiles
+        // Query bulletins: either created by user OR with accessible profile_slug
+        const profileSlugFilter = accessibleProfileSlugs.map(slug => `profile_slug.eq.${slug}`).join(',');
+        ({ data, error } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .select('*')
+            .or(`created_by.eq.${userId},${profileSlugFilter}`)
+            .order('created_at', { ascending: false }),
+          20000
+        ));
+      } else {
+        // No profile_slug or shares - just get bulletins they created
+        ({ data, error } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .select('*')
+            .eq('created_by', userId)
+            .order('created_at', { ascending: false }),
+          20000
+        ));
+      }
 
       if (error) {
         if (error.message.includes('infinite recursion')) {
@@ -697,25 +964,52 @@ export const bulletinService = {
         }
 
         // Fetch tokens in chunks
+        // RLS policy allows: auth.uid() = created_by OR tokens for shared profiles
+        // We query without created_by filter and let RLS handle access control
         const allTokens: any[] = [];
+        const tokenMap = new Map<string, string>();
+        
         for (const chunk of tokenChunks) {
           try {
+            // Query tokens - RLS will filter to show:
+            // 1. Tokens created by the current user (auth.uid() = created_by)
+            // 2. Tokens for bulletins from shared profiles
             const { data: chunkTokens, error: chunkError } = await withTimeout(
               supabase
                 .from('tokens')
                 .select('key, value')
-                .eq('created_by', userId)
                 .in('key', chunk),
               10000
             );
 
             if (chunkError) {
-              console.warn('Token chunk fetch failed:', chunkError);
-              continue; // Skip this chunk and try the next one
+              console.warn(`Error fetching tokens for chunk (${chunk.length} keys):`, chunkError);
+              // If RLS query fails, try fallback with created_by filter for owners
+              console.log('Attempting fallback query with created_by filter...');
+              const { data: fallbackTokens, error: fallbackError } = await withTimeout(
+                supabase
+                  .from('tokens')
+                  .select('key, value')
+                  .eq('created_by', userId)
+                  .in('key', chunk),
+                10000
+              );
+              if (!fallbackError && fallbackTokens) {
+                console.log(`✓ Fallback found ${fallbackTokens.length} tokens`);
+                fallbackTokens.forEach(token => {
+                  tokenMap.set(token.key, token.value);
+                });
+              }
+              continue;
             }
 
-            if (chunkTokens) {
-              allTokens.push(...chunkTokens);
+            if (chunkTokens && chunkTokens.length > 0) {
+              console.log(`✓ Found ${chunkTokens.length} tokens via RLS for chunk`);
+              chunkTokens.forEach(token => {
+                tokenMap.set(token.key, token.value);
+              });
+            } else {
+              console.log(`⚠ No tokens found via RLS for chunk (${chunk.length} keys)`);
             }
           } catch (chunkErr) {
             console.warn('Error fetching token chunk:', chunkErr);
@@ -723,11 +1017,10 @@ export const bulletinService = {
           }
         }
 
-        // Create a map of tokens for quick lookup
-        const tokenMap = new Map();
-        allTokens.forEach(token => {
-          tokenMap.set(token.key, token.value);
-        });
+        console.log(`📊 Token summary: Loaded ${tokenMap.size} tokens out of ${allTokenKeys.length} requested for user ${userId}`);
+        
+        // Convert map to array (for compatibility, though we use the map directly)
+        allTokens.push(...Array.from(tokenMap.entries()).map(([key, value]) => ({ key, value })));
 
         // Build bulletins with token data
         const bulletinsWithData = data.map(bulletin => {
@@ -1128,32 +1421,89 @@ export const bulletinService = {
     status: 'scheduled' | 'draft';
     autoActivate?: boolean;
   }) {
-    // CRITICAL FIX: Check if this bulletin is currently active before changing its status
-    // If it's active, only update the scheduled_date but keep status as 'active'
-    const { data: bulletin } = await supabase
-      .from('bulletins')
-      .select('status')
-      .eq('id', bulletinId)
-      .eq('created_by', userId)
-      .single();
+    try {
+      // Refresh session to ensure we have valid auth
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        throw refreshError;
+      }
 
-    const isCurrentlyActive = bulletin?.status === 'active';
-
-    const { error } = await withTimeout(
-      supabase
+      // Check if this bulletin exists and get its status
+      // Don't filter by created_by - let RLS handle access control
+      const { data: bulletin, error: fetchError } = await supabase
         .from('bulletins')
-        .update({
-          // Only change status to 'scheduled' if it's NOT currently active
-          status: isCurrentlyActive ? 'active' : scheduleData.status,
-          scheduled_date: scheduleData.scheduledDate,
-          auto_activate: scheduleData.autoActivate !== undefined ? scheduleData.autoActivate : true
-        })
+        .select('status, profile_slug')
         .eq('id', bulletinId)
-        .eq('created_by', userId),
-      10000
-    );
+        .single();
 
-    if (error) throw error;
+      if (fetchError) {
+        console.error('Error fetching bulletin for scheduling:', fetchError);
+        throw new Error(`Failed to find bulletin: ${fetchError.message}`);
+      }
+
+      if (!bulletin) {
+        throw new Error('Bulletin not found or you do not have access to it');
+      }
+
+      const isCurrentlyActive = bulletin?.status === 'active';
+
+      // Update the bulletin - RLS will ensure user has edit access
+      const { data: updateData, error: updateError } = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({
+            // Only change status to 'scheduled' if it's NOT currently active
+            status: isCurrentlyActive ? 'active' : scheduleData.status,
+            scheduled_date: scheduleData.scheduledDate,
+            auto_activate: scheduleData.autoActivate !== undefined ? scheduleData.autoActivate : true
+          })
+          .eq('id', bulletinId)
+          .select('id, status, scheduled_date'),
+        10000
+      );
+
+      if (updateError) {
+        console.error('Error updating bulletin schedule:', updateError);
+        throw new Error(`Failed to update schedule: ${updateError.message}`);
+      }
+
+      if (!updateData || updateData.length === 0) {
+        // Check user's role for this profile to provide better error message
+        let userRole = 'unknown';
+        if (bulletin?.profile_slug) {
+          try {
+            const { data: shareCheck } = await supabase
+              .from('profile_shares')
+              .select('role')
+              .eq('profile_slug', bulletin.profile_slug)
+              .eq('shared_with_id', userId)
+              .maybeSingle();
+            
+            if (shareCheck) {
+              userRole = shareCheck.role;
+            }
+          } catch (e) {
+            // Ignore error checking role
+          }
+        }
+
+        if (userRole === 'viewer') {
+          throw new Error('Viewers cannot schedule bulletins. Please ask the profile owner to change your role to Editor.');
+        } else {
+          throw new Error('You do not have permission to schedule this bulletin. Only editors and owners can schedule bulletins.');
+        }
+      }
+
+      console.log('Successfully scheduled bulletin:', {
+        bulletinId,
+        scheduledDate: scheduleData.scheduledDate,
+        status: updateData[0].status,
+        scheduled_date: updateData[0].scheduled_date
+      });
+    } catch (error) {
+      console.error('Error in updateBulletinSchedule:', error);
+      throw error;
+    }
   },
 
   async bulkScheduleBulletins(schedules: Array<{bulletinId: string; scheduledDate: string}>, userId: string) {
@@ -1179,13 +1529,29 @@ export const bulletinService = {
   },
 
   async updateBulletinStatus(bulletinId: string, userId: string, status: 'draft' | 'scheduled' | 'active' | 'archived') {
-    // If making a bulletin active, first archive ALL other active bulletins for this user
-    if (status === 'active') {
+    // First, get the bulletin to find its profile_slug and owner
+    const { data: bulletin, error: fetchError } = await withTimeout(
+      supabase
+        .from('bulletins')
+        .select('profile_slug, created_by')
+        .eq('id', bulletinId)
+        .single(),
+      10000
+    );
+
+    if (fetchError) throw fetchError;
+    if (!bulletin) throw new Error('Bulletin not found');
+
+    const profileOwnerId = bulletin.created_by;
+    const profileSlug = bulletin.profile_slug;
+
+    // If making a bulletin active, first archive ALL other active bulletins for this profile
+    if (status === 'active' && profileSlug) {
       const { error: archiveError } = await withTimeout(
         supabase
           .from('bulletins')
           .update({ status: 'archived' })
-          .eq('created_by', userId)
+          .eq('profile_slug', profileSlug)
           .eq('status', 'active'),
         10000
       );
@@ -1193,33 +1559,28 @@ export const bulletinService = {
       if (archiveError) throw archiveError;
     }
 
-    // Update the specific bulletin's status
+    // Update the specific bulletin's status - RLS policies will handle access control
     const { error } = await withTimeout(
       supabase
         .from('bulletins')
         .update({
           status,
-          // FIX: Disable auto-activation when manually making bulletin active (same as activateScheduledBulletin)
-          // This ensures consistency between manual and scheduled activation
+          // Disable auto-activation when manually making bulletin active
           ...(status === 'active' ? { auto_activate: false } : {})
         })
-        .eq('id', bulletinId)
-        .eq('created_by', userId),
+        .eq('id', bulletinId),
       10000
     );
 
-    // REVERT: To revert this fix, replace the above update with:
-    // .update({ status })
-
     if (error) throw error;
 
-    // If making a bulletin active, also update the user's active_bulletin_id
+    // If making a bulletin active, update the profile owner's active_bulletin_id
     if (status === 'active') {
       const { error: userUpdateError } = await withTimeout(
         supabase
           .from('users')
           .update({ active_bulletin_id: bulletinId })
-          .eq('id', userId),
+          .eq('id', profileOwnerId),
         10000
       );
 

@@ -77,7 +77,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       }
       return bulletinService.getBulletinsByProfileSlug(currentProfileSlug);
     },
-    enabled: !!currentProfileSlug && currentProfileSlug !== profile?.profile_slug
+    enabled: !!currentProfileSlug && currentProfileSlug !== profile?.profile_slug,
+    // Keep data in cache during refetches
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0
   });
 
   useEffect(() => {
@@ -85,16 +88,25 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       localStorage.setItem(LAST_USER_ID, user.id);
     }
 
-    // Initialize selectedProfileSlug with currentProfileSlug or user's profile
+    // Always sync to the actual profile slug from backend, not cached local state
+    // This ensures we show what's actually in the database
     if (currentProfileSlug) {
+      // For shared profiles, always use the current profile slug (this is the owner's slug)
       setSelectedProfileSlug(currentProfileSlug);
       setProfileSlug(currentProfileSlug);
       setInputValue(currentProfileSlug);
     } else if (profile?.profile_slug) {
+      // For owner's own profile, use their profile slug from session
       setSelectedProfileSlug(profile.profile_slug);
       setProfileSlug(profile.profile_slug);
       setInputValue(profile.profile_slug);
       localStorage.setItem(`profile_slug_${user?.id || ''}`, profile.profile_slug);
+    } else if (sharedProfiles && sharedProfiles.length > 0) {
+      // If user has shared profiles but no own profile, use first shared profile
+      const firstSharedProfile = sharedProfiles[0];
+      setSelectedProfileSlug(firstSharedProfile.profile_slug);
+      setProfileSlug(firstSharedProfile.profile_slug);
+      setInputValue(firstSharedProfile.profile_slug);
     } else if (!profile) {
       const cached = localStorage.getItem(`profile_slug_${user?.id || localStorage.getItem(LAST_USER_ID) || ''}`);
       if (cached) {
@@ -103,11 +115,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         setInputValue(cached);
       }
     }
-  }, [user, profile, currentProfileSlug]);
+  }, [user, profile, currentProfileSlug, sharedProfiles]);
 
   useEffect(() => {
     generateQRCode();
-  }, [profileSlug, useShortDomain, selectedProfileSlug]);
+  }, [profileSlug, useShortDomain, selectedProfileSlug, sharedProfiles]);
 
   useEffect(() => {
     const id = user?.id || localStorage.getItem(LAST_USER_ID);
@@ -124,7 +136,8 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     const baseUrl = `https://${domain}`;
 
     // Use selected profile slug (prioritize selectedProfileSlug over local state)
-    const activeProfileSlug = selectedProfileSlug || profileSlug;
+    // For shared users without own profile, fall back to first shared profile
+    const activeProfileSlug = selectedProfileSlug || profileSlug || (sharedProfiles.length > 0 ? sharedProfiles[0].profile_slug : null);
     // Add cache-busting parameter to prevent mobile browser caching
     const timestamp = Date.now();
     const qrData = activeProfileSlug
@@ -163,6 +176,18 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       return;
     }
 
+    // Check if user has permission to edit (must be owner, not viewer/editor of shared profile)
+    if (!permissions.canEdit || (currentProfileSlug && currentProfileSlug !== profile?.profile_slug)) {
+      setError('Only the profile owner can change the profile slug');
+      toast.error('Only the profile owner can change the profile slug');
+      setIsEditing(false);
+      // Revert to actual profile slug
+      const actualSlug = profile?.profile_slug || currentProfileSlug || profileSlug;
+      setInputValue(actualSlug);
+      setProfileSlug(actualSlug);
+      return;
+    }
+
     const sanitized = formatProfileSlug(inputValue);
     if (!sanitized) {
       setError('Profile slug cannot be empty');
@@ -176,18 +201,27 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
     try {
       await userService.updateProfileSlug(user.id, sanitized);
-      setProfileSlug(sanitized); // Set local state immediately
-      setIsEditing(false);
-      if (onProfileSlugUpdate) {
-        onProfileSlugUpdate(sanitized);
-      }
-      // Refresh profile slug from backend
+
+      // Refresh profile slug from backend to ensure we show what's actually saved
       const refreshed = await userService.getUserProfile(user.id);
       if (refreshed && refreshed.length > 0) {
-        setProfileSlug(refreshed[0].profile_slug || '');
+        const actualSlug = refreshed[0].profile_slug || '';
+        setProfileSlug(actualSlug);
+        setInputValue(actualSlug);
+        setSelectedProfileSlug(actualSlug);
+        if (onProfileSlugUpdate) {
+          onProfileSlugUpdate(actualSlug);
+        }
       }
+
+      setIsEditing(false);
+      toast.success('Profile slug updated successfully!');
     } catch (error: any) {
       setError(error.message || 'Failed to update profile slug');
+      // Revert input to current profile slug
+      const currentSlug = profile?.profile_slug || profileSlug;
+      setInputValue(currentSlug);
+      setProfileSlug(currentSlug);
     } finally {
       setLoading(false);
     }
@@ -236,56 +270,56 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile & QR Code</h3>
 
           {/* Profile Selector */}
-          {/* WIP - commented out
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Profile</label>
-            {sharedProfilesLoading ? (
-              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">Loading profiles...</div>
-            ) : (
-              <>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
-                  value={selectedProfileSlug || ''}
-                  onChange={(e) => {
-                    if (e.target.value === 'create-profile-slug') {
-                      if (onCreateProfileSlug) {
-                        onCreateProfileSlug();
+          {(profile?.profile_slug || sharedProfiles.length > 0) && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Active Profile</label>
+              {sharedProfilesLoading ? (
+                <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">Loading profiles...</div>
+              ) : (
+                <>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                    value={selectedProfileSlug || ''}
+                    onChange={(e) => {
+                      if (e.target.value === 'create-profile-slug') {
+                        if (onCreateProfileSlug) {
+                          onCreateProfileSlug();
+                        }
+                      } else if (e.target.value && onProfileChange) {
+                        setSelectedProfileSlug(e.target.value);
+                        onProfileChange(e.target.value);
                       }
-                    } else if (e.target.value && onProfileChange) {
-                      setSelectedProfileSlug(e.target.value);
-                      onProfileChange(e.target.value);
-                    }
-                  }}
-                >
-                  {profile?.profile_slug && (
-                    <option value={profile.profile_slug}>
-                      {profile.profile_slug} (Owner)
-                    </option>
-                  )}
-                  {sharedProfiles.map((sharedProfile) => (
-                    <option key={sharedProfile.profile_slug} value={sharedProfile.profile_slug}>
-                      {sharedProfile.profile_slug} ({sharedProfile.role})
-                    </option>
-                  ))}
-                  {!profile?.profile_slug && sharedProfiles.length === 0 && (
-                    <option value="" disabled>
-                      No profiles available
-                    </option>
-                  )}
-                  {!profile?.profile_slug && (
-                    <option value="create-profile-slug">
-                      Create Profile Slug
-                    </option>
-                  )}
-                </select>
+                    }}
+                  >
+                    {profile?.profile_slug && (
+                      <option value={profile.profile_slug}>
+                        {profile.profile_slug} (My Profile - Owner)
+                      </option>
+                    )}
+                    {sharedProfiles.map((sharedProfile) => (
+                      <option key={sharedProfile.profile_slug} value={sharedProfile.profile_slug}>
+                        {sharedProfile.profile_slug} (Shared - {sharedProfile.role})
+                      </option>
+                    ))}
+                    {!profile?.profile_slug && sharedProfiles.length === 0 && (
+                      <option value="" disabled>
+                        No profiles available
+                      </option>
+                    )}
+                    {!profile?.profile_slug && (
+                      <option value="create-profile-slug">
+                        + Create My Profile
+                      </option>
+                    )}
+                  </select>
 
-                <p className="text-xs text-gray-500 mt-2">
-                  Select which profile's QR code and bulletins to manage
-                </p>
-              </>
-            )}
-          </div>
-          */}
+                  <p className="text-xs text-gray-500 mt-2">
+                    Switch between your profile and shared profiles you have access to
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           {/* QR Code Display */}
           <div className="mb-6">
@@ -300,10 +334,10 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
               {/* Display profile information below QR code */}
               <div className="mt-3 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-sm font-medium text-gray-900">
-                  Profile: {selectedProfileSlug || profileSlug || 'Not set'}
+                  Profile: {selectedProfileSlug || profileSlug || (sharedProfiles.length > 0 ? sharedProfiles[0].profile_slug : 'Not set')}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  URL: https://{useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/{selectedProfileSlug || profileSlug || 'your-profile-slug'}
+                  URL: https://{useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/{selectedProfileSlug || profileSlug || (sharedProfiles.length > 0 ? sharedProfiles[0].profile_slug : 'your-profile-slug')}
                 </p>
               </div>
             </div>
@@ -358,15 +392,17 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             <div className="flex items-center gap-3">
               <div className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <span className="text-sm font-medium text-gray-900">
-                  {selectedProfileSlug || profileSlug || 'Not set'}
+                  {selectedProfileSlug || profileSlug || (sharedProfiles.length > 0 ? sharedProfiles[0].profile_slug : 'Not set')}
                 </span>
               </div>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-3 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors"
-              >
-                Edit
-              </button>
+              {permissions.canEdit && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 py-3 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Edit
+                </button>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -486,6 +522,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             onLoadBulletin={onLoadBulletin}
             onDeleteBulletin={onDeleteBulletin}
             profileSlug={currentProfileSlug || undefined}
+            permissions={permissions}
             onClose={() => {
               // Close the QR modal when Monthly Schedule is clicked
               if (typeof onActiveBulletinSelect === 'function') {

@@ -69,7 +69,7 @@ export function useProfilePermissions(profileSlug: string | null) {
 }
 
 export function useProfileAccess() {
-  const { user, profile } = useSession();
+  const { user } = useSession();
   const [sharedProfiles, setSharedProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -93,6 +93,18 @@ export function useProfileAccess() {
 
   useEffect(() => {
     loadSharedProfiles();
+    
+    // Listen for profile share updates
+    const handleProfileShareUpdate = () => {
+      console.log('Profile share updated, refetching shared profiles');
+      loadSharedProfiles();
+    };
+    
+    window.addEventListener('profile-share-updated', handleProfileShareUpdate);
+    
+    return () => {
+      window.removeEventListener('profile-share-updated', handleProfileShareUpdate);
+    };
   }, [user]);
 
   return { sharedProfiles, loading, refetch: loadSharedProfiles };

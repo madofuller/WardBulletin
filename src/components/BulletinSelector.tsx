@@ -23,6 +23,11 @@ interface BulletinSelectorProps {
   onLoadBulletin?: (bulletin: any) => void;
   onDeleteBulletin?: (bulletinId: string) => void;
   profileSlug?: string;
+  permissions?: {
+    canEdit: boolean;
+    canSchedule: boolean;
+    role: 'owner' | 'editor' | 'viewer';
+  };
 }
 
 export default function BulletinSelector({
@@ -35,7 +40,8 @@ export default function BulletinSelector({
   onClose,
   onLoadBulletin,
   onDeleteBulletin,
-  profileSlug
+  profileSlug,
+  permissions
 }: BulletinSelectorProps) {
   // Cache the last seen user ID so we can fetch local bulletins even if the
   // session temporarily becomes unavailable
@@ -48,18 +54,29 @@ export default function BulletinSelector({
   const cachedUserId = user?.id || localStorage.getItem(LAST_USER_ID) || '';
   const queryClient = useQueryClient();
 
-  const { data: fetchedBulletins = [], isLoading: loading, error } = useQuery({
-    queryKey: ['user-bulletins', cachedUserId],
-    queryFn: () => bulletinService.getUserBulletins(cachedUserId),
-    enabled: !!cachedUserId && bulletins.length === 0,
+  const { data: fetchedBulletins = [], isLoading: loading, error, isFetching } = useQuery({
+    queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId],
+    queryFn: async () => {
+      if (profileSlug) {
+        // If we're on a shared profile, get bulletins for that profile
+        return bulletinService.getBulletinsByProfileSlug(profileSlug);
+      } else {
+        // If no profile slug, get bulletins for the current user (includes shared profiles)
+        return bulletinService.getUserBulletins(cachedUserId);
+      }
+    },
+    enabled: !!cachedUserId,
     staleTime: 0, // Always fetch fresh data to ensure active status is current
-    cacheTime: 0,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    // Keep data in cache longer to prevent disappearing during refetches
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Use passed bulletins or fetched bulletins
-  const allBulletins = bulletins.length > 0 ? bulletins : fetchedBulletins;
+  // Prefer fetched bulletins (fresh data) over passed bulletins (might be stale)
+  // Only use passed bulletins if we don't have fetched data yet
+  // Use placeholderData to keep showing bulletins during refetch
+  const allBulletins = fetchedBulletins && fetchedBulletins.length > 0 ? fetchedBulletins : (bulletins && bulletins.length > 0 ? bulletins : []);
 
 
   const [weeklySchedulerModal, setWeeklySchedulerModal] = useState({
@@ -89,7 +106,9 @@ export default function BulletinSelector({
 
 
 
-  if (loading) {
+  // Only show loading skeleton on initial load, not during refetches
+  // This prevents bulletins from disappearing when status changes
+  if (loading && allBulletins.length === 0) {
     return (
       <div className="space-y-3">
         <h4 className="font-medium text-gray-900">Select Active Bulletin for QR Code</h4>
@@ -134,10 +153,9 @@ export default function BulletinSelector({
       return a.scheduled_date.localeCompare(b.scheduled_date);
     });
   const draftBulletins = allBulletins.filter(b =>
-    (!b.status || b.status === 'draft') &&
+    (!b.status || b.status === 'draft' || b.status === 'scheduled') &&
     b.id !== currentActiveBulletinId &&
-    b.status !== 'active' &&
-    b.status !== 'scheduled'
+    b.status !== 'active'
   );
   const archivedBulletins = allBulletins.filter(b =>
     b.status === 'archived' &&
@@ -153,12 +171,23 @@ export default function BulletinSelector({
       // Check if any of the bulletins being scheduled are currently active
       const schedulingCurrentActive = schedules.some(s => s.bulletinId === currentActiveBulletinId);
 
+      console.log('Scheduling bulletins:', schedules);
+
       for (const schedule of schedules) {
-        await bulletinService.updateBulletinSchedule(schedule.bulletinId, cachedUserId, {
-          scheduledDate: schedule.scheduledDate,
-          status: 'scheduled',
-          autoActivate: true
-        });
+        try {
+          await bulletinService.updateBulletinSchedule(schedule.bulletinId, cachedUserId, {
+            scheduledDate: schedule.scheduledDate,
+            status: 'scheduled',
+            autoActivate: true
+          });
+          console.log(`Successfully scheduled bulletin ${schedule.bulletinId} for ${schedule.scheduledDate}`);
+        } catch (error: any) {
+          console.error(`Failed to schedule bulletin ${schedule.bulletinId}:`, error);
+          // Provide user-friendly error message
+          const errorMessage = error?.message || 'Failed to schedule bulletin';
+          toast.error(errorMessage);
+          throw error; // Re-throw to stop the loop
+        }
       }
 
       toast.success(`${schedules.length} bulletin(s) scheduled successfully!`);
@@ -168,10 +197,29 @@ export default function BulletinSelector({
         toast.info('Note: Your currently active bulletin has been scheduled. Select a new active bulletin for your QR code.');
       }
 
-      queryClient.invalidateQueries({ queryKey: ['user-bulletins', cachedUserId] });
-    } catch (error) {
+      queryClient.invalidateQueries({ 
+        queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId] 
+      });
+      
+      // Also invalidate the other query key to ensure both users see updates
+      if (profileSlug) {
+        queryClient.invalidateQueries({ queryKey: ['user-bulletins', cachedUserId] });
+      } else {
+        // If no profile slug, invalidate shared profile queries too
+        queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
+      }
+      
+      // Refetch immediately to update the UI
+      await queryClient.refetchQueries({ 
+        queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId] 
+      });
+    } catch (error: any) {
       console.error('Error scheduling bulletins:', error);
-      toast.error('Failed to schedule bulletins: ' + (error as Error).message);
+      // Don't show duplicate error - already shown in the loop for permission errors
+      // Only show generic error if it wasn't already shown
+      if (!error?.message?.includes('permission') && !error?.message?.includes('Viewers cannot')) {
+        toast.error('Failed to schedule bulletins: ' + (error as Error).message);
+      }
     }
   };
 
@@ -192,7 +240,8 @@ export default function BulletinSelector({
     setDeletingId(bulletinId);
 
     // Optimistic update - remove from UI immediately
-    queryClient.setQueryData(['user-bulletins', user.id], (oldData: any) => {
+    const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+    queryClient.setQueryData(queryKey, (oldData: any) => {
       if (!oldData) return oldData;
       return oldData.filter((bulletin: any) => bulletin.id !== bulletinId);
     });
@@ -213,7 +262,8 @@ export default function BulletinSelector({
     } catch (error: any) {
       toast.error('Failed to delete bulletin: ' + error.message);
       // Revert optimistic update on error
-      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+      queryClient.invalidateQueries({ queryKey });
     }
   };
 
@@ -223,10 +273,32 @@ export default function BulletinSelector({
       return;
     }
 
-    try {
-      await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
+    // Check permissions - viewers cannot change bulletin status
+    if (permissions && permissions.role === 'viewer') {
+      toast.error('Viewers cannot change bulletin status. Contact the profile owner for editor access.');
+      return;
+    }
 
-      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+    try {
+      // Optimistically update the UI immediately
+      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+      
+      // Update the query cache optimistically
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((b: any) => {
+          if (b.id === bulletinId) {
+            return { ...b, status: newStatus };
+          }
+          // If making this bulletin active, archive others
+          if (newStatus === 'active' && b.status === 'active' && b.id !== bulletinId) {
+            return { ...b, status: 'archived' };
+          }
+          return b;
+        });
+      });
+
+      await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
 
       const statusLabels = {
         draft: 'Saved',
@@ -241,7 +313,13 @@ export default function BulletinSelector({
       if (newStatus === 'active') {
         onBulletinSelect(bulletinId);
       }
+
+      // Don't invalidate - the optimistic update is already applied
+      // Data will naturally refresh on next mount/focus
     } catch (error: any) {
+      // Revert optimistic update on error by invalidating
+      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+      queryClient.invalidateQueries({ queryKey });
       toast.error('Failed to update bulletin status: ' + error.message);
     }
   };
@@ -293,6 +371,13 @@ export default function BulletinSelector({
                 }
               </span>
             </div>
+            {/* Show scheduled date for any bulletin in draft section that has a scheduled_date */}
+            {bulletin.scheduled_date && (
+              <div className="flex items-center text-blue-600">
+                <Clock className="w-3 h-3 mr-1" />
+                <span>Scheduled: {formatDate(bulletin.scheduled_date.split('T')[0])}</span>
+              </div>
+            )}
             {bulletin.updated_at && (
               <div className="text-xs text-gray-500">
                 Updated: {formatDateTime(bulletin.updated_at)}
@@ -316,14 +401,20 @@ export default function BulletinSelector({
         <div className="flex items-center justify-end space-x-1.5">
           <button
             onClick={() => handleStatusChange(bulletin.id, 'active')}
+            disabled={permissions?.role === 'viewer'}
             className={`inline-flex items-center px-2 py-1 rounded-full transition-colors text-xs ${
               bulletin.status === 'active'
                 ? 'bg-green-600 text-white hover:bg-green-700'
+                : permissions?.role === 'viewer'
+                ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
                 : 'bg-purple-600 text-white hover:bg-purple-700'
             }`}
-            title={bulletin.status === 'active'
-              ? 'This bulletin is currently active for QR codes'
-              : 'Make this bulletin show when people scan your QR code'
+            title={
+              permissions?.role === 'viewer'
+                ? 'Viewers cannot change bulletin status. Contact the profile owner for editor access.'
+                : bulletin.status === 'active'
+                ? 'This bulletin is currently active for QR codes'
+                : 'Make this bulletin show when people scan your QR code'
             }
           >
             <CheckCircle className="w-3 h-3 mr-1" />
@@ -341,7 +432,7 @@ export default function BulletinSelector({
             </button>
           )}
 
-          {onDeleteBulletin && (
+          {onDeleteBulletin && permissions?.role !== 'viewer' && (
             <button
               onClick={() => handleDelete(bulletin.id)}
               disabled={deletingId === bulletin.id}
@@ -468,7 +559,27 @@ export default function BulletinSelector({
       {/* Weekly Scheduler Modal */}
       <WeeklySchedulerModal
         isOpen={weeklySchedulerModal.isOpen}
-        onClose={() => setWeeklySchedulerModal({ isOpen: false })}
+        onClose={() => {
+          setWeeklySchedulerModal({ isOpen: false });
+          // Just mark queries as stale - they'll refetch on next mount/focus
+          const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId];
+          queryClient.invalidateQueries({
+            queryKey,
+            refetchType: 'none' // Don't refetch immediately
+          });
+          // Also invalidate the other query key to ensure both users see updates
+          if (profileSlug) {
+            queryClient.invalidateQueries({
+              queryKey: ['user-bulletins', cachedUserId],
+              refetchType: 'none'
+            });
+          } else {
+            queryClient.invalidateQueries({
+              queryKey: ['shared-profile-bulletins'],
+              refetchType: 'none'
+            });
+          }
+        }}
         onSchedule={handleBulkSchedule}
         bulletins={allBulletins}
         userId={cachedUserId}

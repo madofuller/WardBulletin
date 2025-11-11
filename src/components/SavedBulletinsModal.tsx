@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Trash2, Eye, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { bulletinService } from '../lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -52,7 +52,10 @@ export default function SavedBulletinsModal({
   }, [user]);
 
   const cachedUserId = user?.id || localStorage.getItem(LAST_USER_ID) || '';
-
+  
+  // Use local state to persist bulletins even when query cache is cleared
+  const [localBulletins, setLocalBulletins] = useState<any[]>([]);
+  
   const { data: bulletins = [], isLoading: loading, error } = useQuery({
     queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId],
     queryFn: async () => {
@@ -64,11 +67,27 @@ export default function SavedBulletinsModal({
         return bulletinService.getUserBulletins(cachedUserId);
       }
     },
-    enabled: isOpen && (!!cachedUserId || !!profileSlug),
+    // Always enable query - don't disable when modal closes to keep data in cache
+    enabled: !!(cachedUserId || profileSlug),
     staleTime: 0, // Always fetch fresh data to ensure active status is current
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: false, // Don't refetch on window focus to prevent clearing
+    // Keep previous data visible while refetching to prevent disappearing bulletins
+    placeholderData: (previousData) => previousData,
+    // Keep data in cache longer to prevent disappearing during refetches
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // Update local state whenever bulletins change, but never clear it
+  useEffect(() => {
+    if (bulletins && bulletins.length > 0) {
+      setLocalBulletins(bulletins);
+    }
+  }, [bulletins]);
+
+  // Always prefer local bulletins if available - this prevents disappearing during refetches
+  // Only use query data if local state is empty (initial load)
+  const displayBulletins = localBulletins.length > 0 ? localBulletins : bulletins;
 
 
   const handleDelete = async (bulletinId: string) => {
@@ -129,7 +148,17 @@ export default function SavedBulletinsModal({
       const failures = results.filter(r => !r.success).length;
 
       if (failures > 0) {
-        toast.warning(`${successes} bulletins scheduled successfully, ${failures} failed`);
+        // Show specific error messages for failed bulletins
+        const failedBulletins = results.filter(r => !r.success);
+        const errorMessages = failedBulletins.map(r => (r as any).error).filter(Boolean);
+        const uniqueErrors = [...new Set(errorMessages)];
+        
+        if (uniqueErrors.length > 0) {
+          // Show the first unique error message
+          toast.error(uniqueErrors[0]);
+        } else {
+          toast.warning(`${successes} bulletins scheduled successfully, ${failures} failed`);
+        }
       } else {
         toast.success(`${successes} bulletins scheduled successfully`);
       }
@@ -142,6 +171,17 @@ export default function SavedBulletinsModal({
       // Invalidate the correct query key based on whether we're on a shared profile
       const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
       queryClient.invalidateQueries({ queryKey });
+      
+      // Also invalidate the other query key to ensure both users see updates
+      if (profileSlug) {
+        queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+      } else {
+        // If no profile slug, invalidate shared profile queries too
+        queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
+      }
+      
+      // Refetch immediately to update the UI
+      queryClient.refetchQueries({ queryKey });
     } catch (error: any) {
       toast.error('Failed to schedule bulletins: ' + error.message);
     }
@@ -154,15 +194,55 @@ export default function SavedBulletinsModal({
     }
 
     try {
-      await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
+      // Optimistically update the UI immediately - update BOTH query cache and local state
+      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
       
-      // Invalidate ALL relevant queries to ensure real-time sync across all components
-      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
-      if (profileSlug) {
-        queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins', profileSlug] });
-      }
-      // Also invalidate any profile-related queries
-      queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
+      // Get current data to work with (use displayBulletins which has the current state)
+      const currentData = displayBulletins.length > 0 ? displayBulletins : bulletins;
+      
+      // Update local state FIRST to ensure it persists
+      setLocalBulletins(prev => {
+        const dataToUse = prev.length > 0 ? prev : currentData;
+        const updated = dataToUse.map((b: any) => {
+          if (b.id === bulletinId) {
+            return { ...b, status: newStatus };
+          }
+          // If making this bulletin active, archive others
+          if (newStatus === 'active' && b.status === 'active' && b.id !== bulletinId) {
+            return { ...b, status: 'archived' };
+          }
+          return b;
+        });
+        return updated.length > 0 ? updated : prev; // Never clear local state
+      });
+
+      // Also update query cache optimistically
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((b: any) => {
+          if (b.id === bulletinId) {
+            return { ...b, status: newStatus };
+          }
+          // If making this bulletin active, archive others
+          if (newStatus === 'active' && b.status === 'active' && b.id !== bulletinId) {
+            return { ...b, status: 'archived' };
+          }
+          return b;
+        });
+      });
+
+      // Update on server
+      await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
+
+      // After server update succeeds, update cache with fresh data WITHOUT refetching
+      // This prevents the temporary empty state during refetch
+      const freshData = profileSlug 
+        ? await bulletinService.getBulletinsByProfileSlug(profileSlug)
+        : await bulletinService.getUserBulletins(user.id);
+      
+      // Update both query cache and local state with fresh data
+      queryClient.setQueryData(queryKey, freshData);
+      setLocalBulletins(freshData);
 
       const statusLabels = {
         draft: 'Saved',
@@ -173,11 +253,12 @@ export default function SavedBulletinsModal({
 
       toast.success(`Bulletin set to ${statusLabels[newStatus]}`);
       
-      // Notify parent component if bulletin became active
-      if (newStatus === 'active' && onActiveBulletinChange) {
-        onActiveBulletinChange(bulletinId);
-      }
+      // Don't notify parent component - let background refetch handle synchronization
+      // This prevents parent from invalidating queries and clearing our data
     } catch (error: any) {
+      // Revert optimistic update on error by refetching
+      const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
+      queryClient.refetchQueries({ queryKey });
       toast.error('Failed to update bulletin status: ' + error.message);
     }
   };
@@ -257,7 +338,7 @@ export default function SavedBulletinsModal({
             </div>
           )}
 
-          {!loading && !error && bulletins.length === 0 && (
+          {!loading && !error && displayBulletins.length === 0 && (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">No saved bulletins</h4>
@@ -265,7 +346,7 @@ export default function SavedBulletinsModal({
             </div>
           )}
 
-          {!loading && !error && bulletins.length > 0 && (
+          {!loading && !error && displayBulletins.length > 0 && (
             <div className="space-y-4">
               {/* Info Section */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -279,7 +360,7 @@ export default function SavedBulletinsModal({
               </div>
               
 
-              {bulletins.map((bulletin) => (
+              {displayBulletins.map((bulletin) => (
                 <div
                   key={bulletin.id}
                   className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200 hover:border-gray-300 transition-colors"
@@ -309,6 +390,13 @@ export default function SavedBulletinsModal({
                             }
                           </span>
                         </div>
+                        {/* Show scheduled date for draft bulletins if they have one (even if status is still draft) */}
+                        {(bulletin.status === 'draft' || !bulletin.status) && bulletin.scheduled_date && (
+                          <div className="flex items-center text-blue-600">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span>Scheduled: {formatDate(bulletin.scheduled_date.split('T')[0])}</span>
+                          </div>
+                        )}
                         <div>
                           <span>Updated: {formatDateTime(bulletin.updated_at)}</span>
                         </div>
@@ -378,7 +466,7 @@ export default function SavedBulletinsModal({
         <div className="border-t border-gray-200 p-4 bg-gray-50 sticky bottom-0 z-10">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              {bulletins.length} bulletin{bulletins.length !== 1 ? 's' : ''} saved
+              {displayBulletins.length} bulletin{displayBulletins.length !== 1 ? 's' : ''} saved
             </p>
             <button
               onClick={onClose}
@@ -405,9 +493,20 @@ export default function SavedBulletinsModal({
       
       <WeeklySchedulerModal
         isOpen={weeklySchedulerModal.isOpen}
-        onClose={() => setWeeklySchedulerModal({ isOpen: false })}
+        onClose={() => {
+          setWeeklySchedulerModal({ isOpen: false });
+          // Refetch bulletins when modal closes to ensure fresh data
+          const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId];
+          queryClient.invalidateQueries({ queryKey });
+          // Also invalidate the other query key to ensure both users see updates
+          if (profileSlug) {
+            queryClient.invalidateQueries({ queryKey: ['user-bulletins', cachedUserId] });
+          } else {
+            queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
+          }
+        }}
         onSchedule={handleBulkSchedule}
-        bulletins={bulletins || []}
+        bulletins={displayBulletins || []}
         userId={user?.id}
       />
     </div>
