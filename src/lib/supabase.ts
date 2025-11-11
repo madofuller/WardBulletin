@@ -1529,6 +1529,11 @@ export const bulletinService = {
   },
 
   async updateBulletinStatus(bulletinId: string, userId: string, status: 'draft' | 'scheduled' | 'active' | 'archived') {
+    // Validate that the bulletin ID is a proper UUID (not a local_ ID)
+    if (bulletinId.startsWith('local_')) {
+      throw new Error('Cannot update status of unsaved bulletin. Please save the bulletin first.');
+    }
+
     // First, get the bulletin to find its profile_slug and owner
     const { data: bulletin, error: fetchError } = await withTimeout(
       supabase
