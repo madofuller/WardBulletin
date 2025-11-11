@@ -1545,18 +1545,36 @@ export const bulletinService = {
     const profileOwnerId = bulletin.created_by;
     const profileSlug = bulletin.profile_slug;
 
-    // If making a bulletin active, first archive ALL other active bulletins for this profile
-    if (status === 'active' && profileSlug) {
-      const { error: archiveError } = await withTimeout(
-        supabase
-          .from('bulletins')
-          .update({ status: 'archived' })
-          .eq('profile_slug', profileSlug)
-          .eq('status', 'active'),
-        10000
-      );
+    // If making a bulletin active, first archive ALL other active bulletins
+    if (status === 'active') {
+      if (profileSlug) {
+        // Archive all active bulletins for this profile
+        const { error: archiveError } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .update({ status: 'archived' })
+            .eq('profile_slug', profileSlug)
+            .eq('status', 'active')
+            .neq('id', bulletinId), // Don't archive the bulletin we're about to activate
+          10000
+        );
 
-      if (archiveError) throw archiveError;
+        if (archiveError) throw archiveError;
+      } else {
+        // Archive all active bulletins for this user (no profile_slug - backwards compatibility)
+        const { error: archiveError } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .update({ status: 'archived' })
+            .eq('created_by', profileOwnerId)
+            .eq('status', 'active')
+            .neq('id', bulletinId) // Don't archive the bulletin we're about to activate
+            .is('profile_slug', null), // Only archive bulletins without profile_slug
+          10000
+        );
+
+        if (archiveError) throw archiveError;
+      }
     }
 
     // Update the specific bulletin's status - RLS policies will handle access control
@@ -1576,6 +1594,22 @@ export const bulletinService = {
 
     // If making a bulletin active, update the profile owner's active_bulletin_id
     if (status === 'active') {
+      // First, clear this bulletin from being active for any other users (due to unique constraint)
+      const { error: clearError } = await withTimeout(
+        supabase
+          .from('users')
+          .update({ active_bulletin_id: null })
+          .eq('active_bulletin_id', bulletinId)
+          .neq('id', profileOwnerId),
+        10000
+      );
+
+      if (clearError) {
+        console.warn('Failed to clear active_bulletin_id from other users:', clearError);
+        // Don't throw - this is a cleanup operation
+      }
+
+      // Now set it for the profile owner
       const { error: userUpdateError } = await withTimeout(
         supabase
           .from('users')
