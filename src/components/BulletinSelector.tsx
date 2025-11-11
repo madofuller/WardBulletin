@@ -273,6 +273,12 @@ export default function BulletinSelector({
       return;
     }
 
+    // Check if bulletin is saved to database (not a local draft)
+    if (bulletinId.startsWith('local_')) {
+      toast.error('Please save this bulletin before changing its status');
+      return;
+    }
+
     // Check permissions - viewers cannot change bulletin status
     if (permissions && permissions.role === 'viewer') {
       toast.error('Viewers cannot change bulletin status. Contact the profile owner for editor access.');
