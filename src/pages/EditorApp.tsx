@@ -655,18 +655,27 @@ function EditorApp() {
     }
   }, [user]);
 
-  // Load active bulletin on startup ONLY if no draft exists
+  // Load active bulletin on startup or when active bulletin changes
   useEffect(() => {
     const fetchInitialBulletin = async () => {
       if (!user) return;
-      if (currentBulletinId || hasUnsavedChanges) return;
-      
+
+      // CRITICAL: Don't load if there are unsaved changes - user is actively editing
+      if (hasUnsavedChanges) return;
+
       // CRITICAL: Don't load active bulletin if a draft exists
       const hasDraft = !!localStorage.getItem(DRAFT_KEY);
       if (hasDraft) {
         return;
       }
-      
+
+      // IMPORTANT: Check if the active bulletin has changed
+      // This handles scheduled bulletins activating, or manual activation on another device
+      if (currentBulletinId && activeBulletinId && currentBulletinId === activeBulletinId) {
+        // Already viewing the correct active bulletin, no need to reload
+        return;
+      }
+
       try {
         if (currentProfileSlug) {
           // If we're on a shared profile, get its active bulletin
@@ -680,7 +689,8 @@ function EditorApp() {
               localStorage.removeItem(DRAFT_KEY);
             }
           } else if (activeBulletinId) {
-            // If we're on our own profile, use the active bulletin ID
+            // If we're on our own profile, load the active bulletin
+            // This will switch to the new active bulletin even if we were viewing a different one
             const bulletin = await bulletinService.getBulletinById(activeBulletinId);
             const data = convertDbBulletinToData(bulletin);
             setBulletinData(data);
