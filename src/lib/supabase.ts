@@ -1580,13 +1580,15 @@ export const bulletinService = {
 
       if (archiveError) {
         console.error('Error archiving other active bulletins:', archiveError);
+        console.error('Archive query was targeting:', profileSlug ? `profile_slug: ${profileSlug}` : `created_by: ${profileOwnerId}`);
         // If archiving fails due to RLS, try to continue anyway
-        // The unique index will prevent the update if there's still an active bulletin
-        // But we'll get a better error message from the update itself
+        // The database trigger should handle archiving as a fallback
         if (!archiveError.message.includes('permission') && !archiveError.message.includes('policy')) {
           throw archiveError;
         }
-        console.warn('RLS blocked archiving other bulletins, continuing with activation attempt');
+        console.warn('RLS blocked archiving other bulletins, relying on database trigger for automatic archiving');
+      } else {
+        console.log(`Successfully archived ${archiveData?.length || 0} active bulletin(s)`);
       }
     }
 
