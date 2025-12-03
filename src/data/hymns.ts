@@ -207,7 +207,7 @@ export const LDS_HYMNS: Record<number, string> = {
   205: "Once in Royal David's City",
   206: "Away in a Manger",
   207: "It Came upon the Midnight Clear",
-  208: "O Come, O Come, Emmanuel",
+  208: "O Little Town of Bethlehem",
   209: "Hark! The Herald Angels Sing",
   210: "With Wondering Awe",
   211: "While Shepherds Watched Their Flocks",
