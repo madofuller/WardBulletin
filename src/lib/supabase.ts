@@ -537,22 +537,9 @@ export const bulletinService = {
 
     let slug: string;
     
-    if (bulletinId) {
-      try {
-        const { data: existingBulletin, error } = await supabase
-          .from('bulletins')
-          .select('slug')
-          .eq('id', bulletinId)
-          .eq('created_by', userId)
-          .single();
-        if (error) throw error;
-        slug = existingBulletin.slug;
-      } catch (error) {
-        slug = generateUniqueBulletinSlug(userId, bulletinData.date);
-      }
-    } else {
-      slug = generateUniqueBulletinSlug(userId, bulletinData.date);
-    }
+    // Generate slug from bulletin ID and date
+    // Note: slug column doesn't exist in database - it's used for tokenization only
+    slug = generateUniqueBulletinSlug(userId, bulletinData.date, bulletinId);
 
     const bulletinRecord = {
       id: bulletinId || `bulletin-${Date.now()}`,
