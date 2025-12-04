@@ -28,7 +28,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Create a separate Supabase client for public bulletin fetching with aggressive cache-busting
 // This helps prevent iOS Safari from caching stale bulletin data
+// Use a different storage key to avoid the "Multiple GoTrueClient instances" warning
 export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storageKey: 'supabase.public.auth.token', // Different storage key to avoid warning
+    persistSession: false, // Public client doesn't need session persistence
+  },
   db: {
     schema: 'public',
   },
@@ -515,6 +520,7 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise
 // Bulletin service functions
 export const bulletinService = {
   async saveBulletin(bulletinData: any, userId: string, bulletinId?: string, profileSlug?: string) {
+    console.log(`🟢 [saveBulletin] Called with bulletinId: ${bulletinId || 'NEW'}, status: ${bulletinData.status || 'draft'}`);
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -563,6 +569,7 @@ export const bulletinService = {
       wardLeadership: bulletinData.wardLeadership || [],
       missionaries: bulletinData.missionaries || [],
       wardMissionaries: bulletinData.wardMissionaries || [],
+      serviceMissionaries: bulletinData.serviceMissionaries || [],
       imageId: bulletinData.imageId || 'none',
       imagePosition: bulletinData.imagePosition || { x: 50, y: 50 },
     };
@@ -584,6 +591,7 @@ export const bulletinService = {
         { key: `bulletin-${slug}-wardLeadership`, value: JSON.stringify(bulletinData.wardLeadership || []), created_by: userId },
         { key: `bulletin-${slug}-missionaries`, value: JSON.stringify(bulletinData.missionaries || []), created_by: userId },
         { key: `bulletin-${slug}-wardMissionaries`, value: JSON.stringify(bulletinData.wardMissionaries || []), created_by: userId },
+        { key: `bulletin-${slug}-serviceMissionaries`, value: JSON.stringify(bulletinData.serviceMissionaries || []), created_by: userId },
         { key: `bulletin-${slug}-image`, value: bulletinData.imageId || 'none', created_by: userId },
         { key: `bulletin-${slug}-imagePosition`, value: JSON.stringify(bulletinData.imagePosition || { x: 50, y: 50 }), created_by: userId },
       ];
@@ -604,12 +612,16 @@ export const bulletinService = {
     } catch (tokenError) {
     }
 
+    // Don't update status to 'active' via saveBulletin - that should be done via updateBulletinStatus
+    // Only allow saving draft, scheduled, or archived status
+    const statusToSave = bulletinData.status === 'active' ? 'draft' : (bulletinData.status || 'draft');
+    
     const dbBulletinRecord = {
       slug,
       meeting_date: bulletinData.date,
       meeting_type: bulletinData.meetingType,
       created_by: userId,
-      status: bulletinData.status || 'draft',
+      status: statusToSave,
       scheduled_date: bulletinData.scheduledDate || null,
       auto_activate: bulletinData.autoActivate || false,
       profile_slug: effectiveProfileSlug || null
@@ -617,22 +629,53 @@ export const bulletinService = {
 
     try {
       if (bulletinId) {
+        // First, verify the bulletin exists to prevent accidental duplicates
+        const { data: existingBulletin, error: checkError } = await supabase
+          .from('bulletins')
+          .select('id')
+          .eq('id', bulletinId)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking bulletin existence:', checkError);
+          throw checkError;
+        }
+
+        if (!existingBulletin) {
+          console.error(`❌ [saveBulletin] Bulletin ${bulletinId} not found in database. This should not happen when updating.`);
+          console.error(`❌ [saveBulletin] This could cause duplicates. Throwing error instead of creating new bulletin.`);
+          throw new Error(`Bulletin ${bulletinId} not found. Cannot update non-existent bulletin. This may indicate a data inconsistency.`);
+        }
+
         let data, error;
         try {
+          // Don't filter by created_by - let RLS handle permissions
+          // This allows shared profile editors to update bulletins they didn't create
           ({ data, error } = await withTimeout(
             supabase
               .from('bulletins')
               .update(dbBulletinRecord)
               .eq('id', bulletinId)
-              .eq('created_by', userId)
-              .select()
+              .select('id, slug, meeting_date, meeting_type, created_by, profile_slug, created_at, status, scheduled_date, auto_activate')
               .single(),
             20000
           ));
         } catch (timeoutError) {
           throw timeoutError;
         }
-        if (error) throw error;
+        if (error) {
+          // If update failed, check if it's a permission issue
+          if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('row-level security')) {
+            throw new Error('You do not have permission to edit this bulletin. Please check your profile access.');
+          }
+          // Handle 400 Bad Request errors
+          if (error.code === 'PGRST116' || error.status === 400 || error.message?.includes('400')) {
+            console.error('❌ [saveBulletin] 400 Bad Request error:', error);
+            console.error('❌ [saveBulletin] Bulletin data:', dbBulletinRecord);
+            throw new Error(`Failed to save bulletin: ${error.message || 'Invalid request. Please check your data and try again.'}`);
+          }
+          throw error;
+        }
         this.saveToLocalStorage({ ...bulletinRecord, id: data.id });
         return data;
       } else {
@@ -642,14 +685,22 @@ export const bulletinService = {
             supabase
               .from('bulletins')
               .insert(dbBulletinRecord)
-              .select()
+              .select('id, slug, meeting_date, meeting_type, created_by, profile_slug, created_at, status, scheduled_date, auto_activate')
               .single(),
             20000
           ));
         } catch (timeoutError) {
           throw timeoutError;
         }
-        if (error) throw error;
+        if (error) {
+          // Handle 400 Bad Request errors
+          if (error.code === 'PGRST116' || error.status === 400 || error.message?.includes('400')) {
+            console.error('❌ [saveBulletin] 400 Bad Request error on insert:', error);
+            console.error('❌ [saveBulletin] Bulletin data:', dbBulletinRecord);
+            throw new Error(`Failed to create bulletin: ${error.message || 'Invalid request. Please check your data and try again.'}`);
+          }
+          throw error;
+        }
         this.saveToLocalStorage({ ...bulletinRecord, id: data.id });
         return data;
       }
@@ -690,14 +741,53 @@ export const bulletinService = {
     }
 
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('bulletins')
-          .select('*')
-          .eq('profile_slug', profileSlug)
-          .order('created_at', { ascending: false }),
-        10000
-      );
+      // Get current user to also include their bulletins without profile_slug
+      const { data: sessionData } = await supabase.auth.getSession();
+      let userId = sessionData?.session?.user?.id;
+
+      let data, error;
+      
+      if (userId) {
+        // Include bulletins with matching profile_slug OR created by user (to catch bulletins without profile_slug)
+        // Use two separate queries and combine results to handle null profile_slug properly
+        const [profileBulletins, userBulletins] = await Promise.all([
+          // Get bulletins with matching profile_slug
+          supabase
+            .from('bulletins')
+            .select('*')
+            .eq('profile_slug', profileSlug)
+            .order('created_at', { ascending: false }),
+          // Get user's bulletins without profile_slug
+          supabase
+            .from('bulletins')
+            .select('*')
+            .eq('created_by', userId)
+            .is('profile_slug', null)
+            .order('created_at', { ascending: false })
+        ]);
+        
+        // Combine results, removing duplicates
+        const combinedData = [...(profileBulletins.data || [])];
+        const profileIds = new Set(combinedData.map(b => b.id));
+        (userBulletins.data || []).forEach(b => {
+          if (!profileIds.has(b.id)) {
+            combinedData.push(b);
+          }
+        });
+        
+        data = combinedData;
+        error = profileBulletins.error || userBulletins.error;
+      } else {
+        // Fallback: just get bulletins with matching profile_slug
+        ({ data, error } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .select('*')
+            .eq('profile_slug', profileSlug)
+            .order('created_at', { ascending: false }),
+          10000
+        ));
+      }
 
       if (error) {
         console.error('Error fetching bulletins by profile slug:', error);
@@ -726,14 +816,17 @@ export const bulletinService = {
           `bulletin-${bulletin.slug}-wardLeadership`,
           `bulletin-${bulletin.slug}-missionaries`,
           `bulletin-${bulletin.slug}-wardMissionaries`,
+          `bulletin-${bulletin.slug}-serviceMissionaries`,
           `bulletin-${bulletin.slug}-image`,
           `bulletin-${bulletin.slug}-imagePosition`
         );
       });
 
-      // Get current user ID for token fetching
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || '';
+      // Get current user ID for token fetching (reuse userId from above if available)
+      if (!userId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || '';
+      }
 
       // Fetch tokens in chunks (same logic as getUserBulletins)
       const CHUNK_SIZE = 50;
@@ -821,12 +914,14 @@ export const bulletinService = {
           wardLeadership: safeJsonParse(getToken('wardLeadership'), []),
           missionaries: safeJsonParse(getToken('missionaries'), []),
           wardMissionaries: safeJsonParse(getToken('wardMissionaries'), []),
+          serviceMissionaries: safeJsonParse(getToken('serviceMissionaries'), []),
           imageId: getToken('image') || 'none',
           imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
           created_at: bulletin.created_at,
           updated_at: bulletin.created_at,
           status: bulletin.status || 'draft',
-          scheduled_date: bulletin.scheduled_date
+          scheduled_date: bulletin.scheduled_date,
+          profile_slug: bulletin.profile_slug
         };
       });
 
@@ -1046,7 +1141,8 @@ export const bulletinService = {
             created_at: bulletin.created_at,
             updated_at: bulletin.created_at,
             status: bulletin.status || 'draft',
-            scheduled_date: bulletin.scheduled_date
+            scheduled_date: bulletin.scheduled_date,
+            profile_slug: bulletin.profile_slug
           };
         });
 
@@ -1083,7 +1179,8 @@ export const bulletinService = {
           created_at: bulletin.created_at,
           updated_at: bulletin.created_at,
           status: bulletin.status || 'draft',
-          scheduled_date: bulletin.scheduled_date
+          scheduled_date: bulletin.scheduled_date,
+          profile_slug: bulletin.profile_slug
         }));
 
         const dbBulletinIds = new Set(basicBulletins.map(b => b.id));
@@ -1110,13 +1207,89 @@ export const bulletinService = {
     if (localBulletin) {
       return localBulletin;
     }
+    
+    // Select only columns that exist and are accessible via RLS
+    // Avoid select=* which can cause 406 errors if RLS blocks certain columns
     const { data, error } = await supabase
       .from('bulletins')
-      .select('*')
+      .select('id, slug, meeting_date, meeting_type, view_permission, created_by, profile_slug, expires_at, created_at, status, scheduled_date, auto_activate')
       .eq('id', bulletinId)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      // If 406 error, it's likely due to RLS blocking select=* or a column access issue
+      // The error might also indicate the user doesn't have access to this bulletin
+      if (error.code === '406' || error.status === 406) {
+        // Try with minimal columns that should always be accessible
+        const { data: minimalData, error: minimalError } = await supabase
+          .from('bulletins')
+          .select('id, slug, meeting_date, meeting_type, created_by, profile_slug, created_at, status')
+          .eq('id', bulletinId)
+          .single();
+        
+        if (minimalError) {
+          // If still failing, user likely doesn't have access via RLS
+          throw new Error(`Cannot access bulletin: ${minimalError.message || 'Access denied'}`);
+        }
+        
+        // Use minimal data and continue with token fetching
+        const userId = minimalData.created_by;
+        
+        // Fetch bulletin data from tokens
+        const tokenPromises = [
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-ward_name`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-theme`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-userTheme`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-bishopric`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-announcements`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-meetings`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-events`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-agenda`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-prayers`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-music`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-leadership`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-wardLeadership`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-missionaries`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-wardMissionaries`),
+          tokenService.getToken(userId, `bulletin-${minimalData.slug}-serviceMissionaries`),
+        ];
+        
+        tokenPromises.push(tokenService.getToken(userId, `bulletin-${minimalData.slug}-image`));
+        tokenPromises.push(tokenService.getToken(userId, `bulletin-${minimalData.slug}-imagePosition`));
+        
+        const tokenResults = await Promise.all(tokenPromises);
+        const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries, serviceMissionaries] = tokenResults.slice(0, 15);
+        const image = tokenResults[15];
+        const imagePosition = tokenResults[16];
+
+        return {
+          id: minimalData.id,
+          user_id: minimalData.created_by,
+          profile_slug: minimalData.profile_slug,
+          ward_name: wardName || '',
+          date: minimalData.meeting_date,
+          meeting_type: minimalData.meeting_type,
+          theme: theme || '',
+          userTheme: userTheme || '',
+          bishopric_message: bishopric || '',
+          announcements: announcements ? JSON.parse(announcements) : [],
+          meetings: meetings ? JSON.parse(meetings) : [],
+          special_events: events ? JSON.parse(events) : [],
+          agenda: agenda ? JSON.parse(agenda) : [],
+          prayers: prayers ? JSON.parse(prayers) : {},
+          music_program: music ? JSON.parse(music) : {},
+          leadership: leadership ? JSON.parse(leadership) : {},
+          wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
+          missionaries: missionaries ? JSON.parse(missionaries) : [],
+          wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+          imageId: image || 'none',
+          imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
+          created_at: minimalData.created_at,
+          updated_at: minimalData.created_at
+        };
+      }
+      throw error;
+    }
     
     // Get user ID to fetch tokens
     const userId = data.created_by;
@@ -1137,6 +1310,7 @@ export const bulletinService = {
       tokenService.getToken(userId, `bulletin-${data.slug}-wardLeadership`),
       tokenService.getToken(userId, `bulletin-${data.slug}-missionaries`),
       tokenService.getToken(userId, `bulletin-${data.slug}-wardMissionaries`),
+      tokenService.getToken(userId, `bulletin-${data.slug}-serviceMissionaries`),
     ];
     
     // Always fetch image tokens since they're not in database record
@@ -1144,11 +1318,11 @@ export const bulletinService = {
     tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imagePosition`));
     
     const tokenResults = await Promise.all(tokenPromises);
-    const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries] = tokenResults.slice(0, 14);
+    const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries, serviceMissionaries] = tokenResults.slice(0, 15);
     
     // Handle image tokens (always fetched)
-    const image = tokenResults[14];
-    const imagePosition = tokenResults[15];
+    const image = tokenResults[15];
+    const imagePosition = tokenResults[16];
 
     return {
       id: data.id,
@@ -1170,6 +1344,7 @@ export const bulletinService = {
       wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
       missionaries: missionaries ? JSON.parse(missionaries) : [],
       wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+      serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
       imageId: image || 'none',
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       created_at: data.created_at,
@@ -1266,6 +1441,7 @@ export const bulletinService = {
       `bulletin-${data.slug}-wardLeadership`,
       `bulletin-${data.slug}-missionaries`,
       `bulletin-${data.slug}-wardMissionaries`,
+      `bulletin-${data.slug}-serviceMissionaries`,
       `bulletin-${data.slug}-image`,
       `bulletin-${data.slug}-imagePosition`
     ];
@@ -1300,6 +1476,7 @@ export const bulletinService = {
     const wardLeadership = tokenMap.get(`bulletin-${data.slug}-wardLeadership`) || null;
     const missionaries = tokenMap.get(`bulletin-${data.slug}-missionaries`) || null;
     const wardMissionaries = tokenMap.get(`bulletin-${data.slug}-wardMissionaries`) || null;
+    const serviceMissionaries = tokenMap.get(`bulletin-${data.slug}-serviceMissionaries`) || null;
     const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
     const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
 
@@ -1328,6 +1505,7 @@ export const bulletinService = {
       wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
       missionaries: missionaries ? JSON.parse(missionaries) : [],
       wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+      serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
       created_at: data.created_at,
       updated_at: data.created_at
     };
@@ -1409,6 +1587,16 @@ export const bulletinService = {
     autoActivate?: boolean;
   }) {
     try {
+      // Validate that the scheduled date is not in the past
+      if (scheduleData.status === 'scheduled' && scheduleData.scheduledDate) {
+        const scheduledDateTime = new Date(scheduleData.scheduledDate);
+        const now = new Date();
+        
+        if (scheduledDateTime < now) {
+          throw new Error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
+        }
+      }
+
       // Refresh session to ensure we have valid auth
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -1516,6 +1704,7 @@ export const bulletinService = {
   },
 
   async updateBulletinStatus(bulletinId: string, userId: string, status: 'draft' | 'scheduled' | 'active' | 'archived') {
+    console.log(`🔵 [updateBulletinStatus] Updating bulletin ${bulletinId} to status: ${status}`);
     // Validate that the bulletin ID is a proper UUID (not a local_ ID)
     if (bulletinId.startsWith('local_')) {
       throw new Error('Cannot update status of unsaved bulletin. Please save the bulletin first.');
@@ -1537,27 +1726,69 @@ export const bulletinService = {
     const profileOwnerId = bulletin.created_by;
     const profileSlug = bulletin.profile_slug;
 
+    // Check permissions BEFORE attempting update (prevents unnecessary operations)
+    if (profileSlug) {
+      // Check user's role for this profile
+      const { data: shareCheck } = await supabase
+        .from('profile_shares')
+        .select('role')
+        .eq('profile_slug', profileSlug)
+        .eq('shared_with_id', userId)
+        .maybeSingle();
+      
+      if (shareCheck && shareCheck.role === 'viewer') {
+        throw new Error('Viewers cannot change bulletin status. Please ask the profile owner to change your role to Editor.');
+      }
+      
+      // If user doesn't own the profile and isn't shared, check if they created the bulletin
+      if (profileOwnerId !== userId && !shareCheck) {
+        // Check if user owns the profile
+        const { data: ownerCheck } = await supabase
+          .from('users')
+          .select('id')
+          .eq('profile_slug', profileSlug)
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (!ownerCheck && profileOwnerId !== userId) {
+          throw new Error('You do not have permission to edit this bulletin.');
+        }
+      }
+    } else {
+      // No profile_slug - check if user created the bulletin
+      if (profileOwnerId !== userId) {
+        throw new Error('You can only update bulletins you created.');
+      }
+    }
+
     // If making a bulletin active, first archive ALL other active bulletins for this user
-    // The unique index enforces only one active bulletin per created_by, regardless of profile_slug
+    // We do this BEFORE updating to avoid conflicts
     if (status === 'active') {
       // Archive ALL active bulletins for this user (regardless of profile_slug)
-      // This ensures we don't violate the unique_active_bulletin_per_user index
-      // For shared users, we can only archive bulletins in the same profile (RLS limitation)
-      // So we archive by profile_slug if available, otherwise by created_by
+      // This ensures we don't have multiple active bulletins causing conflicts
       let archiveQuery = supabase
         .from('bulletins')
         .update({ status: 'archived' })
         .eq('status', 'active')
+        .eq('created_by', profileOwnerId)
         .neq('id', bulletinId); // Don't archive the bulletin we're about to activate
 
+      // If bulletin has a profile_slug, also try archiving by profile_slug for shared users
+      // This helps with RLS policies that might restrict updates by created_by
       if (profileSlug) {
-        // If bulletin has a profile_slug, only archive bulletins in the same profile
-        // This ensures RLS allows the update for shared users
-        archiveQuery = archiveQuery.eq('profile_slug', profileSlug);
-      } else {
-        // If no profile_slug, archive all active bulletins for this user
-        // This works because the user owns these bulletins
-        archiveQuery = archiveQuery.eq('created_by', profileOwnerId);
+        const { error: profileArchiveError } = await withTimeout(
+          supabase
+            .from('bulletins')
+            .update({ status: 'archived' })
+            .eq('status', 'active')
+            .eq('profile_slug', profileSlug)
+            .neq('id', bulletinId),
+          10000
+        );
+        
+        if (!profileArchiveError) {
+          console.log('Successfully archived active bulletins by profile_slug');
+        }
       }
 
       const { error: archiveError, data: archiveData } = await withTimeout(
@@ -1566,63 +1797,185 @@ export const bulletinService = {
       );
 
       if (archiveError) {
-        console.error('Error archiving other active bulletins:', archiveError);
-        console.error('Archive query was targeting:', profileSlug ? `profile_slug: ${profileSlug}` : `created_by: ${profileOwnerId}`);
-        // If archiving fails due to RLS, try to continue anyway
-        // The database trigger should handle archiving as a fallback
-        if (!archiveError.message.includes('permission') && !archiveError.message.includes('policy')) {
-          throw archiveError;
-        }
-        console.warn('RLS blocked archiving other bulletins, relying on database trigger for automatic archiving');
+        console.warn('Error archiving other active bulletins by created_by:', archiveError);
+        // Don't throw - we'll try to continue and the update might still work
+        // RLS might prevent archiving, but the update itself might succeed
       } else {
-        console.log(`Successfully archived ${archiveData?.length || 0} active bulletin(s)`);
+        console.log(`Successfully archived ${archiveData?.length || 0} active bulletin(s) by created_by`);
       }
     }
 
     // Update the specific bulletin's status - RLS policies will handle access control
-    const { error, data: updateData } = await withTimeout(
-      supabase
-        .from('bulletins')
-        .update({
-          status,
-          // Disable auto-activation when manually making bulletin active
-          ...(status === 'active' ? { auto_activate: false } : {})
-        })
-        .eq('id', bulletinId)
-        .select('id, status'),
-      10000
-    );
+    // Retry logic for handling race conditions with scheduler/triggers
+    let updateData;
+    let error;
+    let retries = 3;
+    let lastError;
+    
+    while (retries > 0) {
+      const result = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({
+            status,
+            // Disable auto-activation when manually making bulletin active
+            ...(status === 'active' ? { auto_activate: false } : {})
+          })
+          .eq('id', bulletinId)
+          .select('id, status'),
+        10000
+      );
+      
+      error = result.error;
+      updateData = result.data;
+      lastError = error;
+      
+      // If no error, break
+      if (!error) {
+        break;
+      }
+      
+      // Check for unique constraint violation (23505) - another bulletin is already active
+      const isUniqueViolation = error.code === '23505' ||
+                                error.message?.includes('unique_active_bulletin_per_user') ||
+                                error.message?.includes('unique_active_bulletin_per_profile');
+
+      if (isUniqueViolation && status === 'active') {
+        console.warn(`Unique constraint violation when activating bulletin ${bulletinId}. Archiving conflicting bulletin.`);
+        // Archive the conflicting active bulletin
+        if (profileSlug) {
+          await withTimeout(
+            supabase
+              .from('bulletins')
+              .update({ status: 'archived' })
+              .eq('profile_slug', profileSlug)
+              .eq('status', 'active')
+              .neq('id', bulletinId),
+            10000
+          );
+        } else {
+          await withTimeout(
+            supabase
+              .from('bulletins')
+              .update({ status: 'archived' })
+              .eq('created_by', profileOwnerId)
+              .eq('status', 'active')
+              .eq('profile_slug', null)
+              .neq('id', bulletinId),
+            10000
+          );
+        }
+        // Retry after archiving
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          continue;
+        }
+      }
+
+      // Check both error.code and error.status for 409 conflicts
+      const isConflict = error.code === '409' ||
+                        error.code === 'PGRST116' ||
+                        (error as any).status === 409 ||
+                        error.message?.includes('Conflict') ||
+                        error.message?.includes('409');
+
+      // If not a conflict or unique violation, break
+      if (!isConflict && !isUniqueViolation) {
+        break;
+      }
+
+      // If it's a 409 Conflict, wait a bit and retry (might be race condition with scheduler/trigger)
+      if (isConflict) {
+        retries--;
+        if (retries > 0) {
+          // Wait a random amount between 100-300ms to avoid thundering herd
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          // Verify the bulletin status before retrying - it might have been updated by trigger/scheduler
+          const { data: currentBulletin } = await supabase
+            .from('bulletins')
+            .select('id, status')
+            .eq('id', bulletinId)
+            .single();
+
+          // If the status is already what we want, consider it successful
+          if (currentBulletin && currentBulletin.status === status) {
+            updateData = [currentBulletin];
+            error = null;
+            break;
+          }
+        }
+      } else {
+        break;
+      }
+    }
 
     if (error) {
-      // Check if it's a unique constraint violation
-      if (error.message.includes('unique_active_bulletin_per_user') || 
-          error.message.includes('duplicate key') ||
-          error.code === '23505') {
-        throw new Error('Another bulletin is already active. Please archive it first or contact the profile owner.');
+      // Check for 409 conflicts FIRST (before unique constraint checks)
+      // A 409 Conflict might be a race condition that can be resolved
+      const isConflict = error.code === '409' || 
+                        error.code === 'PGRST116' || 
+                        (error as any).status === 409 ||
+                        error.message?.includes('Conflict') ||
+                        error.message?.includes('409');
+      
+      if (isConflict) {
+        // Verify the bulletin status - the trigger might have already updated it
+        const { data: currentBulletin } = await supabase
+          .from('bulletins')
+          .select('id, status')
+          .eq('id', bulletinId)
+          .single();
+        
+        if (currentBulletin && currentBulletin.status === status) {
+          // The update actually succeeded despite the error - use the current data
+          updateData = [currentBulletin];
+          error = null;
+        } else {
+          // Check if there's actually another active bulletin causing a real constraint violation
+          if (status === 'active') {
+            // Get the profile owner to check their active bulletin
+            const { data: profileOwner } = await supabase
+              .from('bulletins')
+              .select('created_by')
+              .eq('id', bulletinId)
+              .single();
+            
+            if (profileOwner) {
+              const { data: ownerProfile } = await supabase
+                .from('users')
+                .select('active_bulletin_id')
+                .eq('id', profileOwner.created_by)
+                .single();
+              
+              if (ownerProfile && ownerProfile.active_bulletin_id && ownerProfile.active_bulletin_id !== bulletinId) {
+                // There's actually another active bulletin - this is a real constraint violation
+                throw new Error('Another bulletin is already active. Please archive it first or contact the profile owner.');
+              }
+            }
+          }
+          throw new Error('Failed to update bulletin status due to a conflict. Please try again.');
+        }
+      } else {
+        // Check if it's a unique constraint violation (non-409 errors)
+        if (error.message?.includes('unique_active_bulletin_per_user') ||
+            error.message?.includes('unique_active_bulletin_per_profile') ||
+            error.message?.includes('duplicate key') ||
+            error.code === '23505') {
+          throw new Error('Another bulletin is already active for this profile. Please archive it first.');
+        }
+        throw error;
       }
-      throw error;
     }
 
     // Verify the update succeeded
     if (!updateData || updateData.length === 0) {
-      // Check if user has permission
-      if (profileSlug) {
-        // Check user's role for this profile
-        const { data: shareCheck } = await supabase
-          .from('profile_shares')
-          .select('role')
-          .eq('profile_slug', profileSlug)
-          .eq('shared_with_id', userId)
-          .maybeSingle();
-        
-        if (shareCheck && shareCheck.role === 'viewer') {
-          throw new Error('Viewers cannot change bulletin status. Please ask the profile owner to change your role to Editor.');
-        }
-      }
-      throw new Error('Failed to update bulletin status. You may not have permission to edit this bulletin.');
+      // Permissions were already checked above, so this is likely an RLS policy issue
+      throw new Error('Failed to update bulletin status. The update was blocked - you may not have permission to edit this bulletin.');
     }
 
     // If making a bulletin active, update the profile owner's active_bulletin_id
+    // Note: The database trigger should handle this, but we do it explicitly for shared users
     if (status === 'active') {
       // First, clear this bulletin from being active for any other users (due to unique constraint)
       const { error: clearError } = await withTimeout(
@@ -1640,75 +1993,460 @@ export const bulletinService = {
       }
 
       // Now set it for the profile owner
-      const { error: userUpdateError } = await withTimeout(
-        supabase
-          .from('users')
-          .update({ active_bulletin_id: bulletinId })
-          .eq('id', profileOwnerId),
-        10000
+      // Use retry logic to handle race conditions with the database trigger
+      let userUpdateError;
+      let retries = 3;
+      
+      while (retries > 0) {
+        const result = await withTimeout(
+          supabase
+            .from('users')
+            .update({ active_bulletin_id: bulletinId })
+            .eq('id', profileOwnerId),
+          10000
+        );
+        
+        userUpdateError = result.error;
+        
+      // If successful or not a conflict error, break
+      // Check both error.code and error.status for 409 conflicts
+      const isUserConflict = userUpdateError && (
+        userUpdateError.code === '409' || 
+        userUpdateError.code === 'PGRST116' || 
+        (userUpdateError as any).status === 409 ||
+        userUpdateError.message?.includes('Conflict') ||
+        userUpdateError.message?.includes('409')
       );
+      
+      if (!userUpdateError || !isUserConflict) {
+        break;
+      }
+      
+      // If it's a 409 Conflict, wait and retry
+      if (isUserConflict) {
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          // Verify the user's active_bulletin_id - the trigger might have already updated it
+          const { data: currentUser } = await supabase
+            .from('users')
+            .select('active_bulletin_id')
+            .eq('id', profileOwnerId)
+            .single();
+          
+          // If the active_bulletin_id is already set correctly, consider it successful
+          if (currentUser && currentUser.active_bulletin_id === bulletinId) {
+            userUpdateError = null;
+            break;
+          }
+        }
+      }
+      }
 
-      if (userUpdateError) throw userUpdateError;
+      // Only throw if it's not a conflict that was resolved by the trigger
+      // Check if it's still a conflict after retries
+      const isStillConflict = userUpdateError && (
+        userUpdateError.code === '409' || 
+        userUpdateError.code === 'PGRST116' || 
+        (userUpdateError as any).status === 409 ||
+        userUpdateError.message?.includes('Conflict') ||
+        userUpdateError.message?.includes('409')
+      );
+      
+      if (userUpdateError && !isStillConflict) {
+        throw userUpdateError;
+      }
+      
+      // If it's still a conflict after retries, verify the trigger handled it
+      if (isStillConflict) {
+        const { data: currentUser } = await supabase
+          .from('users')
+          .select('active_bulletin_id')
+          .eq('id', profileOwnerId)
+          .single();
+        
+        if (currentUser && currentUser.active_bulletin_id === bulletinId) {
+          // The trigger already updated it, so we're good
+          console.log('User active_bulletin_id was updated by database trigger');
+        } else {
+          // Still failed after retries and verification
+          console.warn('Failed to update user active_bulletin_id after retries:', userUpdateError);
+          // Don't throw - the trigger should handle it, and this is not critical for the operation
+        }
+      }
     }
   },
 
-  async getScheduledBulletins() {
+  async getScheduledBulletins(userId?: string) {
     // Get current local time in ISO format (without timezone conversion)
     const now = new Date();
     const localTimeString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-    
-    const { data, error } = await withTimeout(
-      supabase
-        .from('bulletins')
-        .select('id, created_by, scheduled_date, auto_activate')
-        .eq('status', 'scheduled')
-        .eq('auto_activate', true)
-        .lte('scheduled_date', localTimeString),
-      10000
-    );
+
+    let query = supabase
+      .from('bulletins')
+      .select('id, created_by, profile_slug, scheduled_date, auto_activate')
+      .eq('status', 'scheduled')
+      .eq('auto_activate', true)
+      .lte('scheduled_date', localTimeString);
+
+    // If userId is provided, filter by accessible profiles (owned + shared)
+    if (userId) {
+      // Get all profile_slugs the user has access to
+      const accessibleProfiles = await this.getUserAccessibleProfiles(userId);
+      const accessibleSlugs = accessibleProfiles.map(p => p.profile_slug);
+
+      if (accessibleSlugs.length > 0) {
+        // Get bulletins that either:
+        // 1. Were created by this user, OR
+        // 2. Belong to a profile_slug the user has access to
+        query = query.or(`created_by.eq.${userId},profile_slug.in.(${accessibleSlugs.join(',')})`);
+      } else {
+        // No accessible profiles, just get bulletins they created
+        query = query.eq('created_by', userId);
+      }
+    }
+
+    const { data, error } = await withTimeout(query, 10000);
 
     if (error) throw error;
     return data || [];
   },
 
   async activateScheduledBulletin(bulletinId: string, userId: string) {
-    // First archive ALL other active bulletins for this user (keep historical record)
-    const { error: archiveError } = await withTimeout(
+    // First, get the bulletin to check its status and profile_slug
+    const { data: currentBulletin } = await withTimeout(
       supabase
         .from('bulletins')
-        .update({ status: 'archived' })
-        .eq('created_by', userId)
-        .eq('status', 'active'),
+        .select('id, status, auto_activate, profile_slug, created_by')
+        .eq('id', bulletinId)
+        .single(),
       10000
     );
-    
-    if (archiveError) throw archiveError;
+
+    if (!currentBulletin) {
+      console.error(`Bulletin ${bulletinId} not found`);
+      return;
+    }
+
+    if (currentBulletin.status === 'active') {
+      // Bulletin is already active, just disable auto_activate to prevent re-activation attempts
+      if (currentBulletin.auto_activate) {
+        await supabase
+          .from('bulletins')
+          .update({ auto_activate: false })
+          .eq('id', bulletinId);
+        console.log(`Bulletin ${bulletinId} is already active - disabled auto_activate`);
+      }
+      return; // Already active, nothing to do
+    }
+
+    const profileSlug = currentBulletin.profile_slug;
+
+    // Check if there's a manually activated bulletin (auto_activate = false) for this profile
+    // If so, don't override it - scheduled activations should respect manual activations
+    let activeBulletinsQuery = supabase
+      .from('bulletins')
+      .select('id, auto_activate, profile_slug')
+      .eq('status', 'active');
+
+    // Filter by profile_slug if the bulletin belongs to a profile
+    if (profileSlug) {
+      activeBulletinsQuery = activeBulletinsQuery.eq('profile_slug', profileSlug);
+    } else {
+      // No profile_slug, filter by the bulletin's creator
+      activeBulletinsQuery = activeBulletinsQuery.eq('created_by', currentBulletin.created_by);
+    }
+
+    const { data: activeBulletins } = await withTimeout(activeBulletinsQuery, 10000);
+
+    // If there's a manually activated bulletin (auto_activate = false), don't override it
+    const manuallyActivated = activeBulletins?.find(b => b.auto_activate === false);
+    if (manuallyActivated && manuallyActivated.id !== bulletinId) {
+      console.log(`Skipping scheduled activation: bulletin ${bulletinId} - profile has manually activated bulletin ${manuallyActivated.id}`);
+      // Disable auto_activate on the scheduled bulletin so it doesn't keep trying
+      await supabase
+        .from('bulletins')
+        .update({ auto_activate: false })
+        .eq('id', bulletinId);
+      return; // Don't activate - respect the manual activation
+    }
+
+    // Archive other active bulletins for this profile (only auto-activated ones)
+    if (profileSlug) {
+      const { error: archiveError } = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({ status: 'archived' })
+          .eq('profile_slug', profileSlug)
+          .eq('status', 'active')
+          .eq('auto_activate', true)
+          .neq('id', bulletinId),
+        10000
+      );
+
+      if (archiveError) {
+        console.warn('Error archiving auto-activated bulletins for profile:', archiveError);
+      }
+    } else {
+      // No profile_slug, archive by the bulletin's creator
+      const { error: archiveError } = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({ status: 'archived' })
+          .eq('created_by', currentBulletin.created_by)
+          .eq('status', 'active')
+          .eq('auto_activate', true)
+          .neq('id', bulletinId),
+        10000
+      );
+
+      if (archiveError) {
+        console.warn('Error archiving auto-activated bulletins for bulletin owner:', archiveError);
+      }
+    }
 
     // Then activate the specific bulletin and disable auto_activate to prevent re-activation
-    const { error } = await withTimeout(
-      supabase
-        .from('bulletins')
-        .update({ 
-          status: 'active',
-          auto_activate: false  // Disable auto-activation to prevent re-activation
-        })
-        .eq('id', bulletinId)
-        .eq('created_by', userId),
-      10000
-    );
+    // Use retry logic to handle race conditions
+    let error;
+    let retries = 3;
+    let updateData;
 
-    if (error) throw error;
+    while (retries > 0) {
+      const result = await withTimeout(
+        supabase
+          .from('bulletins')
+          .update({
+            status: 'active',
+            auto_activate: false  // Disable auto-activation to prevent re-activation
+          })
+          .eq('id', bulletinId)
+          .select('id, status, auto_activate, profile_slug'),
+        10000
+      );
 
-    // Also update the user's active_bulletin_id
-    const { error: userUpdateError } = await withTimeout(
-      supabase
-        .from('users')
-        .update({ active_bulletin_id: bulletinId })
-        .eq('id', userId),
-      10000
+      error = result.error;
+      updateData = result.data;
+
+      // If no error, break
+      if (!error) {
+        break;
+      }
+
+      // Check for unique constraint violation (23505) from the database
+      // This means another bulletin is already active for this user/profile
+      const isUniqueViolation = error.code === '23505' ||
+                                error.message?.includes('unique_active_bulletin_per_user') ||
+                                error.message?.includes('unique_active_bulletin_per_profile');
+
+      if (isUniqueViolation) {
+        console.warn(`Unique constraint violation when activating bulletin ${bulletinId}. Another bulletin is already active.`);
+        // Archive the conflicting active bulletin first
+        if (profileSlug) {
+          await withTimeout(
+            supabase
+              .from('bulletins')
+              .update({ status: 'archived' })
+              .eq('profile_slug', profileSlug)
+              .eq('status', 'active')
+              .neq('id', bulletinId),
+            10000
+          );
+        } else {
+          await withTimeout(
+            supabase
+              .from('bulletins')
+              .update({ status: 'archived' })
+              .eq('created_by', currentBulletin.created_by)
+              .eq('status', 'active')
+              .eq('profile_slug', null)
+              .neq('id', bulletinId),
+            10000
+          );
+        }
+        // Retry the activation after archiving
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          continue;
+        }
+      }
+
+      // Check for 409 Conflict errors from Supabase
+      const isConflict = error.code === '409' ||
+                        error.code === 'PGRST116' ||
+                        (error as any).status === 409 ||
+                        error.message?.includes('Conflict') ||
+                        error.message?.includes('409');
+
+      // If not a conflict or unique violation, break
+      if (!isConflict && !isUniqueViolation) {
+        break;
+      }
+
+      // If it's a 409 Conflict, wait and retry
+      if (isConflict) {
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          // Verify the bulletin status - it might have been updated by another process
+          const { data: currentBulletin } = await supabase
+            .from('bulletins')
+            .select('id, status, auto_activate')
+            .eq('id', bulletinId)
+            .single();
+
+          // If the status is already active, consider it successful
+          if (currentBulletin && currentBulletin.status === 'active') {
+            // If auto_activate is still true, update it to false
+            if (currentBulletin.auto_activate) {
+              await supabase
+                .from('bulletins')
+                .update({ auto_activate: false })
+                .eq('id', bulletinId);
+            }
+            updateData = [currentBulletin];
+            error = null;
+            break;
+          }
+        }
+      }
+    }
+
+    // For 409 conflicts after retries, verify if the update actually succeeded
+    const isConflictAfterRetries = error && (
+      error.code === '409' || 
+      error.code === 'PGRST116' || 
+      (error as any).status === 409 ||
+      error.message?.includes('Conflict') ||
+      error.message?.includes('409')
     );
     
-    if (userUpdateError) throw userUpdateError;
+    if (isConflictAfterRetries) {
+      const { data: currentBulletin } = await supabase
+        .from('bulletins')
+        .select('id, status, auto_activate')
+        .eq('id', bulletinId)
+        .single();
+      
+      if (currentBulletin && currentBulletin.status === 'active') {
+        // The update actually succeeded - ensure auto_activate is false
+        if (currentBulletin.auto_activate) {
+          await supabase
+            .from('bulletins')
+            .update({ auto_activate: false })
+            .eq('id', bulletinId);
+        }
+        updateData = [currentBulletin];
+        error = null;
+      } else {
+        throw new Error(`Failed to activate scheduled bulletin due to conflict: ${error.message}`);
+      }
+    } else if (error) {
+      // If activation failed, still try to disable auto_activate to prevent repeated attempts
+      console.error(`Failed to activate scheduled bulletin ${bulletinId}:`, error);
+      try {
+        await supabase
+          .from('bulletins')
+          .update({ auto_activate: false })
+          .eq('id', bulletinId);
+        console.log(`Disabled auto_activate on bulletin ${bulletinId} due to activation failure`);
+      } catch (disableError) {
+        console.warn(`Failed to disable auto_activate on bulletin ${bulletinId}:`, disableError);
+      }
+      throw error;
+    }
+
+    // Ensure auto_activate is disabled after successful activation
+    if (updateData && updateData.length > 0 && updateData[0].auto_activate) {
+      await supabase
+        .from('bulletins')
+        .update({ auto_activate: false })
+        .eq('id', bulletinId);
+    }
+
+    // Also update the bulletin creator's active_bulletin_id (with retry logic)
+    // For shared profiles, this updates the owner's active_bulletin_id so all shared users see it
+    let userUpdateError;
+    retries = 3;
+
+    while (retries > 0) {
+      const result = await withTimeout(
+        supabase
+          .from('users')
+          .update({ active_bulletin_id: bulletinId })
+          .eq('id', currentBulletin.created_by),
+        10000
+      );
+      
+      userUpdateError = result.error;
+      
+      // If no error, break
+      if (!userUpdateError) {
+        break;
+      }
+      
+      // Check both error.code and error.status for 409 conflicts
+      const isConflict = userUpdateError.code === '409' || 
+                        userUpdateError.code === 'PGRST116' || 
+                        (userUpdateError as any).status === 409 ||
+                        userUpdateError.message?.includes('Conflict') ||
+                        userUpdateError.message?.includes('409');
+      
+      // If not a conflict error, break
+      if (!isConflict) {
+        break;
+      }
+      
+      // If it's a 409 Conflict, wait and retry
+      if (isConflict) {
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+          // Verify the user's active_bulletin_id - the trigger might have already updated it
+          const { data: currentUser } = await supabase
+            .from('users')
+            .select('active_bulletin_id')
+            .eq('id', userId)
+            .single();
+          
+          // If the active_bulletin_id is already set correctly, consider it successful
+          if (currentUser && currentUser.active_bulletin_id === bulletinId) {
+            userUpdateError = null;
+            break;
+          }
+        }
+      } else {
+        break;
+      }
+    }
+    
+    // Only throw if it's not a conflict that was resolved by the trigger
+    const isSchedulerUserConflict = userUpdateError && (
+      userUpdateError.code === '409' || 
+      userUpdateError.code === 'PGRST116' || 
+      (userUpdateError as any).status === 409 ||
+      userUpdateError.message?.includes('Conflict') ||
+      userUpdateError.message?.includes('409')
+    );
+    
+    if (userUpdateError && !isSchedulerUserConflict) {
+      throw userUpdateError;
+    }
+    
+    // If it's still a conflict after retries, verify the trigger handled it
+    if (isSchedulerUserConflict) {
+      const { data: currentUser } = await supabase
+        .from('users')
+        .select('active_bulletin_id')
+        .eq('id', userId)
+        .single();
+      
+      if (!currentUser || currentUser.active_bulletin_id !== bulletinId) {
+        // Still failed after retries and verification
+        console.warn('Failed to update user active_bulletin_id after retries:', userUpdateError);
+        // Don't throw - the trigger should handle it, and this is not critical for the operation
+      }
+    }
   },
 
   async getUserAccessibleProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
@@ -1734,18 +2472,15 @@ export const bulletinService = {
   // Client-side function to check and activate scheduled bulletins
   async checkAndActivateScheduledBulletins(userId: string) {
     try {
-      // Get bulletins that should be activated (using local timezone)
-      const scheduledBulletins = await this.getScheduledBulletins();
+      // Get bulletins that should be activated (using local timezone), filtered by user
+      const scheduledBulletins = await this.getScheduledBulletins(userId);
 
       for (const bulletin of scheduledBulletins) {
-        // Only activate bulletins owned by this user
-        if (bulletin.created_by === userId) {
-          try {
-            await this.activateScheduledBulletin(bulletin.id, userId);
-            console.log(`Activated scheduled bulletin: ${bulletin.id} at local time: ${new Date().toLocaleString()}`);
-          } catch (error) {
-            console.error(`Failed to activate bulletin ${bulletin.id}:`, error);
-          }
+        try {
+          await this.activateScheduledBulletin(bulletin.id, userId);
+          console.log(`Activated scheduled bulletin: ${bulletin.id} at local time: ${new Date().toLocaleString()}`);
+        } catch (error) {
+          console.error(`Failed to activate bulletin ${bulletin.id}:`, error);
         }
       }
 

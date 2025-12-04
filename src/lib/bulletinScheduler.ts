@@ -1,4 +1,4 @@
-import { bulletinService } from './supabase';
+import { bulletinService, supabase } from './supabase';
 
 export class BulletinScheduler {
   private intervalId: number | null = null;
@@ -28,7 +28,17 @@ export class BulletinScheduler {
 
   private async checkAndActivateScheduledBulletins() {
     try {
-      const scheduledBulletins = await bulletinService.getScheduledBulletins();
+      // Get current user ID from session
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (!userId) {
+        console.log('No user session, skipping scheduled bulletin check');
+        return;
+      }
+
+      // Pass userId to filter bulletins the user has access to
+      const scheduledBulletins = await bulletinService.getScheduledBulletins(userId);
 
       if (scheduledBulletins.length === 0) {
         return;
@@ -38,6 +48,7 @@ export class BulletinScheduler {
 
       for (const bulletin of scheduledBulletins) {
         try {
+          // Use the bulletin's created_by, but verify user has access
           await bulletinService.activateScheduledBulletin(bulletin.id, bulletin.created_by);
           console.log(`Activated bulletin ${bulletin.id} for user ${bulletin.created_by} at local time: ${new Date().toLocaleString()}`);
         } catch (error) {

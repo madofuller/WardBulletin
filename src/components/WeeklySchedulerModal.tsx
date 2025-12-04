@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Check, X, Clock, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { bulletinService } from '../lib/supabase';
+import { toast } from 'react-toastify';
 
 interface WeeklyScheduleItem {
   bulletinId: string;
@@ -168,11 +169,28 @@ export default function WeeklySchedulerModal({
     const validSchedules = scheduleItems.filter(item => item.weekOf);
     if (validSchedules.length === 0) return;
     
-    // Convert week dates to scheduled dates (Sunday of each week) - using local timezone
-    const schedulesWithDates = validSchedules.map(item => ({
-      bulletinId: item.bulletinId,
-      scheduledDate: item.weekOf + 'T00:00:00' // Keep as local time, don't convert to UTC
-    }));
+    const now = new Date();
+    
+    // Validate that all scheduled dates are in the future
+    const pastDates: string[] = [];
+    const schedulesWithDates = validSchedules.map(item => {
+      const scheduledDate = item.weekOf + 'T00:00:00';
+      const scheduledDateTime = new Date(scheduledDate);
+      
+      if (scheduledDateTime < now) {
+        pastDates.push(item.weekOf);
+      }
+      
+      return {
+        bulletinId: item.bulletinId,
+        scheduledDate
+      };
+    });
+    
+    if (pastDates.length > 0) {
+      toast.error(`Cannot schedule bulletins for past dates: ${pastDates.join(', ')}. Please select future dates.`);
+      return;
+    }
     
     onSchedule(schedulesWithDates);
     onClose();

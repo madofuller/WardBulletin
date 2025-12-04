@@ -100,10 +100,18 @@ export interface UnitMissionaryEntry {
   mission?: string;
   missionAddress?: string;
   email?: string;
+  setApartDate?: string; // Date when missionary was set apart
+  expectedReturnDate?: string; // Expected return date for sorting
+  sortOrder?: number; // Manual sort order
 }
 
 // Legacy type alias for backward compatibility
 export type WardMissionaryEntry = UnitMissionaryEntry;
+
+export interface ServiceMissionaryEntry {
+  name: string; // Name(s) of service missionary (e.g., "Elder and Sister Jones")
+  serviceName: string; // Name of service (e.g., "Senior Missionary Mentors", "Pathway Instructor")
+}
 
 export type BulletinStatus = 'draft' | 'scheduled' | 'active' | 'archived';
 
@@ -122,8 +130,9 @@ export interface BulletinData {
   musicProgram: MusicProgram;
   leadership: Leadership;
   wardLeadership: UnitLeadershipEntry[]; // Using new interface
-  missionaries: MissionaryEntry[];
-  wardMissionaries: UnitMissionaryEntry[]; // Using new interface
+  missionaries: MissionaryEntry[]; // Full-time missionaries assigned to ward
+  wardMissionaries: UnitMissionaryEntry[]; // Full-time missionaries serving from our ward
+  serviceMissionaries: ServiceMissionaryEntry[]; // Local service missionaries
   imageId?: string; // ID of selected image from LDS_IMAGES or custom images
   imagePosition?: { x: number; y: number }; // Image positioning coordinates
   showQRCodeOnPrint?: boolean; // Whether to show QR code on printed bulletin

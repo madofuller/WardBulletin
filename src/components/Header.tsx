@@ -56,6 +56,7 @@ export default function Header({
   onScheduleBulletin?: (scheduledDate: string) => void;
   onSaveAsTemplate?: () => void;
   currentBulletinStatus?: string;
+  currentProfileSlug?: string;
 }) {
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
@@ -65,7 +66,14 @@ export default function Header({
             <Logo size={40} />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
-              <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
+                {currentProfileSlug && (
+                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium" title={`Currently viewing profile: ${currentProfileSlug}`}>
+                    Profile: {currentProfileSlug}
+                  </span>
+                )}
+              </div>
             </div>
           </a>
           {/* Desktop Menu */}

@@ -440,17 +440,26 @@ export const getHymnUrl = (number: number): string => {
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
 
-  // New hymns (1001+) use the "Hymns—For Home and Church" collection
-  if (number >= 1001) {
-    const release = getHymnRelease(number);
+  // Check if device is mobile
+  const isMobile = typeof window !== 'undefined' && (
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent) ||
+    window.innerWidth < 768
+  );
 
-    // Only Release 3 needs the release suffix
-    const releaseSuffix = release === 3 ? `-release-${release}` : '';
-    return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}${releaseSuffix}?lang=eng`;
+  // Mobile devices: use study/manual format (opens in Gospel Library App)
+  if (isMobile) {
+    // New hymns (1001+) use the "Hymns—For Home and Church" collection
+    if (number >= 1001) {
+      const release = getHymnRelease(number);
+      const releaseSuffix = release === 3 ? `-release-${release}` : '';
+      return `https://www.churchofjesuschrist.org/study/music/hymns-for-home-and-church/${slug}${releaseSuffix}?lang=eng`;
+    }
+    // Regular hymns (1-341) use the standard hymns manual
+    return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
   }
 
-  // Regular hymns (1-341) use the standard hymns manual
-  return `https://www.churchofjesuschrist.org/study/manual/hymns/${slug}?lang=eng`;
+  // Desktop/Web: use media/music/songs format (opens in new web page)
+  return `https://www.churchofjesuschrist.org/media/music/songs/${slug}?crumbs=hymns&lang=eng`;
 };
 
 export const isValidHymnNumber = (number: number): boolean => {

@@ -60,10 +60,17 @@ export default function SavedBulletinsModal({
     queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId],
     queryFn: async () => {
       if (profileSlug) {
-        // If we're on a shared profile, get bulletins for that profile
-        return bulletinService.getBulletinsByProfileSlug(profileSlug);
+        // Try to get bulletins by profile slug first
+        const profileBulletins = await bulletinService.getBulletinsByProfileSlug(profileSlug);
+        // If no bulletins found with profile slug, fall back to all user bulletins
+        // This handles cases where bulletins don't have a profile_slug set
+        if (profileBulletins.length === 0 && cachedUserId) {
+          console.log('No bulletins found for profile slug, falling back to all user bulletins');
+          return bulletinService.getUserBulletins(cachedUserId);
+        }
+        return profileBulletins;
       } else {
-        // If no profile slug, get bulletins for the current user
+        // Only get all user bulletins if no profile slug is specified
         return bulletinService.getUserBulletins(cachedUserId);
       }
     },
@@ -378,6 +385,11 @@ export default function SavedBulletinsModal({
                           status={bulletin.status || 'draft'}
                           scheduledDate={bulletin.scheduled_date}
                         />
+                        {bulletin.profile_slug && (
+                          <span className="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded-full" title={`Profile: ${bulletin.profile_slug}`}>
+                            {bulletin.profile_slug}
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-sm text-gray-600 mb-3">

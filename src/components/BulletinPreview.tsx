@@ -49,9 +49,12 @@ const hasUnitInfo = (data?: BulletinData): boolean => {
 
   const hasUnitMissionaries =
     Array.isArray(data.wardMissionaries) &&
-    data.wardMissionaries.some(e => e && (e.name || e.mission || e.missionAddress || e.email));
+    data.wardMissionaries.some(e => e && (e.name || e.mission || e.setApartDate || e.expectedReturnDate || e.email));
+  const hasServiceMissionaries =
+    Array.isArray(data.serviceMissionaries) &&
+    data.serviceMissionaries.some(e => e && (e.name || e.serviceName));
 
-  return hasUnitLeadership || hasMissionaries || hasUnitMissionaries;
+  return hasUnitLeadership || hasMissionaries || hasUnitMissionaries || hasServiceMissionaries;
 };
 
 // Legacy alias for compatibility
@@ -103,7 +106,7 @@ function BulletinHeader({
         <img
           src={image.url}
           alt={image.name ?? ""}
-          className="absolute inset-0 w-full h-full object-cover opacity-15 transition-all duration-300"
+          className="absolute inset-0 w-full h-full object-cover opacity-40 transition-all duration-300"
           style={{ objectPosition: `${imagePosition.x}% ${imagePosition.y}%` }}
         />
       )}
@@ -261,7 +264,19 @@ function AnnouncementItem({
         <div className="mt-3 space-y-3">
           {images.map((img: any, index: number) => {
             // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
-            const imageUrl = img.imageUrl || getImageByIdSync(img.imageId)?.url;
+            // For custom images, imageUrl should always be present (Supabase public URL)
+            // For LDS images, getImageByIdSync will return the relative path
+            let imageUrl = img.imageUrl;
+            if (!imageUrl && img.imageId) {
+              const imageData = getImageByIdSync(img.imageId);
+              imageUrl = imageData?.url;
+            }
+            // If still no URL and it's a custom image, try to construct Supabase URL
+            if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
+              // For custom images, we need the URL from the saved data
+              // If it's missing, the image might have been deleted or not saved properly
+              console.warn('Custom image URL missing for imageId:', img.imageId);
+            }
             return imageUrl ? (
               <div key={index} className={`${img.hideImageOnPrint ? 'print:hidden' : ''}`}>
                 <img
@@ -270,6 +285,11 @@ function AnnouncementItem({
                   className="max-w-full h-auto rounded-lg shadow-sm w-full"
                   style={{ ...getImageSizeStyle(img.size), objectFit: 'contain' }}
                   loading="lazy"
+                  onError={(e) => {
+                    console.error('Failed to load announcement image:', imageUrl, img);
+                    // Hide broken images
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
               </div>
             ) : null;
@@ -643,18 +663,116 @@ export default function BulletinPreview({
 
           {sanitizedAnnouncements.length > 0 ? (
             <div className="space-y-8">
-              {sanitizedAnnouncements.map((a, i) => (
-                <AnnouncementItem
-                  key={i}
-                  audience={a.audienceLabel}
-                  category={a.category}
-                  title={a.title}
-                  html={a.html}
-                  imageId={a.imageId}
-                  hideImageOnPrint={a.hideImageOnPrint}
-                  images={a.images}
-                />
-              ))}
+              {(() => {
+                // Group announcements by audience/type
+                const grouped = sanitizedAnnouncements.reduce((groups, announcement) => {
+                  const audience = announcement.audienceLabel || 'Ward';
+                  if (!groups[audience]) {
+                    groups[audience] = [];
+                  }
+                  groups[audience].push(announcement);
+                  return groups;
+                }, {} as Record<string, typeof sanitizedAnnouncements>);
+
+                // Render grouped announcements
+                return Object.entries(grouped).map(([audience, announcements]) => (
+                  <article key={audience} className="border-l-4 border-[#edf4ff] pl-4">
+                    <h3 className="text-xl sm:text-2xl text-gray-900 mb-4">{audience}</h3>
+                    <div className="space-y-6">
+                      {announcements.map((a, i) => (
+                        <div key={i}>
+                          {a.title && (
+                            <h2 className="text-xl sm:text-xl text-gray-900 mb-2 font-semibold">{a.title}</h2>
+                          )}
+                          {a.category && a.category !== 'general' && (
+                            <div className="mb-2">
+                              <span className="inline-block text-gray-700 text-xs bg-gray-100 px-2 py-1 rounded">
+                                {a.category}
+                              </span>
+                            </div>
+                          )}
+                          <div className="mt-2 text-gray-800 text-base leading-relaxed">
+                            <div
+                              className="mt-1"
+                              style={{
+                                '--tw-prose-bullets': 'disc',
+                                '--tw-prose-list-style': 'disc'
+                              } as React.CSSProperties}
+                              dangerouslySetInnerHTML={{ 
+                                __html: a.html.replace(
+                                  /<ul>/g, 
+                                  '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
+                                ).replace(
+                                  /<ol>/g, 
+                                  '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
+                                ).replace(
+                                  /<li>/g, 
+                                  '<li style="margin-left: 0.5rem; display: list-item;">'
+                                )
+                              }}
+                            />
+                          </div>
+                          {/* Announcement Images */}
+                          {a.imageId && a.imageId !== 'none' && !a.images && (
+                            <div className={`mt-3 ${a.hideImageOnPrint ? 'print:hidden' : ''}`}>
+                              {(() => {
+                                const selectedImage = getImageByIdSync(a.imageId);
+                                return selectedImage?.url ? (
+                                  <img
+                                    src={selectedImage.url}
+                                    alt={selectedImage.name}
+                                    className="max-w-full h-auto rounded-lg shadow-sm w-full"
+                                    style={{ maxHeight: '200px', objectFit: 'contain' }}
+                                    loading="lazy"
+                                  />
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+                          {a.images && a.images.length > 0 && (
+                            <div className="mt-3 space-y-3">
+                              {a.images.map((img: any, index: number) => {
+                                // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
+                                // For custom images, imageUrl should always be present (Supabase public URL)
+                                let imageUrl = img.imageUrl;
+                                if (!imageUrl && img.imageId) {
+                                  const imageData = getImageByIdSync(img.imageId);
+                                  imageUrl = imageData?.url;
+                                }
+                                // If still no URL and it's a custom image, log warning
+                                if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
+                                  console.warn('Custom image URL missing for imageId:', img.imageId);
+                                }
+                                return imageUrl ? (
+                                  <div key={index} className={`${img.hideImageOnPrint ? 'print:hidden' : ''}`}>
+                                    <img
+                                      src={imageUrl}
+                                      alt="Announcement Image"
+                                      className="max-w-full h-auto rounded-lg shadow-sm w-full"
+                                      style={{ 
+                                        maxHeight: img.size === 'small' ? '120px' : 
+                                                  img.size === 'medium' ? '200px' : 
+                                                  img.size === 'large' ? '300px' : 
+                                                  img.size === 'xlarge' ? '400px' : '200px',
+                                        objectFit: 'contain' 
+                                      }}
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        console.error('Failed to load announcement image:', imageUrl, img);
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                ) : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ));
+              })()}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
@@ -731,9 +849,9 @@ export default function BulletinPreview({
                   <tbody>
                     {(data?.wardLeadership || []).map((e, idx) => (
                       <tr key={idx}>
-                        <td className="border px-3 py-2">{e.title}</td>
-                        <td className="border px-3 py-2 text-center">{e.name}</td>
-                        <td className="border px-3 py-2">{e.phone}</td>
+                        <td className="border px-3 py-2 font-bold">{e.title}</td>
+                        <td className="border px-3 py-2 text-center font-normal">{e.name}</td>
+                        <td className="border px-3 py-2 font-normal">{e.phone}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -757,8 +875,8 @@ export default function BulletinPreview({
                   <tbody>
                     {(data?.missionaries || []).map((e, idx) => (
                       <tr key={idx}>
-                        <td className="border px-3 py-2 text-center">{e.name}</td>
-                        <td className="border px-3 py-2">{e.phone}</td>
+                        <td className="border px-3 py-2 text-center font-bold">{e.name}</td>
+                        <td className="border px-3 py-2 font-normal">{e.phone}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -768,44 +886,99 @@ export default function BulletinPreview({
           )}
 
           {/* Ward Missionaries Section */}
-          {Array.isArray(data.wardMissionaries) && data.wardMissionaries.some(e => e && (e.name || e.mission || e.missionAddress || e.email)) && (
+          {Array.isArray(data.wardMissionaries) && data.wardMissionaries.some(e => e && (e.name || e.mission || e.setApartDate || e.expectedReturnDate || e.email)) && (
             <>
               <h3 className="text-base font-bold mb-3 text-center mt-8">{getUnitMissionariesLabel()}</h3>
-              {(data?.wardMissionaries || []).length > 2 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(data?.wardMissionaries || []).map((e, idx) => (
-                    <div key={idx} className="border border-gray-300 rounded-lg p-3">
-                      <div className="font-semibold text-sm mb-2">{e.name}</div>
-                      {e.mission && <div className="text-xs text-gray-600 mb-1">📍 {e.mission}</div>}
-                      {e.missionAddress && <div className="text-xs text-gray-600 mb-1">📮 {e.missionAddress}</div>}
-                      {e.email && <div className="text-xs text-gray-600">✉️ {e.email}</div>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border text-sm">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-3 py-2 border">Name</th>
-                        <th className="px-3 py-2 border">Mission</th>
-                        <th className="px-3 py-2 border">Mission Address</th>
-                        <th className="px-3 py-2 border">Email</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(data?.wardMissionaries || []).map((e, idx) => (
-                        <tr key={idx}>
-                          <td className="border px-3 py-2">{e.name}</td>
-                          <td className="border px-3 py-2">{e.mission}</td>
-                          <td className="border px-3 py-2">{e.missionAddress}</td>
-                          <td className="border px-3 py-2">{e.email}</td>
+              {(() => {
+                // Sort by expected return date (earliest first)
+                const sorted = [...(data?.wardMissionaries || [])].sort((a, b) => {
+                  const dateA = a.expectedReturnDate || '';
+                  const dateB = b.expectedReturnDate || '';
+                  if (!dateA && !dateB) return 0;
+                  if (!dateA) return 1;
+                  if (!dateB) return -1;
+                  return dateA.localeCompare(dateB);
+                });
+                
+                return sorted.length > 2 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {sorted.map((e, idx) => (
+                      <div key={idx} className="border border-gray-300 rounded-lg p-3">
+                        <div className="font-bold text-sm mb-2">{e.name}</div>
+                        {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">📍 {e.mission}</div>}
+                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">📅 Set Apart: {new Date(e.setApartDate).toLocaleDateString()}</div>}
+                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">🏠 Expected Return: {new Date(e.expectedReturnDate).toLocaleDateString()}</div>}
+                        {e.email && <div className="text-xs text-gray-600 font-normal">✉️ {e.email}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border text-sm">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 border">Name</th>
+                          <th className="px-3 py-2 border">Mission</th>
+                          <th className="px-3 py-2 border">Set Apart Date</th>
+                          <th className="px-3 py-2 border">Expected Return</th>
+                          <th className="px-3 py-2 border">Email</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody>
+                        {sorted.map((e, idx) => (
+                          <tr key={idx}>
+                            <td className="border px-3 py-2 font-bold">{e.name}</td>
+                            <td className="border px-3 py-2 font-normal">{e.mission}</td>
+                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? new Date(e.setApartDate).toLocaleDateString() : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? new Date(e.expectedReturnDate).toLocaleDateString() : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.email}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </>
+          )}
+
+          {/* Service Missionaries Section */}
+          {Array.isArray(data.serviceMissionaries) && data.serviceMissionaries.some(e => e && (e.name || e.serviceName)) && (
+            <>
+              <h3 className="text-base font-bold mb-3 text-center mt-8">Service Missionaries</h3>
+              {(() => {
+                const serviceMissionaries = data?.serviceMissionaries || [];
+                
+                return serviceMissionaries.length > 2 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {serviceMissionaries.map((e, idx) => (
+                      <div key={idx} className="border border-gray-300 rounded-lg p-3">
+                        <div className="font-bold text-sm mb-2">{e.name}</div>
+                        {e.serviceName && <div className="text-xs text-gray-600 font-normal">🔧 {e.serviceName}</div>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border text-sm">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-3 py-2 border">Name(s)</th>
+                          <th className="px-3 py-2 border">Service Name</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {serviceMissionaries.map((e, idx) => (
+                          <tr key={idx}>
+                            <td className="border px-3 py-2 font-bold">{e.name}</td>
+                            <td className="border px-3 py-2 font-normal">{e.serviceName || ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </>
           )}
 
