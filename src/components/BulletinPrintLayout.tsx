@@ -308,13 +308,19 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     return entry && (entry.name?.trim() || entry.phone?.trim() || entry.mission?.trim() || entry.email?.trim());
   };
 
+  // For service missionaries, we care about name or serviceName
+  const hasValidServiceMissionaryInfo = (entry: any) => {
+    return entry && (entry.name?.trim() || entry.serviceName?.trim());
+  };
+
   // Filter out empty ward info entries
   const filteredWardLeadership = data.wardLeadership?.filter(hasValidLeadershipInfo) || [];
   const filteredMissionaries = data.missionaries?.filter(hasValidMissionaryInfo) || [];
   const filteredWardMissionaries = data.wardMissionaries?.filter(hasValidMissionaryInfo) || [];
+  const filteredServiceMissionaries = data.serviceMissionaries?.filter(hasValidServiceMissionaryInfo) || [];
 
   // Check if there's any meaningful ward info to display
-  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0;
+  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0 || filteredServiceMissionaries.length > 0;
 
   const selectedTheme = themes.find(t => t.name === data.userTheme);
 
@@ -338,9 +344,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                      <tbody>
                        {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
                          <tr key={idx}>
-                           <td className="py-1 font-semibold text-xs pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
-                           <td className="py-1 text-xs pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
-                           <td className="py-1 text-right text-xs whitespace-nowrap" style={{ width: '25%' }}>
+                           <td className="py-1 font-bold text-xs pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
+                           <td className="py-1 text-xs font-normal pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
+                           <td className="py-1 text-right text-xs font-normal whitespace-nowrap" style={{ width: '25%' }}>
                              {leader.phone || ''}
                            </td>
                          </tr>
@@ -361,8 +367,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     <tbody>
                       {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
                         <tr key={idx}>
-                          <td className="py-0 font-semibold text-xs pr-1" style={{ width: '60%' }}>{missionary.name}</td>
-                          <td className="py-0 text-right text-xs" style={{ width: '40%' }}>
+                          <td className="py-0 font-bold text-xs pr-1" style={{ width: '60%' }}>{missionary.name}</td>
+                          <td className="py-0 text-right text-xs font-normal" style={{ width: '40%' }}>
                             {missionary.phone || ''}
                           </td>
                         </tr>
@@ -397,15 +403,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       <div className="space-y-1" style={{ fontSize }}>
                         {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).map((missionary: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center py-0">
-                        <div className="font-semibold" style={{ width: '25%' }}>
+                        <div className="font-bold" style={{ width: '25%' }}>
                           {missionary.name}
                         </div>
-                        <div className="text-center flex-1 px-2">
+                        <div className="text-center flex-1 px-2 font-normal">
                           {missionary.mission && (
                             <span className="text-gray-600">{missionary.mission}</span>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0" style={{ minWidth: '120px' }}>
+                        <div className="text-right flex-shrink-0 font-normal" style={{ minWidth: '120px' }}>
                           {missionary.email ? (
                             <span className="text-gray-700">{missionary.email}</span>
                           ) : (
@@ -420,6 +426,46 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
                     <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} more ward missionaries</p>
                   )}
+                </div>
+              )}
+
+              {/* Service Missionaries */}
+              {filteredServiceMissionaries.length > 0 && (
+                <div className="w-full mb-1">
+                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">SERVICE MISSIONARIES</h3>
+                  {(() => {
+                    const serviceMissionaryCount = filteredServiceMissionaries.length;
+                    // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
+                    let fontSize = '9px';
+                    if (serviceMissionaryCount <= 3) {
+                      fontSize = '11px';
+                    } else if (serviceMissionaryCount <= 6) {
+                      fontSize = '10px';
+                    } else if (serviceMissionaryCount <= 10) {
+                      fontSize = '9px';
+                    } else {
+                      fontSize = '8px';
+                    }
+                    
+                    return (
+                      <div className="space-y-1" style={{ fontSize }}>
+                        {filteredServiceMissionaries.map((missionary: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center py-0">
+                            <div className="font-bold" style={{ width: '40%' }}>
+                              {missionary.name}
+                            </div>
+                            <div className="text-right flex-1 font-normal">
+                              {missionary.serviceName ? (
+                                <span className="text-gray-600">{missionary.serviceName}</span>
+                              ) : (
+                                <span className="text-gray-400">No service listed</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
            </div>
@@ -486,7 +532,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded ml-2">{a.category}</span>
                     )}
                   </div>
-                  <div className="font-semibold print:!text-base print:!text-black">{a.title}</div>
+                  <div className="font-bold print:!text-base print:!text-black">{a.title}</div>
 
                     <div
                       className="text-sm print:!text-sm print:!text-black mb-2"
@@ -537,7 +583,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                         {a.images.map((img: any, index: number) => {
                           if (img.hideImageOnPrint) return null;
                           // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
-                          const imageUrl = img.imageUrl || getImageByIdSync(img.imageId)?.url;
+                          // For custom images, imageUrl should always be present (Supabase public URL)
+                          let imageUrl = img.imageUrl;
+                          if (!imageUrl && img.imageId) {
+                            const imageData = getImageByIdSync(img.imageId);
+                            imageUrl = imageData?.url;
+                          }
+                          // If still no URL and it's a custom image, log warning
+                          if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
+                            console.warn('Custom image URL missing for imageId:', img.imageId);
+                          }
                           return imageUrl ? (
                             <div key={index}>
                               <img
@@ -552,6 +607,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                             img.size === 'xlarge' ? '400px' : '200px',
                                   borderRadius: '0.5rem',
                                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                                }}
+                                onError={(e) => {
+                                  console.error('Failed to load announcement image in print layout:', imageUrl, img);
+                                  (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                               />
                             </div>

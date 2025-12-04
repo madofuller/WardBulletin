@@ -66,6 +66,10 @@ export default function InvitePage() {
       const { data: invitation, error } = await profileSharingService.getInvitationByToken(token);
 
       if (error || !invitation) {
+        // Check if it's an expiration error specifically
+        if (error?.message?.includes('expired')) {
+          throw new Error('This invitation has expired. Please contact the profile owner to request a new invitation.');
+        }
         throw new Error('Invalid invitation or invitation not found');
       }
 

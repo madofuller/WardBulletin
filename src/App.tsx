@@ -10,18 +10,10 @@ import PublicBulletinPage from './pages/PublicBulletinPage';
 import AnnouncementSubmissionPage from './pages/AnnouncementSubmissionPage';
 import InvitePage from './pages/InvitePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import { bulletinScheduler } from './lib/bulletinScheduler';
 
 export default function App() {
-  useEffect(() => {
-    // Start the bulletin scheduler when the app loads
-    bulletinScheduler.start();
-
-    // Cleanup on unmount
-    return () => {
-      bulletinScheduler.stop();
-    };
-  }, []);
+  // Note: Scheduled bulletin activation is handled by SessionContext
+  // which properly filters bulletins by the logged-in user
 
   return (
     <ErrorBoundary>

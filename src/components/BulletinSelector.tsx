@@ -54,7 +54,7 @@ export default function BulletinSelector({
   const cachedUserId = user?.id || localStorage.getItem(LAST_USER_ID) || '';
   const queryClient = useQueryClient();
 
-  const { data: fetchedBulletins = [], isLoading: loading, error, isFetching } = useQuery({
+  const { data: fetchedBulletins = [], isLoading: loading, error, isFetching, refetch } = useQuery({
     queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId],
     queryFn: async () => {
       if (profileSlug) {
@@ -71,12 +71,67 @@ export default function BulletinSelector({
     refetchOnWindowFocus: true,
     // Keep data in cache longer to prevent disappearing during refetches
     gcTime: 5 * 60 * 1000, // 5 minutes
+    // Use placeholderData to keep showing bulletins during refetch
+    placeholderData: (previousData) => previousData || (bulletins && bulletins.length > 0 ? bulletins : []),
   });
+
+  // Force refetch on mount to ensure we have fresh status data
+  useEffect(() => {
+    // Refetch immediately on mount to get fresh data
+    refetch();
+  }, []); // Only run on mount
+
+  // Refetch bulletins when currentActiveBulletinId changes to ensure status is up to date
+  useEffect(() => {
+    if (currentActiveBulletinId && !isFetching) {
+      // Small delay to ensure the database update has propagated
+      const timeoutId = setTimeout(() => {
+        refetch();
+      }, 200);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentActiveBulletinId, refetch, isFetching]);
 
   // Prefer fetched bulletins (fresh data) over passed bulletins (might be stale)
   // Only use passed bulletins if we don't have fetched data yet
   // Use placeholderData to keep showing bulletins during refetch
   const allBulletins = fetchedBulletins && fetchedBulletins.length > 0 ? fetchedBulletins : (bulletins && bulletins.length > 0 ? bulletins : []);
+
+  // Debug: Log active bulletin status on mount and when data changes
+  useEffect(() => {
+    console.log('🔍 BulletinSelector status check:', {
+      bulletinsCount: allBulletins.length,
+      currentActiveBulletinId,
+      bulletinsWithStatus: allBulletins.map(b => ({ id: b.id, status: b.status }))
+    });
+    
+    if (allBulletins.length > 0) {
+      if (currentActiveBulletinId) {
+        const activeBulletin = allBulletins.find(b => b.id === currentActiveBulletinId);
+        if (activeBulletin) {
+          console.log('✅ Active bulletin found:', {
+            id: activeBulletin.id,
+            status: activeBulletin.status,
+            currentActiveBulletinId,
+            willShowAsActive: activeBulletin.status === 'active' || activeBulletin.id === currentActiveBulletinId
+          });
+        } else {
+          console.warn('⚠️ Active bulletin ID not found in bulletins list:', {
+            currentActiveBulletinId,
+            availableIds: allBulletins.map(b => b.id)
+          });
+        }
+      } else {
+        // Check if any bulletins have status='active'
+        const activeBulletins = allBulletins.filter(b => b.status === 'active');
+        if (activeBulletins.length > 0) {
+          console.log('📌 Found bulletins with status=active but no currentActiveBulletinId:', 
+            activeBulletins.map(b => ({ id: b.id, status: b.status }))
+          );
+        }
+      }
+    }
+  }, [allBulletins, currentActiveBulletinId]);
 
 
   const [weeklySchedulerModal, setWeeklySchedulerModal] = useState({
@@ -153,9 +208,10 @@ export default function BulletinSelector({
       return a.scheduled_date.localeCompare(b.scheduled_date);
     });
   const draftBulletins = allBulletins.filter(b =>
-    (!b.status || b.status === 'draft' || b.status === 'scheduled') &&
+    (!b.status || b.status === 'draft') &&
     b.id !== currentActiveBulletinId &&
-    b.status !== 'active'
+    b.status !== 'active' &&
+    b.status !== 'scheduled' // Exclude scheduled bulletins - they appear in "Scheduled to Activate" section
   );
   const archivedBulletins = allBulletins.filter(b =>
     b.status === 'archived' &&
@@ -306,16 +362,20 @@ export default function BulletinSelector({
 
       await bulletinService.updateBulletinStatus(bulletinId, user.id, newStatus);
 
-      // Refetch queries to ensure we have the latest data after status change
-      // This is especially important for shared users to see the correct active status
-      const refetchQueryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
-      await queryClient.refetchQueries({ queryKey: refetchQueryKey });
+      // After server update succeeds, update cache with fresh data WITHOUT refetching
+      // This prevents the temporary empty state during refetch that causes bulletins to disappear
+      const freshData = profileSlug 
+        ? await bulletinService.getBulletinsByProfileSlug(profileSlug)
+        : await bulletinService.getUserBulletins(user.id);
       
-      // Also refetch the other query key to ensure consistency
+      // Update the query cache with fresh data to prevent disappearing
+      queryClient.setQueryData(queryKey, freshData);
+      
+      // Also update the other query key to ensure consistency (only if needed)
       if (profileSlug) {
-        await queryClient.refetchQueries({ queryKey: ['user-bulletins', user.id] });
-      } else {
-        await queryClient.refetchQueries({ queryKey: ['shared-profile-bulletins'] });
+        // If we're on a shared profile, also update the user's own bulletins cache
+        const userBulletins = await bulletinService.getUserBulletins(user.id);
+        queryClient.setQueryData(['user-bulletins', user.id], userBulletins);
       }
 
       const statusLabels = {
@@ -418,7 +478,7 @@ export default function BulletinSelector({
             onClick={() => handleStatusChange(bulletin.id, 'active')}
             disabled={permissions?.role === 'viewer'}
             className={`inline-flex items-center px-2 py-1 rounded-full transition-colors text-xs ${
-              bulletin.status === 'active'
+              bulletin.status === 'active' || bulletin.id === currentActiveBulletinId
                 ? 'bg-green-600 text-white hover:bg-green-700'
                 : permissions?.role === 'viewer'
                 ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
@@ -427,13 +487,13 @@ export default function BulletinSelector({
             title={
               permissions?.role === 'viewer'
                 ? 'Viewers cannot change bulletin status. Contact the profile owner for editor access.'
-                : bulletin.status === 'active'
+                : bulletin.status === 'active' || bulletin.id === currentActiveBulletinId
                 ? 'This bulletin is currently active for QR codes'
                 : 'Make this bulletin show when people scan your QR code'
             }
           >
             <CheckCircle className="w-3 h-3 mr-1" />
-            <span>{bulletin.status === 'active' ? 'QR Active' : 'Make Active'}</span>
+            <span>{bulletin.status === 'active' || bulletin.id === currentActiveBulletinId ? 'QR Active' : 'Make Active'}</span>
           </button>
 
           {onLoadBulletin && (

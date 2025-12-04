@@ -343,7 +343,11 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       throw new Error('Failed to verify user account');
     }
 
-    if (userData.email !== invitation.invited_email) {
+    // Compare emails case-insensitively (matching UI behavior)
+    const userEmail = userData.email?.toLowerCase().trim();
+    const invitedEmail = invitation.invited_email?.toLowerCase().trim();
+    
+    if (userEmail !== invitedEmail) {
       throw new Error('This invitation was sent to a different email address. Please sign in with the correct account.');
     }
 
