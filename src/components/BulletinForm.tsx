@@ -61,15 +61,25 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
     onChange({ ...data, [field]: value });
   };
 
-  const addAnnouncement = () => {
+  const addAnnouncement = (audience?: string) => {
     const newAnnouncement: Announcement = {
       id: Date.now().toString(),
       title: '',
       content: '',
       category: 'general',
+      audience: audience || 'ward',
       images: [] // Initialize empty images array
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
+  };
+
+  const addAnnouncementToType = (audience: string) => {
+    addAnnouncement(audience);
+  };
+
+  const addNewTypeSection = () => {
+    // Add a new announcement with the first available audience type
+    addAnnouncement('ward');
   };
 
   const updateAnnouncement = (id: string, field: keyof Announcement, value: any) => {
@@ -651,7 +661,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
-                    value={data.wardName}
+                    value={data.wardName || ''}
                     onChange={(e) => updateField('wardName', e.target.value)}
                     placeholder={`e.g., Sunset Hills ${getUnitLabel()}`}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -670,7 +680,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-base font-medium text-gray-700 mb-2">Date</label>
                 <input
                   type="date"
-                  value={data.date}
+                  value={data.date || ''}
                   onChange={(e) => updateField('date', e.target.value)}
                   className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -681,7 +691,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-base font-medium text-gray-700 mb-2">Theme/Scripture</label>
                 <input
                   type="text"
-                  value={data.theme}
+                  value={data.theme || ''}
                   onChange={(e) => updateField('theme', e.target.value)}
                   placeholder="Weekly theme or scripture reference"
                   className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -814,7 +824,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
-                    value={data.leadership.presiding}
+                    value={data.leadership.presiding || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, presiding: e.target.value })}
                     placeholder="e.g., Bishop Dave Stratham"
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -878,7 +888,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
-                    value={data.leadership.chorister}
+                    value={data.leadership.chorister || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, chorister: e.target.value })}
                     placeholder={`e.g., Debbie Hanes (${choristerLabel})`}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -918,7 +928,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
-                    value={data.leadership.organist}
+                    value={data.leadership.organist || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, organist: e.target.value })}
                     placeholder={`e.g., Tom Webster (${organistLabel})`}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -990,7 +1000,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 </div>
                 <input
                   type="text"
-                  value={data.musicProgram.openingHymnNumber}
+                  value={data.musicProgram.openingHymnNumber || ''}
                   onChange={(e) => handleHymnNumberChange('openingHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('openingHymnNumber')}
                   className={`w-full px-3 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
@@ -1007,7 +1017,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hymn Title</label>
                 <input
                   type="text"
-                  value={data.musicProgram.openingHymnTitle}
+                  value={data.musicProgram.openingHymnTitle || ''}
                   onChange={(e) => {
                     updateField('musicProgram', { ...data.musicProgram, openingHymnTitle: e.target.value });
                     handleHymnTitleSearch('openingHymnNumber', e.target.value);
@@ -1074,7 +1084,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 </div>
                 <input
                   type="text"
-                  value={data.musicProgram.sacramentHymnNumber}
+                  value={data.musicProgram.sacramentHymnNumber || ''}
                   onChange={(e) => handleHymnNumberChange('sacramentHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('sacramentHymnNumber')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
@@ -1091,7 +1101,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-sm font-medium text-gray-700 mb-1">Sacrament Hymn Title</label>
                 <input
                   type="text"
-                  value={data.musicProgram.sacramentHymnTitle}
+                  value={data.musicProgram.sacramentHymnTitle || ''}
                   onChange={(e) => {
                     updateField('musicProgram', { ...data.musicProgram, sacramentHymnTitle: e.target.value });
                     handleHymnTitleSearch('sacramentHymnNumber', e.target.value);
@@ -1158,7 +1168,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 </div>
                 <input
                   type="text"
-                  value={data.musicProgram.closingHymnNumber}
+                  value={data.musicProgram.closingHymnNumber || ''}
                   onChange={(e) => handleHymnNumberChange('closingHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('closingHymnNumber')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
@@ -1175,7 +1185,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-sm font-medium text-gray-700 mb-1">Closing Hymn Title</label>
                 <input
                   type="text"
-                  value={data.musicProgram.closingHymnTitle}
+                  value={data.musicProgram.closingHymnTitle || ''}
                   onChange={(e) => {
                     updateField('musicProgram', { ...data.musicProgram, closingHymnTitle: e.target.value });
                     handleHymnTitleSearch('closingHymnNumber', e.target.value);
@@ -1223,7 +1233,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-sm font-medium text-gray-700 mb-1">Invocation</label>
                 <input
                   type="text"
-                  value={data.prayers.opening}
+                  value={data.prayers.opening || ''}
                   onChange={(e) => updateField('prayers', { ...data.prayers, opening: e.target.value })}
                   placeholder="Invocation name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1233,7 +1243,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 <label className="block text-sm font-medium text-gray-700 mb-1">Benediction</label>
                 <input
                   type="text"
-                  value={data.prayers.closing}
+                  value={data.prayers.closing || ''}
                   onChange={(e) => updateField('prayers', { ...data.prayers, closing: e.target.value })}
                   placeholder="Benediction name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1265,8 +1275,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                   </div>
                 ) : item.type === 'speaker' ? (
                   <>
-                    <input type="text" value={item.name} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder="Speaker name" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
-                    <select value={item.speakerType} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
+                    <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder="Speaker name" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
+                    <select value={item.speakerType || 'adult'} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
                       <option value="youth">Youth Speaker</option>
                       <option value="adult">Speaker</option>
                     </select>
@@ -1473,42 +1483,168 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                 </div>
               </div>
             </div>
-            {data.announcements.map((announcement, idx) => (
-              <div key={announcement.id} className="bg-gray-50 p-4 rounded-lg space-y-3 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                <div className="flex-1 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      value={announcement.title}
-                      onChange={(e) => updateAnnouncement(announcement.id, 'title', e.target.value)}
-                      placeholder="Announcement title"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <select
-                      value={announcement.audience || 'ward'}
-                      onChange={e => updateAnnouncement(announcement.id, 'audience', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      {audienceOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <ReactQuill
-                    value={announcement.content}
-                    onChange={value => updateAnnouncement(announcement.id, 'content', value)}
-                    placeholder="Announcement content..."
-                    className="quill-no-border"
-                    theme="snow"
-                    modules={{
-                      toolbar: [
-                        [{ 'size': ['small', false, 'large', 'huge'] }],
-                        ['bold', 'italic', 'underline', { 'color': [] }, 'link'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['clean']
-                      ]
-                    }}
-                  />
+            {(() => {
+              // Group announcements by audience/type
+              const grouped = data.announcements.reduce((groups, announcement) => {
+                const audience = announcement.audience || 'ward';
+                if (!groups[audience]) {
+                  groups[audience] = [];
+                }
+                groups[audience].push(announcement);
+                return groups;
+              }, {} as Record<string, Announcement[]>);
+
+              // Get all used audiences and add default if empty
+              const usedAudiences = Object.keys(grouped);
+              if (usedAudiences.length === 0) {
+                grouped['ward'] = [];
+              }
+
+              return Object.entries(grouped).map(([audience, announcements]) => {
+                const audienceLabel = audienceOptions.find(opt => opt.value === audience)?.label || getAudienceDisplayName(audience);
+                return (
+                  <div key={audience} className="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
+                    {/* Type Header */}
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={audience}
+                          onChange={e => {
+                            // Update all announcements in this group to the new audience
+                            const updated = data.announcements.map(ann => 
+                              ann.audience === audience ? { ...ann, audience: e.target.value } : ann
+                            );
+                            updateField('announcements', updated);
+                          }}
+                          className="text-lg font-semibold text-gray-900 border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                        >
+                          {audienceOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'})</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => addAnnouncementToType(audience)}
+                          className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Title
+                        </button>
+                        {announcements.length === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Remove this type section if it has no announcements
+                              const updated = data.announcements.filter(ann => ann.audience !== audience);
+                              updateField('announcements', updated);
+                            }}
+                            className="px-3 py-1.5 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors"
+                          >
+                            Remove Type
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Announcement Titles under this Type */}
+                    {announcements.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p className="mb-2">No announcements yet for {audienceLabel}</p>
+                        <button
+                          type="button"
+                          onClick={() => addAnnouncementToType(audience)}
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Add your first announcement
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {announcements.map((announcement, idx) => (
+                          <div key={announcement.id} className="bg-gray-50 p-4 rounded-lg space-y-3">
+                            <div className="flex-1 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="text"
+                                  value={announcement.title}
+                                  onChange={(e) => updateAnnouncement(announcement.id, 'title', e.target.value)}
+                                  placeholder="Announcement title"
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                                />
+                                <div className="flex items-center gap-1">
+                                  <button 
+                                    onClick={() => {
+                                      const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
+                                      const sameAudience = data.announcements.filter(a => a.audience === audience);
+                                      const groupIndex = sameAudience.findIndex(a => a.id === announcement.id);
+                                      if (groupIndex > 0) {
+                                        const prevInGroup = sameAudience[groupIndex - 1];
+                                        const prevIndex = data.announcements.findIndex(a => a.id === prevInGroup.id);
+                                        const updated = [...data.announcements];
+                                        [updated[prevIndex], updated[currentIndex]] = [updated[currentIndex], updated[prevIndex]];
+                                        updateField('announcements', updated);
+                                      }
+                                    }}
+                                    disabled={idx === 0}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg rounded-lg hover:bg-gray-100 transition-colors"
+                                    title="Move up"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
+                                      const sameAudience = data.announcements.filter(a => a.audience === audience);
+                                      const groupIndex = sameAudience.findIndex(a => a.id === announcement.id);
+                                      if (groupIndex < sameAudience.length - 1) {
+                                        const nextInGroup = sameAudience[groupIndex + 1];
+                                        const nextIndex = data.announcements.findIndex(a => a.id === nextInGroup.id);
+                                        const updated = [...data.announcements];
+                                        [updated[nextIndex], updated[currentIndex]] = [updated[currentIndex], updated[nextIndex]];
+                                        updateField('announcements', updated);
+                                      }
+                                    }}
+                                    disabled={idx === announcements.length - 1}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg rounded-lg hover:bg-gray-100 transition-colors"
+                                    title="Move down"
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => convertToRecurring(announcement)}
+                                    className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                                    title="Convert to recurring announcement"
+                                  >
+                                    <RotateCcw className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAnnouncement(announcement.id)}
+                                    className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              <ReactQuill
+                                value={announcement.content}
+                                onChange={value => updateAnnouncement(announcement.id, 'content', value)}
+                                placeholder="Announcement content..."
+                                className="quill-no-border"
+                                theme="snow"
+                                modules={{
+                                  toolbar: [
+                                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                                    ['bold', 'italic', 'underline', { 'color': [] }, 'link'],
+                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                    ['clean']
+                                  ]
+                                }}
+                              />
                   
                   {/* Announcement Image Section */}
                   <div className="mt-4 p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -1556,8 +1692,11 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                         
                         {/* Multiple images */}
                         {announcement.images && announcement.images.map((img, index) => {
+                          // Use imageUrl if available (for Supabase Storage images), otherwise get from cache
                           const selectedImage = getImageFromCache(img.imageId);
-                          return selectedImage?.url ? (
+                          const imageUrl = img.imageUrl || selectedImage?.url;
+                          const imageName = selectedImage?.name || 'Custom Image';
+                          return imageUrl ? (
                             <div key={index} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-white rounded border">
                               {/* Drag handle and reorder buttons */}
                               <div className="flex flex-col items-center gap-1 flex-shrink-0">
@@ -1585,12 +1724,16 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                               </div>
                               
                               <img
-                                src={selectedImage.url}
-                                alt={selectedImage.name}
+                                src={imageUrl}
+                                alt={imageName}
                                 className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded border flex-shrink-0"
+                                onError={(e) => {
+                                  console.error('Failed to load announcement image in form:', imageUrl, img);
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{selectedImage.name}</p>
+                                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{imageName}</p>
                                 <div className="flex flex-col gap-2 mt-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <label className="flex items-center text-xs">
@@ -1703,39 +1846,22 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                       </div>
                     </details>
                   </div>
-                </div>
-                <div className="flex flex-col items-end space-y-2 sm:space-y-0 sm:ml-4 sm:flex-row sm:items-center sm:space-x-2">
-                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => moveAnnouncement(idx, -1)} disabled={idx === 0} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg sm:text-xl rounded-lg hover:bg-gray-100 transition-colors">↑</button>
-                    <button onClick={() => moveAnnouncement(idx, 1)} disabled={idx === data.announcements.length - 1} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg sm:text-xl rounded-lg hover:bg-gray-100 transition-colors">↓</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => convertToRecurring(announcement)}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-green-600 hover:bg-green-100 rounded-lg transition-colors"
-                    title="Convert to recurring announcement"
-                  >
-                    <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeAnnouncement(announcement.id)}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
-                </div>
-                </div>
-              </div>
-            ))}
-            <div className="flex flex-col sm:flex-row gap-3 mt-2">
+                );
+              });
+            })()}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
               <button
-                onClick={addAnnouncement}
+                onClick={addNewTypeSection}
                 className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add Announcement
+                Add New Type
               </button>
               
               <button
@@ -2043,191 +2169,491 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
 
           {/* Missionaries from our ward Section */}
           <section className="space-y-4 mt-8">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{getUnitMissionariesLabel()}
-              <div className="flex flex-col items-end ml-2">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-xl font-medium text-gray-900">{getUnitMissionariesLabel()}</h3>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => saveDefault('wardMissionaries', data.wardMissionaries)}
-                  className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
-                  title="Save as default"
+                  onClick={() => {
+                    const updated = [...data.wardMissionaries];
+                    updated.sort((a, b) => {
+                      const dateA = a.expectedReturnDate || '';
+                      const dateB = b.expectedReturnDate || '';
+                      if (!dateA && !dateB) return 0;
+                      if (!dateA) return 1;
+                      if (!dateB) return -1;
+                      return dateA.localeCompare(dateB);
+                    });
+                    updateField('wardMissionaries', updated);
+                  }}
+                  className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 border border-blue-300 font-medium"
+                  title="Sort by return date (earliest first)"
                 >
-                  Save as default
+                  Sort by Return Date
                 </button>
-                <span className="text-sm text-gray-500 mt-1">Saves all {getUnitLowercase()} missionary information as your template.</span>
+                <div className="flex flex-col items-end">
+                  <button
+                    type="button"
+                    onClick={() => saveDefault('wardMissionaries', data.wardMissionaries)}
+                    className="px-3 py-1.5 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
+                    title="Save as default"
+                  >
+                    Save as default
+                  </button>
+                  <span className="text-xs text-gray-500 mt-1">Saves as template</span>
+                </div>
               </div>
-            </h3>
+            </div>
             
-            {/* Desktop view */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full border text-sm rounded-lg overflow-hidden bg-white shadow-sm">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-3 py-2 border-b text-sm">Name</th>
-                    <th className="px-3 py-2 border-b text-sm">Mission</th>
-                    <th className="px-3 py-2 border-b text-sm">Mission Address</th>
-                    <th className="px-3 py-2 border-b text-sm">Email</th>
-                    <th className="px-3 py-2 border-b text-sm"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.wardMissionaries.map((entry, idx) => (
-                    <tr key={idx} className="hover:bg-blue-50 transition">
-                      <td className="border-b px-3 py-2">
-                        <input
-                          type="text"
-                          value={entry.name}
-                          onChange={e => {
-                            const updated = [...data.wardMissionaries];
-                            updated[idx] = { ...updated[idx], name: e.target.value };
-                            updateField('wardMissionaries', updated);
-                          }}
-                          className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Missionary name"
-                        />
-                      </td>
-                      <td className="border-b px-3 py-2">
-                        <input
-                          type="text"
-                          value={entry.mission || ''}
-                          onChange={e => {
-                            const updated = [...data.wardMissionaries];
-                            updated[idx] = { ...updated[idx], mission: e.target.value };
-                            updateField('wardMissionaries', updated);
-                          }}
-                          className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Mission name"
-                        />
-                      </td>
-                      <td className="border-b px-3 py-2">
-                        <input
-                          type="text"
-                          value={entry.missionAddress || ''}
-                          onChange={e => {
-                            const updated = [...data.wardMissionaries];
-                            updated[idx] = { ...updated[idx], missionAddress: e.target.value };
-                            updateField('wardMissionaries', updated);
-                          }}
-                          className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Mission address"
-                        />
-                      </td>
-                      <td className="border-b px-3 py-2">
-                        <input
-                          type="email"
-                          value={entry.email || ''}
-                          onChange={e => {
-                            const updated = [...data.wardMissionaries];
-                            updated[idx] = { ...updated[idx], email: e.target.value };
-                            updateField('wardMissionaries', updated);
-                          }}
-                          className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Email address"
-                        />
-                      </td>
-                      <td className="border-b px-3 py-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = data.wardMissionaries.filter((_, i) => i !== idx);
-                            updateField('wardMissionaries', updated);
-                          }}
-                          className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                          title="Remove"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Desktop view - Stacked card layout */}
+            <div className="hidden md:block space-y-4">
+              {data.wardMissionaries.length === 0 ? (
+                <div className="bg-white border rounded-lg p-8 text-center">
+                  <p className="text-gray-500 mb-3">No missionaries added yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
+                    className="text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    Add your first missionary
+                  </button>
+                </div>
+              ) : (
+                data.wardMissionaries.map((entry, idx) => {
+                  // Calculate days until return
+                  const getDaysUntilReturn = () => {
+                    if (!entry.expectedReturnDate) return null;
+                    const returnDate = new Date(entry.expectedReturnDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffTime = returnDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays;
+                  };
+                  
+                  const daysUntilReturn = getDaysUntilReturn();
+                  const getReturnStatusBadge = () => {
+                    if (daysUntilReturn === null) return null;
+                    if (daysUntilReturn < 0) {
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-green-100 text-green-800 rounded-full">Returned</span>;
+                    } else if (daysUntilReturn <= 30) {
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-800 rounded-full">Returning Soon</span>;
+                    } else if (daysUntilReturn <= 90) {
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">Returning in {daysUntilReturn} days</span>;
+                    }
+                    return null;
+                  };
+                  
+                  return (
+                    <div key={idx} className="bg-white border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Left Column */}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                            <input
+                              type="text"
+                              value={entry.name}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                              placeholder="Missionary name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Mission</label>
+                            <input
+                              type="text"
+                              value={entry.mission || ''}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], mission: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Mission name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                            <input
+                              type="email"
+                              value={entry.email || ''}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], email: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Email address"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Right Column */}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Set Apart Date</label>
+                            <input
+                              type="date"
+                              value={entry.setApartDate || ''}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Set apart date"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Expected Return Date</label>
+                            <div className="space-y-2">
+                              <input
+                                type="date"
+                                value={entry.expectedReturnDate || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                                  // Auto-sort by return date when changed
+                                  updated.sort((a, b) => {
+                                    const dateA = a.expectedReturnDate || '';
+                                    const dateB = b.expectedReturnDate || '';
+                                    if (!dateA && !dateB) return 0;
+                                    if (!dateA) return 1;
+                                    if (!dateB) return -1;
+                                    return dateA.localeCompare(dateB);
+                                  });
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Expected return date"
+                              />
+                              {getReturnStatusBadge()}
+                            </div>
+                          </div>
+                          <div className="pt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = data.wardMissionaries.filter((_, i) => i !== idx);
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                              title="Remove"
+                            >
+                              Remove Missionary
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
             
             {/* Mobile view */}
             <div className="md:hidden space-y-4">
-              {data.wardMissionaries.map((entry, idx) => (
-                <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Name</label>
-                      <input
-                        type="text"
-                        value={entry.name}
-                        onChange={e => {
-                          const updated = [...data.wardMissionaries];
-                          updated[idx] = { ...updated[idx], name: e.target.value };
-                          updateField('wardMissionaries', updated);
-                        }}
-                        className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Missionary name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Mission</label>
-                      <input
-                        type="text"
-                        value={entry.mission || ''}
-                        onChange={e => {
-                          const updated = [...data.wardMissionaries];
-                          updated[idx] = { ...updated[idx], mission: e.target.value };
-                          updateField('wardMissionaries', updated);
-                        }}
-                        className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Mission name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Mission Address</label>
-                      <input
-                        type="text"
-                        value={entry.missionAddress || ''}
-                        onChange={e => {
-                          const updated = [...data.wardMissionaries];
-                          updated[idx] = { ...updated[idx], missionAddress: e.target.value };
-                          updateField('wardMissionaries', updated);
-                        }}
-                        className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Mission address"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={entry.email || ''}
-                        onChange={e => {
-                          const updated = [...data.wardMissionaries];
-                          updated[idx] = { ...updated[idx], email: e.target.value };
-                          updateField('wardMissionaries', updated);
-                        }}
-                        className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Email address"
-                      />
-                    </div>
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = data.wardMissionaries.filter((_, i) => i !== idx);
-                          updateField('wardMissionaries', updated);
-                        }}
-                        className="w-full px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        title="Remove"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+              {data.wardMissionaries.length === 0 ? (
+                <div className="bg-white border rounded-lg p-8 text-center">
+                  <p className="text-gray-500 mb-3">No missionaries added yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
+                    className="text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    Add your first missionary
+                  </button>
                 </div>
-              ))}
+              ) : (
+                data.wardMissionaries.map((entry, idx) => {
+                  // Calculate days until return
+                  const getDaysUntilReturn = () => {
+                    if (!entry.expectedReturnDate) return null;
+                    const returnDate = new Date(entry.expectedReturnDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const diffTime = returnDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays;
+                  };
+                  
+                  const daysUntilReturn = getDaysUntilReturn();
+                  const getReturnStatusBadge = () => {
+                    if (daysUntilReturn === null) return null;
+                    if (daysUntilReturn < 0) {
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mt-1">Returned</span>;
+                    } else if (daysUntilReturn <= 30) {
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full mt-1">Returning Soon</span>;
+                    } else if (daysUntilReturn <= 90) {
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full mt-1">Returning in {daysUntilReturn} days</span>;
+                    }
+                    return null;
+                  };
+                  
+                  return (
+                    <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name</label>
+                          <input
+                            type="text"
+                            value={entry.name}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], name: e.target.value };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                            placeholder="Missionary name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mission</label>
+                          <input
+                            type="text"
+                            value={entry.mission || ''}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], mission: e.target.value };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Mission name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Set Apart Date</label>
+                          <input
+                            type="date"
+                            value={entry.setApartDate || ''}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Set apart date"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expected Return Date</label>
+                          <input
+                            type="date"
+                            value={entry.expectedReturnDate || ''}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                              // Auto-sort by return date when changed
+                              updated.sort((a, b) => {
+                                const dateA = a.expectedReturnDate || '';
+                                const dateB = b.expectedReturnDate || '';
+                                if (!dateA && !dateB) return 0;
+                                if (!dateA) return 1;
+                                if (!dateB) return -1;
+                                return dateA.localeCompare(dateB);
+                              });
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Expected return date"
+                          />
+                          {getReturnStatusBadge()}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                          <input
+                            type="email"
+                            value={entry.email || ''}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], email: e.target.value };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Email address"
+                          />
+                        </div>
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = data.wardMissionaries.filter((_, i) => i !== idx);
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                            title="Remove"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
             
             <button
               type="button"
-              onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', missionAddress: '', email: '' }])}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-base"
+              onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
+              className="mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
             >
+              <Plus className="w-4 h-4 inline mr-2" />
               Add {getUnitLabel()} Missionary
+            </button>
+          </section>
+
+          {/* Service Missionaries Section */}
+          <section className="space-y-4 mt-8">
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">Service Missionaries</h3>
+            
+            {/* Desktop view - Card layout matching Ward Missionaries */}
+            <div className="hidden md:block space-y-4">
+              {(!data.serviceMissionaries || data.serviceMissionaries.length === 0) ? (
+                <div className="bg-white border rounded-lg p-8 text-center">
+                  <p className="text-gray-500 mb-3">No service missionaries added yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => updateField('serviceMissionaries', [...(data.serviceMissionaries || []), { name: '', serviceName: '' }])}
+                    className="text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    Add your first service missionary
+                  </button>
+                </div>
+              ) : (
+                (data.serviceMissionaries || []).map((entry, idx) => (
+                  <div key={idx} className="bg-white border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Left Column */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Name(s)</label>
+                          <input
+                            type="text"
+                            value={entry.name || ''}
+                            onChange={e => {
+                              const updated = [...(data.serviceMissionaries || [])];
+                              updated[idx] = { ...updated[idx], name: e.target.value };
+                              updateField('serviceMissionaries', updated);
+                            }}
+                            className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                            placeholder="Elder and Sister Jones"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Right Column */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Service Name</label>
+                          <input
+                            type="text"
+                            value={entry.serviceName || ''}
+                            onChange={e => {
+                              const updated = [...(data.serviceMissionaries || [])];
+                              updated[idx] = { ...updated[idx], serviceName: e.target.value };
+                              updateField('serviceMissionaries', updated);
+                            }}
+                            className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Senior Missionary Mentors"
+                          />
+                        </div>
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (data.serviceMissionaries || []).filter((_, i) => i !== idx);
+                              updateField('serviceMissionaries', updated);
+                            }}
+                            className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                            title="Remove"
+                          >
+                            Remove Missionary
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Mobile view */}
+            <div className="md:hidden space-y-4">
+              {(!data.serviceMissionaries || data.serviceMissionaries.length === 0) ? (
+                <div className="bg-white border rounded-lg p-8 text-center">
+                  <p className="text-gray-500 mb-3">No service missionaries added yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => updateField('serviceMissionaries', [...(data.serviceMissionaries || []), { name: '', serviceName: '' }])}
+                    className="text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    Add your first service missionary
+                  </button>
+                </div>
+              ) : (
+                (data.serviceMissionaries || []).map((entry, idx) => (
+                  <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name(s)</label>
+                        <input
+                          type="text"
+                          value={entry.name || ''}
+                          onChange={e => {
+                            const updated = [...(data.serviceMissionaries || [])];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            updateField('serviceMissionaries', updated);
+                          }}
+                          className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+                          placeholder="Elder and Sister Jones"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Service Name</label>
+                        <input
+                          type="text"
+                          value={entry.serviceName || ''}
+                          onChange={e => {
+                            const updated = [...(data.serviceMissionaries || [])];
+                            updated[idx] = { ...updated[idx], serviceName: e.target.value };
+                            updateField('serviceMissionaries', updated);
+                          }}
+                          className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Senior Missionary Mentors"
+                        />
+                      </div>
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (data.serviceMissionaries || []).filter((_, i) => i !== idx);
+                            updateField('serviceMissionaries', updated);
+                          }}
+                          className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                          title="Remove"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => updateField('serviceMissionaries', [...(data.serviceMissionaries || []), { name: '', serviceName: '' }])}
+              className="mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4 inline mr-2" />
+              Add Service Missionary
             </button>
           </section>
         </>

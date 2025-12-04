@@ -284,8 +284,20 @@ export const getChildrensSongUrl = (number: string): string => {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-+/g, '-');
-  // Use Gospel Library app format (opens in app instead of web browser)
-  return `https://www.churchofjesuschrist.org/study/manual/childrens-songbook/${slug}?lang=eng`;
+  
+  // Check if device is mobile
+  const isMobile = typeof window !== 'undefined' && (
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent) ||
+    window.innerWidth < 768
+  );
+
+  // Mobile devices: use study/manual format (opens in Gospel Library App)
+  if (isMobile) {
+    return `https://www.churchofjesuschrist.org/study/manual/childrens-songbook/${slug}?lang=eng`;
+  }
+
+  // Desktop/Web: use media/music/songs format (opens in new web page)
+  return `https://www.churchofjesuschrist.org/media/music/songs/${slug}?crumbs=childrens-songbook&lang=eng`;
 };
 
 export const isValidChildrensSongNumber = (number: string): boolean => {

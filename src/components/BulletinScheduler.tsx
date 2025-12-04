@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, Check, X, AlertCircle } from 'lucide-react';
 import { BulletinStatus } from '../types/bulletin';
+import { toast } from 'react-toastify';
 
 interface BulletinSchedulerProps {
   isOpen: boolean;
@@ -46,6 +47,15 @@ export default function BulletinScheduler({
   const handleSchedule = () => {
     if (!selectedDate) return;
 
+    // Validate that the scheduled date/time is not in the past
+    const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}:00`);
+    const now = new Date();
+    
+    if (scheduledDateTime < now) {
+      toast.error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
+      return;
+    }
+
     try {
       // Create date/time string in local timezone format (no UTC conversion)
       const dateTimeString = `${selectedDate}T${selectedTime}:00`;
@@ -57,7 +67,7 @@ export default function BulletinScheduler({
   };
 
   const isScheduled = currentStatus === 'scheduled';
-  const isInPast = selectedDate && new Date(`${selectedDate}T${selectedTime}`) < new Date();
+  const isInPast = selectedDate && new Date(`${selectedDate}T${selectedTime}:00`) < new Date();
 
   // Get minimum date (today) - using local date
   const today = new Date();
@@ -134,10 +144,10 @@ export default function BulletinScheduler({
           </div>
 
           {isInPast && selectedDate && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start">
-              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
-              <div className="text-sm text-amber-800">
-                The selected date and time is in the past. {autoActivate ? 'The bulletin will be activated immediately.' : 'Please select a future date.'}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
+              <div className="text-sm text-red-800">
+                Cannot schedule for a date/time in the past. Please select a future date and time.
               </div>
             </div>
           )}
@@ -152,7 +162,7 @@ export default function BulletinScheduler({
           </button>
           <button
             onClick={handleSchedule}
-            disabled={!selectedDate}
+            disabled={!selectedDate || isInPast}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
             <Check className="w-4 h-4 mr-1" />

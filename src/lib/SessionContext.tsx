@@ -70,12 +70,15 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Check for scheduled bulletins that need activation when user logs in
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user?.id) {
       const checkScheduledBulletins = async () => {
         try {
+          console.log('[SessionContext] Checking for scheduled bulletins...');
           const activatedCount = await bulletinService.checkAndActivateScheduledBulletins(session.user.id);
           if (activatedCount > 0) {
-            console.log(`Activated ${activatedCount} scheduled bulletin(s)`);
+            console.log(`✅ Activated ${activatedCount} scheduled bulletin(s)`);
+          } else {
+            console.log('[SessionContext] No bulletins to activate');
           }
         } catch (error) {
           console.error('Error checking scheduled bulletins:', error);
@@ -90,7 +93,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return () => clearInterval(interval);
     }
-  }, [session?.user]);
+  }, [session?.user?.id]);
 
   return (
     <SessionContext.Provider value={{ session, user: session?.user ?? null, profile }}>

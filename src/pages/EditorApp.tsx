@@ -64,17 +64,42 @@ function EditorApp() {
   const currentProfileSlug = slug || profile?.profile_slug;
 
   // Get active bulletin ID for the current profile
+  // Query by status='active' and profile_slug instead of relying on active_bulletin_id
+  // This is more reliable for shared profiles where multiple users might activate bulletins
   const getActiveBulletinForCurrentProfile = async (profileSlug: string) => {
     try {
-      const { data: profileData } = await supabase
-        .from('users')
-        .select('active_bulletin_id')
+      console.log('🔍 [EditorApp] Querying for active bulletin:', { profileSlug });
+      const { data: activeBulletins, error: queryError } = await supabase
+        .from('bulletins')
+        .select('id, status')
         .eq('profile_slug', profileSlug)
-        .single();
+        .eq('status', 'active')
+        .limit(1)
+        .maybeSingle(); // Use maybeSingle instead of single to handle no results gracefully
       
-      return profileData?.active_bulletin_id || null;
+      if (queryError) {
+        console.error('❌ [EditorApp] Error querying active bulletin:', queryError);
+        return null;
+      }
+      
+      if (activeBulletins) {
+        console.log('✅ [EditorApp] Active bulletin FOUND:', { 
+          profileSlug, 
+          id: activeBulletins.id, 
+          status: activeBulletins.status 
+        });
+      } else {
+        console.log('❌ [EditorApp] No active bulletin found for profile:', profileSlug);
+      }
+      
+      return activeBulletins?.id || null;
     } catch (error) {
-      console.error('Failed to get active bulletin for profile:', error);
+      // If no active bulletin found, that's okay - return null
+      if ((error as any)?.code === 'PGRST116') {
+        console.log('🔍 [EditorApp] No active bulletin found (PGRST116)');
+        return null;
+      }
+      console.error('❌ [EditorApp] Failed to get active bulletin for profile:', error);
       return null;
     }
   };
@@ -88,15 +113,23 @@ function EditorApp() {
           setActiveBulletinId(activeId);
         } else {
           // If we're on our own profile, use the profile's active bulletin
-          setActiveBulletinId(profile?.active_bulletin_id || null);
+          // But also verify by querying for active bulletins to ensure consistency
+          const activeId = await getActiveBulletinForCurrentProfile(currentProfileSlug);
+          // Prefer the queried active bulletin over profile.active_bulletin_id for consistency
+          setActiveBulletinId(activeId || profile?.active_bulletin_id || null);
         }
-      } else {
-        setActiveBulletinId(null);
+      } else if (profile?.active_bulletin_id !== undefined) {
+        // No profile_slug but user has a profile - use their active_bulletin_id
+        // Only update if it's different to prevent unnecessary re-renders
+        if (activeBulletinId !== profile.active_bulletin_id) {
+          setActiveBulletinId(profile.active_bulletin_id || null);
+        }
       }
+      // If no profile yet, do nothing (keep current state)
     };
-    
+
     updateActiveBulletinId();
-  }, [currentProfileSlug, profile]);
+  }, [currentProfileSlug, profile?.active_bulletin_id, profile?.profile_slug]);
 
   // Redirect to shared profile if user has shared profiles but no slug specified
   useEffect(() => {
@@ -165,9 +198,9 @@ function EditorApp() {
   const [newProfileSlug, setNewProfileSlug] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(() => {
-    // If we loaded a draft during initialization, mark as having unsaved changes
-    const DRAFT_KEY = 'draft_bulletin';
-    return !!localStorage.getItem(DRAFT_KEY);
+    // Don't mark as having unsaved changes on initial load
+    // The useEffect will handle loading saved bulletins and clearing drafts
+    return false;
   });
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
@@ -332,6 +365,7 @@ function EditorApp() {
       ]),
       missionaries: getDefault('missionaries', []),
       wardMissionaries: getDefault('wardMissionaries', []),
+      serviceMissionaries: [],
       imageId: 'none',
       imagePosition: { x: 50, y: 50 }
     };
@@ -486,9 +520,13 @@ function EditorApp() {
   // }, [user, activeBulletinId, hasUnsavedChanges, currentBulletinId]);
 
   const convertDbBulletinToData = (bulletin: any): BulletinData => ({
-    wardName: bulletin.ward_name,
-    date: bulletin.date,
-    meetingType: bulletin.meeting_type,
+    wardName: bulletin.ward_name || '',
+    date: bulletin.date || '',
+    // Include status and scheduling fields
+    status: bulletin.status || 'draft',
+    scheduledDate: bulletin.scheduled_date || null,
+    autoActivate: bulletin.auto_activate || false,
+    meetingType: bulletin.meeting_type || 'sacrament',
     theme: bulletin.theme || '',
     userTheme: bulletin.userTheme || '',
     bishopricMessage: bulletin.bishopric_message || '',
@@ -513,12 +551,14 @@ function EditorApp() {
       closingHymnNumber: '',
       closingHymnTitle: ''
     },
-    leadership: bulletin.leadership || {
-      presiding: '',
-      chorister: '',
-      organist: '',
-      organistLabel: 'Organist',
-      choristerLabel: 'Chorister'
+    leadership: {
+      presiding: bulletin.leadership?.presiding || '',
+      chorister: bulletin.leadership?.chorister || '',
+      organist: bulletin.leadership?.organist || '',
+      conducting: bulletin.leadership?.conducting || '',
+      preludeMusic: bulletin.leadership?.preludeMusic || '',
+      organistLabel: bulletin.leadership?.organistLabel || 'Organist',
+      choristerLabel: bulletin.leadership?.choristerLabel || 'Chorister'
     },
     wardLeadership: bulletin.wardLeadership || [
       { title: 'Bishop', name: '', phone: '' },
@@ -537,6 +577,7 @@ function EditorApp() {
     ],
     missionaries: bulletin.missionaries || [],
     wardMissionaries: bulletin.wardMissionaries || [],
+    serviceMissionaries: bulletin.serviceMissionaries || [],
     imageId: bulletin.imageId || 'none',
     imagePosition: bulletin.imagePosition || { x: 50, y: 50 }
   });
@@ -655,24 +696,67 @@ function EditorApp() {
     }
   }, [user]);
 
+  // Fetch status for current bulletin if missing, or update if activeBulletinId changes
+  useEffect(() => {
+    const fetchBulletinStatus = async () => {
+      if (!user || !currentBulletinId) {
+        return;
+      }
+
+      // If we have an activeBulletinId and it matches currentBulletinId, set status to active immediately
+      if (activeBulletinId === currentBulletinId) {
+        if (bulletinData.status !== 'active') {
+          setBulletinData(prev => ({ ...prev, status: 'active' }));
+          console.log('✅ [EditorApp] Set status to active (matches activeBulletinId)');
+        }
+        return;
+      }
+
+      // If we already have a status and it's not active, and this isn't the active bulletin, don't fetch
+      if (bulletinData.status && bulletinData.status !== 'active') {
+        return;
+      }
+
+      try {
+        // Fetch just the status field for the current bulletin
+        const { data, error } = await supabase
+          .from('bulletins')
+          .select('id, status')
+          .eq('id', currentBulletinId)
+          .single();
+
+        if (!error && data && data.status) {
+          // Update bulletinData with the status
+          setBulletinData(prev => ({ ...prev, status: data.status }));
+          console.log('✅ [EditorApp] Fetched status for current bulletin:', { id: currentBulletinId, status: data.status });
+        }
+      } catch (error) {
+        console.warn('⚠️ [EditorApp] Failed to fetch bulletin status:', error);
+      }
+    };
+
+    fetchBulletinStatus();
+  }, [user, currentBulletinId, activeBulletinId, bulletinData.status]);
+
   // Load active bulletin on startup or when active bulletin changes
   useEffect(() => {
     const fetchInitialBulletin = async () => {
       if (!user) return;
 
-      // CRITICAL: Don't load if there are unsaved changes - user is actively editing
-      if (hasUnsavedChanges) return;
-
-      // CRITICAL: Don't load active bulletin if a draft exists
-      const hasDraft = !!localStorage.getItem(DRAFT_KEY);
-      if (hasDraft) {
+      // CRITICAL: On refresh, prioritize loading saved bulletins over drafts
+      // Only skip if user is actively editing (hasUnsavedChanges is true AND we're not on initial load)
+      // On initial load (refresh), we want to load the saved bulletin and clear any stale draft
+      const isInitialLoad = !currentBulletinId && !bulletinData.wardName;
+      if (hasUnsavedChanges && !isInitialLoad) {
+        console.log('⏸️ Skipping bulletin load - user has unsaved changes');
         return;
       }
 
       // IMPORTANT: Check if the active bulletin has changed
       // This handles scheduled bulletins activating, or manual activation on another device
-      if (currentBulletinId && activeBulletinId && currentBulletinId === activeBulletinId) {
+      if (currentBulletinId && activeBulletinId && currentBulletinId === activeBulletinId && !isInitialLoad) {
         // Already viewing the correct active bulletin, no need to reload
+        console.log('✅ Already viewing correct active bulletin');
         return;
       }
 
@@ -682,21 +766,40 @@ function EditorApp() {
           if (currentProfileSlug !== profile?.profile_slug) {
             const bulletin = await bulletinService.getLatestBulletinByProfileSlug(currentProfileSlug);
             if (bulletin) {
+              console.log('✅ Loading active bulletin for shared profile:', bulletin.id);
               const data = convertDbBulletinToData(bulletin);
               setBulletinData(data);
               setCurrentBulletinId(bulletin.id);
               setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY);
+              localStorage.removeItem(DRAFT_KEY); // Clear any stale draft
             }
           } else if (activeBulletinId) {
             // If we're on our own profile, load the active bulletin
             // This will switch to the new active bulletin even if we were viewing a different one
             const bulletin = await bulletinService.getBulletinById(activeBulletinId);
-            const data = convertDbBulletinToData(bulletin);
-            setBulletinData(data);
-            setCurrentBulletinId(bulletin.id);
-            setHasUnsavedChanges(false);
-            localStorage.removeItem(DRAFT_KEY);
+            if (bulletin) {
+              console.log('✅ Loading active bulletin for own profile:', bulletin.id);
+              const data = convertDbBulletinToData(bulletin);
+              setBulletinData(data);
+              setCurrentBulletinId(bulletin.id);
+              setHasUnsavedChanges(false);
+              localStorage.removeItem(DRAFT_KEY); // Clear any stale draft
+            }
+          } else if (isInitialLoad) {
+            // On initial load with no active bulletin, check for draft
+            // But only if we don't have a currentBulletinId
+            const hasDraft = !!localStorage.getItem(DRAFT_KEY);
+            if (hasDraft) {
+              console.log('📝 Restoring draft on initial load');
+              try {
+                const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!);
+                setBulletinData(draftData);
+                setHasUnsavedChanges(true);
+              } catch (err) {
+                console.error('Failed to restore draft:', err);
+                localStorage.removeItem(DRAFT_KEY);
+              }
+            }
           }
         }
       } catch (err) {
@@ -875,11 +978,8 @@ function EditorApp() {
 
     try {
       setLoading(true);
-      const templateData = {
-        name: `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`,
-        data: bulletinData
-      };
-      await templateService.saveTemplate(templateData, user.id);
+      const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`;
+      await templateService.saveTemplate(templateName, bulletinData);
       toast.success('Bulletin saved as template!');
     } catch (error) {
       toast.error('Error saving template: ' + (error as Error).message);
@@ -998,6 +1098,10 @@ function EditorApp() {
         chorister: '',
         organist: ''
       },
+      // Include status and scheduling fields
+      status: bulletin.status || 'draft',
+      scheduledDate: bulletin.scheduled_date,
+      autoActivate: bulletin.auto_activate,
       wardLeadership: bulletin.wardLeadership || [
         { title: 'Bishop', name: '', phone: '' },
         { title: '1st Counselor', name: '', phone: '' },
@@ -1050,6 +1154,15 @@ function EditorApp() {
   const handleScheduleBulletin = async (scheduledDate: string) => {
     if (!user) {
       setShowAuthModal(true);
+      return;
+    }
+
+    // Validate that the scheduled date/time is not in the past
+    const scheduledDateTime = new Date(scheduledDate);
+    const now = new Date();
+    
+    if (scheduledDateTime < now) {
+      toast.error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
       return;
     }
 
@@ -1137,6 +1250,12 @@ function EditorApp() {
         await bulletinService.updateBulletinStatus(bulletinId, user.id, 'active');
         setActiveBulletinId(bulletinId);
 
+        // Update local bulletinData status if this is the current bulletin
+        if (currentBulletinId === bulletinId) {
+          setBulletinData(prev => ({ ...prev, status: 'active' }));
+          console.log('✅ [EditorApp] Updated local bulletinData.status to active for current bulletin');
+        }
+
         // Refetch queries instead of invalidating to preserve data during refetch
         queryClient.refetchQueries({ 
           queryKey: ['user-bulletins', user.id],
@@ -1170,6 +1289,11 @@ function EditorApp() {
       } else {
         // Clear the active bulletin
         await userService.updateActiveBulletinId(user.id, null);
+        
+        // Update local bulletinData status if this was the active bulletin
+        if (currentBulletinId === activeBulletinId) {
+          setBulletinData(prev => ({ ...prev, status: 'draft' }));
+        }
         setActiveBulletinId(null);
 
         // Invalidate ALL relevant queries to ensure real-time sync across all components
@@ -1360,7 +1484,14 @@ function EditorApp() {
               <Logo size={40} />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
-                <p className="text-sm text-gray-600">Ward Bulletin Creator</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm text-gray-600">Ward Bulletin Creator</p>
+                  {currentProfileSlug && (
+                    <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium" title={`Currently viewing profile: ${currentProfileSlug}`}>
+                      Profile: {currentProfileSlug}
+                    </span>
+                  )}
+                </div>
               </div>
             </a>
             {/* Desktop/Menu/Sign In button remains outside the clickable logo area */}
@@ -1631,7 +1762,11 @@ function EditorApp() {
                     onMakeActive={handleMakeActive}
                     onSaveAsTemplate={handleSaveAsTemplate}
                     loading={loading}
-                    currentStatus={bulletinData.status || (currentBulletinId === activeBulletinId ? 'active' : 'draft')}
+                    currentStatus={
+                      (currentBulletinId && currentBulletinId === activeBulletinId) 
+                        ? 'active' 
+                        : (bulletinData.status || 'draft')
+                    }
                   />
                 </div>
               )}
@@ -1728,7 +1863,7 @@ function EditorApp() {
           onClose={() => setShowSavedBulletins(false)}
           onLoadBulletin={handleLoadSavedBulletin}
           onDeleteBulletin={handleDeleteSavedBulletin}
-          profileSlug={currentProfileSlug && currentProfileSlug !== profile?.profile_slug ? currentProfileSlug : undefined}
+          profileSlug={currentProfileSlug || profile?.profile_slug || undefined}
           onActiveBulletinChange={handleActiveBulletinSelect}
           currentActiveBulletinId={activeBulletinId || undefined}
         />
