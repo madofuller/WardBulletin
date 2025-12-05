@@ -3,7 +3,7 @@ import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { decodeHtml } from '../lib/decodeHtml';
 import { getSongUrl, getSongTitle } from '../lib/songService';
-import { getImageByIdSync, LDS_IMAGES } from '../data/images';
+import { getImageByIdSync, LDS_IMAGES, ImageData } from '../data/images';
 
 
 import {
@@ -20,6 +20,8 @@ interface BulletinPreviewProps {
   hideTabs?: boolean;
   hideImageControls?: boolean;
   onImagePositionChange?: (position: { x: number; y: number }) => void;
+  onImageOpacityChange?: (opacity: number) => void;
+  allImages?: ImageData[];
 }
 
 /* ---------------------------------- Consts --------------------------------- */
@@ -63,8 +65,10 @@ const hasWardInfo = hasUnitInfo;
 const formatDate = (dateString?: string) => {
   if (!dateString) return 'Date';
   const [y, m, d] = dateString.split('-').map(Number);
-  const date = new Date(y, (m ?? 1) - 1, d ?? 1); // local tz
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  // Use UTC to avoid timezone shifts, then format manually
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${monthNames[(m ?? 1) - 1]} ${d ?? 1}, ${y}`;
 };
 
 /* ----------------------------- Reusable pieces ----------------------------- */
@@ -91,6 +95,7 @@ function BulletinHeader({
   heading, // e.g., "Sacrament Meeting" or "Announcements"
   image,
   imagePosition,
+  imageOpacity = 40,
   children
 }: {
   wardName?: string;
@@ -98,19 +103,32 @@ function BulletinHeader({
   heading: string;
   image?: { url?: string; name?: string } | null;
   imagePosition: { x: number; y: number };
+  imageOpacity?: number;
   children?: React.ReactNode;
 }) {
+  console.log('🎨 [BulletinHeader] Rendering with:', {
+    hasImage: !!image,
+    imageUrl: image?.url,
+    imageName: image?.name,
+    imagePosition,
+    imageOpacity
+  });
+
   return (
     <div className="bg-gray-100 border-b-2 border-gray-300 text-center relative overflow-hidden min-h-56">
       {image?.url && (
         <img
           src={image.url}
           alt={image.name ?? ""}
-          className="absolute inset-0 w-full h-full object-cover opacity-40 transition-all duration-300"
-          style={{ objectPosition: `${imagePosition.x}% ${imagePosition.y}%` }}
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
+          style={{
+            objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
+            opacity: imageOpacity / 100
+          }}
+          onLoad={() => console.log('✅ [BulletinHeader] Image loaded successfully:', image.url)}
+          onError={(e) => console.error('❌ [BulletinHeader] Image failed to load:', image.url, e)}
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-100/30" />
       <div className="relative z-10 p-12">
         {wardName && (
           <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-wide">
@@ -130,13 +148,17 @@ function ImagePositionControls({
   onToggle,
   positions,
   current,
-  onChange
+  onChange,
+  opacity = 40,
+  onOpacityChange
 }: {
   show: boolean;
   onToggle: () => void;
   positions: Record<string, { x: number; y: number }>;
   current: { x: number; y: number };
   onChange: (p: { x: number; y: number }) => void;
+  opacity?: number;
+  onOpacityChange?: (opacity: number) => void;
 }) {
   return (
     <div className="absolute top-2 right-2 z-20">
@@ -147,22 +169,59 @@ function ImagePositionControls({
         {show ? '✕' : '⚙️'}
       </button>
       {show && (
-        <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-lg border p-3 min-w-32">
-          <div className="space-y-1">
-            {Object.entries(positions).map(([key, pos]) => (
-              <button
-                key={key}
-                onClick={() => onChange(pos)}
-                className={`px-3 py-2 text-xs rounded ${
-                  current.x === pos.x && current.y === pos.y
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-                title={key.charAt(0).toUpperCase() + key.slice(1)}
-              >
-                {key === 'center' ? '● Center' : key === 'top' ? '↑ Top' : '↓ Bottom'}
-              </button>
-            ))}
+        <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-lg border p-3 min-w-48">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-2">Position</label>
+              <div className="space-y-1">
+                {Object.entries(positions).map(([key, pos]) => (
+                  <button
+                    key={key}
+                    onClick={() => onChange(pos)}
+                    className={`w-full px-3 py-2 text-xs rounded ${
+                      current.x === pos.x && current.y === pos.y
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                    title={key.charAt(0).toUpperCase() + key.slice(1)}
+                  >
+                    {key === 'center' ? '● Center' : key === 'top' ? '↑ Top' : '↓ Bottom'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {onOpacityChange && (
+              <div>
+                <label className="text-xs font-medium text-gray-700 block mb-2 flex items-center justify-between">
+                  <span>Opacity</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={opacity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 0 && val <= 100) {
+                        onOpacityChange(val);
+                      }
+                    }}
+                    className="w-14 px-2 py-1 text-xs border border-gray-300 rounded text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={opacity}
+                  onChange={(e) => onOpacityChange(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Transparent</span>
+                  <span>Opaque</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -307,7 +366,9 @@ export default function BulletinPreview({
   hideTabs = false,
   hideImageControls = false,
   onImagePositionChange,
+  onImageOpacityChange,
   onThemeSelectClick,
+  allImages = [],
 }: BulletinPreviewProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
 
@@ -357,10 +418,41 @@ export default function BulletinPreview({
 
   /* ------------------------------- Memoized -------------------------------- */
 
-  const selectedImage = useMemo(
-    () => (data.imageId && data.imageId !== 'none' ? getImageByIdSync(data.imageId) : null),
-    [data.imageId]
-  );
+  const selectedImage = useMemo(() => {
+    if (!data.imageId || data.imageId === 'none') return null;
+
+    console.log('🖼️ [BulletinPreview] Image lookup:', {
+      imageId: data.imageId,
+      imageUrl: data.imageUrl,
+      hasAllImages: allImages.length > 0,
+      allImagesCount: allImages.length
+    });
+
+    // If imageUrl is provided (from public bulletin), use it directly
+    if (data.imageUrl) {
+      console.log('✅ [BulletinPreview] Using direct imageUrl:', data.imageUrl);
+      return {
+        id: data.imageId,
+        name: 'Custom Image',
+        url: data.imageUrl,
+        description: 'Custom uploaded image'
+      };
+    }
+
+    // First try to find in allImages (includes both preset and custom images)
+    if (allImages.length > 0) {
+      const found = allImages.find(img => img.id === data.imageId);
+      if (found) {
+        console.log('✅ [BulletinPreview] Found in allImages:', found);
+        return found;
+      }
+    }
+
+    // Fallback to sync lookup for preset images
+    const fallback = getImageByIdSync(data.imageId);
+    console.log('⚠️ [BulletinPreview] Using fallback getImageByIdSync:', fallback);
+    return fallback;
+  }, [data.imageId, data.imageUrl, allImages]);
 
   const formattedDate = useMemo(() => formatDate(data.date), [data.date]);
 
@@ -425,6 +517,7 @@ export default function BulletinPreview({
               heading="Sacrament Meeting"
               image={selectedImage}
               imagePosition={imagePosition}
+              imageOpacity={data.imageOpacity ?? 40}
             />
             {data?.imageId && data.imageId !== 'none' && !hideImageControls && (
               <ImagePositionControls
@@ -433,6 +526,8 @@ export default function BulletinPreview({
                 positions={imagePositions}
                 current={imagePosition}
                 onChange={handleImagePositionChange}
+                opacity={data.imageOpacity ?? 40}
+                onOpacityChange={onImageOpacityChange}
               />
             )}
           </div>
@@ -649,6 +744,7 @@ export default function BulletinPreview({
               heading="Announcements"
               image={selectedImage}
               imagePosition={imagePosition}
+              imageOpacity={data.imageOpacity ?? 40}
             />
             {data?.imageId && data.imageId !== 'none' && !hideImageControls && (
               <ImagePositionControls
@@ -657,6 +753,8 @@ export default function BulletinPreview({
                 positions={imagePositions}
                 current={imagePosition}
                 onChange={handleImagePositionChange}
+                opacity={data.imageOpacity ?? 40}
+                onOpacityChange={onImageOpacityChange}
               />
             )}
           </div>
@@ -905,10 +1003,10 @@ export default function BulletinPreview({
                     {sorted.map((e, idx) => (
                       <div key={idx} className="border border-gray-300 rounded-lg p-3">
                         <div className="font-bold text-sm mb-2">{e.name}</div>
-                        {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">📍 {e.mission}</div>}
-                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">📅 Set Apart: {new Date(e.setApartDate).toLocaleDateString()}</div>}
-                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">🏠 Expected Return: {new Date(e.expectedReturnDate).toLocaleDateString()}</div>}
-                        {e.email && <div className="text-xs text-gray-600 font-normal">✉️ {e.email}</div>}
+                        {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
+                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">Set Apart: {formatDate(e.setApartDate)}</div>}
+                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">Expected Return: {formatDate(e.expectedReturnDate)}</div>}
+                        {e.email && <div className="text-xs text-gray-600 font-normal">{e.email}</div>}
                       </div>
                     ))}
                   </div>
@@ -929,8 +1027,8 @@ export default function BulletinPreview({
                           <tr key={idx}>
                             <td className="border px-3 py-2 font-bold">{e.name}</td>
                             <td className="border px-3 py-2 font-normal">{e.mission}</td>
-                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? new Date(e.setApartDate).toLocaleDateString() : ''}</td>
-                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? new Date(e.expectedReturnDate).toLocaleDateString() : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? formatDate(e.setApartDate) : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? formatDate(e.expectedReturnDate) : ''}</td>
                             <td className="border px-3 py-2 font-normal">{e.email}</td>
                           </tr>
                         ))}
@@ -954,7 +1052,7 @@ export default function BulletinPreview({
                     {serviceMissionaries.map((e, idx) => (
                       <div key={idx} className="border border-gray-300 rounded-lg p-3">
                         <div className="font-bold text-sm mb-2">{e.name}</div>
-                        {e.serviceName && <div className="text-xs text-gray-600 font-normal">🔧 {e.serviceName}</div>}
+                        {e.serviceName && <div className="text-xs text-gray-600 font-normal">{e.serviceName}</div>}
                       </div>
                     ))}
                   </div>
@@ -964,7 +1062,7 @@ export default function BulletinPreview({
                       <thead>
                         <tr className="bg-gray-100">
                           <th className="px-3 py-2 border">Name(s)</th>
-                          <th className="px-3 py-2 border">Service Name</th>
+                          <th className="px-3 py-2 border">Calling</th>
                         </tr>
                       </thead>
                       <tbody>

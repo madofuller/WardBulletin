@@ -26,26 +26,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Create a separate Supabase client for public bulletin fetching with aggressive cache-busting
-// This helps prevent iOS Safari from caching stale bulletin data
-// Use a different storage key to avoid the "Multiple GoTrueClient instances" warning
-export const supabasePublic = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storageKey: 'supabase.public.auth.token', // Different storage key to avoid warning
-    persistSession: false, // Public client doesn't need session persistence
-  },
-  db: {
-    schema: 'public',
-  },
-  global: {
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    },
-  },
-})
-
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
   return !!(supabaseUrl && supabaseAnonKey)
@@ -551,7 +531,7 @@ export const bulletinService = {
       id: bulletinId || `bulletin-${Date.now()}`,
       slug,
       profile_slug: effectiveProfileSlug || null,
-      meeting_date: bulletinData.date,
+      meeting_date: bulletinData.date || null,
       meeting_type: bulletinData.meetingType,
       created_by: userId,
       created_at: new Date().toISOString(),
@@ -572,6 +552,7 @@ export const bulletinService = {
       serviceMissionaries: bulletinData.serviceMissionaries || [],
       imageId: bulletinData.imageId || 'none',
       imagePosition: bulletinData.imagePosition || { x: 50, y: 50 },
+      imageOpacity: bulletinData.imageOpacity ?? 40,
     };
 
     // Save tokens (batch upsert)
@@ -594,6 +575,7 @@ export const bulletinService = {
         { key: `bulletin-${slug}-serviceMissionaries`, value: JSON.stringify(bulletinData.serviceMissionaries || []), created_by: userId },
         { key: `bulletin-${slug}-image`, value: bulletinData.imageId || 'none', created_by: userId },
         { key: `bulletin-${slug}-imagePosition`, value: JSON.stringify(bulletinData.imagePosition || { x: 50, y: 50 }), created_by: userId },
+        { key: `bulletin-${slug}-imageOpacity`, value: String(bulletinData.imageOpacity ?? 40), created_by: userId },
       ];
       let data, error;
       try {
@@ -618,7 +600,7 @@ export const bulletinService = {
     
     const dbBulletinRecord = {
       slug,
-      meeting_date: bulletinData.date,
+      meeting_date: bulletinData.date || null,
       meeting_type: bulletinData.meetingType,
       created_by: userId,
       status: statusToSave,
@@ -1358,23 +1340,12 @@ export const bulletinService = {
     // This is added as a comment filter that doesn't affect the query but changes the URL
     const cacheBuster = Date.now().toString();
 
-    // Use supabasePublic client for all queries to avoid iOS caching
     // First get the user by profile_slug and their active bulletin
-    let userData, userError;
-    try {
-      ({ data: userData, error: userError } = await withTimeout(
-        supabasePublic
-          .from('users')
-          .select('id, active_bulletin_id')
-          .eq('profile_slug', profileSlug)
-          .limit(1000) // Large limit as cache-buster (doesn't affect single result)
-          .maybeSingle(), // Use maybeSingle to handle not found case properly
-        5000 // Shorter timeout for user lookup to avoid long waits
-      ));
-    } catch (timeoutError) {
-      // If timeout occurs during user lookup, it's likely the profile doesn't exist
-      throw new Error('Bulletin not found');
-    }
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, active_bulletin_id')
+      .eq('profile_slug', profileSlug)
+      .maybeSingle(); // Use maybeSingle to handle not found case properly
 
     if (userError || !userData) {
       throw new Error('Bulletin not found');
@@ -1384,7 +1355,7 @@ export const bulletinService = {
 
     // If no active bulletin is set, get their latest bulletin
     if (!bulletinId) {
-      const { data: latestBulletin, error: latestError } = await supabasePublic
+      const { data: latestBulletin, error: latestError } = await supabase
         .from('bulletins')
         .select('id')
         .eq('created_by', userData.id)
@@ -1399,19 +1370,11 @@ export const bulletinService = {
     }
 
     // Get the specific bulletin
-    let data, error;
-    try {
-      ({ data, error } = await withTimeout(
-        supabasePublic
-          .from('bulletins')
-          .select('*')
-          .eq('id', bulletinId)
-          .limit(1000) // Cache-buster
-          .single()
-      ));
-    } catch (timeoutError) {
-      throw timeoutError;
-    }
+    const { data, error } = await supabase
+      .from('bulletins')
+      .select('*')
+      .eq('id', bulletinId)
+      .single();
 
     if (error) {
       // If bulletin not found, return null instead of throwing
@@ -1443,21 +1406,20 @@ export const bulletinService = {
       `bulletin-${data.slug}-wardMissionaries`,
       `bulletin-${data.slug}-serviceMissionaries`,
       `bulletin-${data.slug}-image`,
-      `bulletin-${data.slug}-imagePosition`
+      `bulletin-${data.slug}-imagePosition`,
+      `bulletin-${data.slug}-imageOpacity`
     ];
 
-    // Fetch all tokens in a single query using supabasePublic to bypass caching
-    // Add limit as cache-buster to change the request URL
-    const { data: tokenData, error: tokenError } = await supabasePublic
+    // Fetch all tokens in a single query
+    const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
       .select('key, value')
       .eq('created_by', userId)
-      .in('key', tokenKeys)
-      .limit(1000); // Cache-buster - makes Safari see this as a new request
+      .in('key', tokenKeys);
 
     // Create a map for quick lookup
     const tokenMap = new Map();
-    (tokenData || []).forEach(token => {
+    (tokenData || []).forEach((token: any) => {
       tokenMap.set(token.key, token.value);
     });
 
@@ -1479,8 +1441,25 @@ export const bulletinService = {
     const serviceMissionaries = tokenMap.get(`bulletin-${data.slug}-serviceMissionaries`) || null;
     const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
     const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
+    const imageOpacity = tokenMap.get(`bulletin-${data.slug}-imageOpacity`) || null;
 
     const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
+
+    // If the imageId is a custom image, fetch its URL from storage
+    let imageUrl = null;
+    if (image && image.startsWith('custom-')) {
+      try {
+        const filePath = `${userId}/${image}.jpg`;
+        console.log('🔍 [getLatestBulletinByProfileSlug] Fetching custom image URL for:', { imageId: image, filePath, userId });
+        const { data: urlData } = supabase.storage
+          .from('bulletin-images')
+          .getPublicUrl(filePath);
+        imageUrl = urlData.publicUrl;
+        console.log('✅ [getLatestBulletinByProfileSlug] Custom image URL fetched:', imageUrl);
+      } catch (error) {
+        console.error('❌ [getLatestBulletinByProfileSlug] Error fetching custom image URL:', error);
+      }
+    }
 
     // Debug logging
     const result = {
@@ -1493,7 +1472,9 @@ export const bulletinService = {
       theme: theme || '',
       userTheme: userTheme || '',
       imageId: image || 'none',
+      imageUrl: imageUrl, // Include the actual URL for custom images
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
+      imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
       bishopric_message: bishopric || '',
       announcements: parsedAnnouncements,
       meetings: meetings ? JSON.parse(meetings) : [],
@@ -1510,7 +1491,11 @@ export const bulletinService = {
       updated_at: data.created_at
     };
 
-
+    console.log('📋 [getLatestBulletinByProfileSlug] Returning bulletin with image data:', {
+      imageId: result.imageId,
+      imageUrl: result.imageUrl,
+      hasImageUrl: !!result.imageUrl
+    });
 
     return result;
   },
