@@ -134,7 +134,9 @@ export interface BulletinData {
   wardMissionaries: UnitMissionaryEntry[]; // Full-time missionaries serving from our ward
   serviceMissionaries: ServiceMissionaryEntry[]; // Local service missionaries
   imageId?: string; // ID of selected image from LDS_IMAGES or custom images
+  imageUrl?: string; // Direct URL for custom images (fetched from storage for public bulletins)
   imagePosition?: { x: number; y: number }; // Image positioning coordinates
+  imageOpacity?: number; // Image opacity (0-100, default 40)
   showQRCodeOnPrint?: boolean; // Whether to show QR code on printed bulletin
   showImagesOnPrint?: boolean; // Whether to show images on printed bulletin
   // Scheduling fields
