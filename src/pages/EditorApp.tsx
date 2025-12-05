@@ -35,6 +35,7 @@ import { themes } from '../data/themes';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useProfileAccess } from '../hooks/useProfilePermissions';
+import { getAllImages, ImageData } from '../data/images';
 
 
 function decodeJwtExp(token: string) {
@@ -58,6 +59,19 @@ function EditorApp() {
   const navigate = useNavigate();
   const [activeBulletinId, setActiveBulletinId] = useState<string | null>(null);
   const { sharedProfiles, loading: sharedProfilesLoading } = useProfileAccess();
+  const [allImages, setAllImages] = useState<ImageData[]>([]);
+
+  // Load images when user changes
+  useEffect(() => {
+    loadAllImages();
+  }, [user]);
+
+  const loadAllImages = async () => {
+    if (user) {
+      const images = await getAllImages(user.id);
+      setAllImages(images);
+    }
+  };
 
   // Get the current profile slug (from URL or user's profile)
   // If user has shared profiles and no slug is specified, default to first shared profile
@@ -579,7 +593,9 @@ function EditorApp() {
     wardMissionaries: bulletin.wardMissionaries || [],
     serviceMissionaries: bulletin.serviceMissionaries || [],
     imageId: bulletin.imageId || 'none',
-    imagePosition: bulletin.imagePosition || { x: 50, y: 50 }
+    imageUrl: bulletin.imageUrl, // Include the direct URL for custom images
+    imagePosition: bulletin.imagePosition || { x: 50, y: 50 },
+    imageOpacity: bulletin.imageOpacity ?? 40
   });
 
   const handleBulletinDataChange = (newData: BulletinData) => {
@@ -1686,6 +1702,8 @@ function EditorApp() {
                 onChange={handleBulletinDataChange}
                 profileSlug={currentProfileSlug || undefined}
                 userId={user?.id}
+                allImages={allImages}
+                onImagesRefresh={loadAllImages}
               />
             </div>
           </div>
@@ -1738,8 +1756,9 @@ function EditorApp() {
                 </div>
               )}
               <div ref={bulletinRef}>
-                <BulletinPreview 
-                  data={bulletinData} 
+                <BulletinPreview
+                  data={bulletinData}
+                  allImages={allImages}
                   onImagePositionChange={(position) => {
                     // Only update if the position actually changed and is different from current
                     const currentPosition = bulletinData.imagePosition || { x: 50, y: 50 };
@@ -1749,6 +1768,12 @@ function EditorApp() {
                         imagePosition: position
                       });
                     }
+                  }}
+                  onImageOpacityChange={(opacity) => {
+                    handleBulletinDataChange({
+                      ...bulletinData,
+                      imageOpacity: opacity
+                    });
                   }}
                 />
               </div>

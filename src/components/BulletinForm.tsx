@@ -26,9 +26,11 @@ interface BulletinFormProps {
   onChange: (data: BulletinData) => void;
   profileSlug?: string;
   userId?: string;
+  allImages?: any[];
+  onImagesRefresh?: () => void;
 }
 
-export default function BulletinForm({ data, onChange, profileSlug, userId }: BulletinFormProps) {
+export default function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
@@ -43,14 +45,18 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRecurringAnnouncements, setShowRecurringAnnouncements] = useState(false);
 
-  // Load images on mount
+  // Load images on mount (only if not provided externally)
   useEffect(() => {
-    const loadImages = async () => {
-      const images = await getAllImages(userId);
-      setAllImages(images);
-    };
-    loadImages();
-  }, [userId]);
+    if (externalAllImages) {
+      setAllImages(externalAllImages);
+    } else {
+      const loadImages = async () => {
+        const images = await getAllImages(userId);
+        setAllImages(images);
+      };
+      loadImages();
+    }
+  }, [userId, externalAllImages]);
 
   // Helper to get image by ID from loaded images
   const getImageFromCache = (imageId: string) => {
@@ -338,9 +344,23 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
 
   // Image handlers
   const handleImageUploaded = async (imageId: string, imageUrl: string) => {
+    // Immediately add the new image to the local state so it shows up right away
+    const newImage = {
+      id: imageId,
+      name: 'Custom Image',
+      url: imageUrl,
+      isCustom: true,
+      uploadDate: new Date().toISOString()
+    };
+
+    setAllImages(prev => [...prev, newImage]);
     updateField('imageId', imageId);
+
+    // Also refresh from server to ensure consistency
     const images = await getAllImages(userId);
-    setAllImages(images); // Refresh the images list
+    setAllImages(images);
+    onImagesRefresh?.(); // Notify parent to refresh its images too
+
     setImageError(null);
     toast.success('Image uploaded successfully!');
   };
@@ -2318,15 +2338,6 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                                 onChange={e => {
                                   const updated = [...data.wardMissionaries];
                                   updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                                  // Auto-sort by return date when changed
-                                  updated.sort((a, b) => {
-                                    const dateA = a.expectedReturnDate || '';
-                                    const dateB = b.expectedReturnDate || '';
-                                    if (!dateA && !dateB) return 0;
-                                    if (!dateA) return 1;
-                                    if (!dateB) return -1;
-                                    return dateA.localeCompare(dateB);
-                                  });
                                   updateField('wardMissionaries', updated);
                                 }}
                                 className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -2448,15 +2459,6 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                             onChange={e => {
                               const updated = [...data.wardMissionaries];
                               updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                              // Auto-sort by return date when changed
-                              updated.sort((a, b) => {
-                                const dateA = a.expectedReturnDate || '';
-                                const dateB = b.expectedReturnDate || '';
-                                if (!dateA && !dateB) return 0;
-                                if (!dateA) return 1;
-                                if (!dateB) return -1;
-                                return dateA.localeCompare(dateB);
-                              });
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -2550,7 +2552,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                       {/* Right Column */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Service Name</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Calling</label>
                           <input
                             type="text"
                             value={entry.serviceName || ''}
@@ -2560,7 +2562,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                               updateField('serviceMissionaries', updated);
                             }}
                             className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Senior Missionary Mentors"
+                            placeholder="e.g., Senior Missionary Mentors"
                           />
                         </div>
                         <div className="pt-2">
@@ -2615,7 +2617,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Service Name</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Calling</label>
                         <input
                           type="text"
                           value={entry.serviceName || ''}
@@ -2625,7 +2627,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId }: Bu
                             updateField('serviceMissionaries', updated);
                           }}
                           className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Senior Missionary Mentors"
+                          placeholder="e.g., Senior Missionary Mentors"
                         />
                       </div>
                       <div className="pt-2">
