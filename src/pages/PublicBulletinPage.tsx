@@ -99,38 +99,8 @@ export default function PublicBulletinPage() {
     refetchOnReconnect: true // Refetch when connection is restored
   });
 
-  // CRITICAL: Detect if we got stale cached data and force a hard reload
-  // This handles Safari's aggressive HTTP caching that ignores cache-control headers
-  useEffect(() => {
-    if (publicBulletin && !isLoading) {
-      // Check if bulletin data looks suspiciously empty (stale cache indicator)
-      const hasDate = publicBulletin.date && publicBulletin.date.trim() !== '';
-      const hasContent = (
-        (publicBulletin.ward_name && publicBulletin.ward_name.trim() !== '') ||
-        (publicBulletin.announcements && publicBulletin.announcements.length > 0) ||
-        (publicBulletin.agenda && publicBulletin.agenda.length > 0) ||
-        (publicBulletin.bishopric_message && publicBulletin.bishopric_message.trim() !== '')
-      );
-
-      // If we have a date but no content, this is likely stale cached data
-      if (hasDate && !hasContent) {
-        console.warn('Detected stale cached bulletin data - forcing reload');
-
-        // Store a flag to prevent infinite reload loop
-        const reloadKey = `reload-${slug}-${publicBulletin.date}`;
-        const hasReloaded = sessionStorage.getItem(reloadKey);
-
-        if (!hasReloaded) {
-          sessionStorage.setItem(reloadKey, 'true');
-
-          // Force a hard reload to bypass all caches
-          // Add a timestamp to make Safari think it's a completely new URL
-          const newUrl = `${window.location.pathname}?t=${Date.now()}&refresh=1`;
-          window.location.href = newUrl;
-        }
-      }
-    }
-  }, [publicBulletin, isLoading, slug]);
+  // Note: Removed aggressive stale cache detection that was causing infinite reload loops
+  // The React Query configuration above handles cache invalidation properly
 
   if (isLoading) {
     return (
