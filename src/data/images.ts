@@ -116,6 +116,48 @@ export const LDS_IMAGES = [
     name: 'Calling the Fishermen',
     url: '/calling_the_fishermen.jpeg',
     description: 'Jesus calling the fishermen to be fishers of men'
+  },
+  {
+    id: 'angel-appears-shepherds',
+    name: 'Angel Appears to Shepherds',
+    url: '/angel_appears_shepherds.jpeg',
+    description: 'The angel announcing Christ\'s birth to the shepherds'
+  },
+  {
+    id: 'jesus-birth-nativity',
+    name: 'Jesus Birth Nativity',
+    url: '/jesus_birth_nativity.jpeg',
+    description: 'The birth of Jesus Christ'
+  },
+  {
+    id: 'mary-joseph-inn-bethlehem',
+    name: 'Mary and Joseph at the Inn',
+    url: '/mary_joseph_inn_bethlehem.jpeg',
+    description: 'Mary and Joseph seeking room at the inn in Bethlehem'
+  },
+  {
+    id: 'nativity',
+    name: 'The Nativity',
+    url: '/nativity.jpeg',
+    description: 'The nativity scene'
+  },
+  {
+    id: 'mary-joseph-bethlehem-inn-barrett',
+    name: 'Mary and Joseph at Bethlehem Inn',
+    url: '/robert_barrett_mary_joseph_bethlehem_inn.jpeg',
+    description: 'Mary and Joseph at the Bethlehem inn by Robert Barrett'
+  },
+  {
+    id: 'star-jesus-birth',
+    name: 'Star of Jesus Birth',
+    url: '/star_jesus_birth.jpeg',
+    description: 'The star announcing the birth of Jesus'
+  },
+  {
+    id: 'walter-rane-nativity',
+    name: 'Nativity by Walter Rane',
+    url: '/walter_rane_nativity.jpeg',
+    description: 'The nativity scene by Walter Rane'
   }
 ];
 
