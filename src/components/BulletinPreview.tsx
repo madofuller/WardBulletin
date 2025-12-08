@@ -458,11 +458,21 @@ export default function BulletinPreview({
 
   const sanitizedAnnouncements = useMemo(() => {
     const arr = data?.announcements ?? [];
-    return arr.map(a => ({
-      ...a,
-      audienceLabel: getAudienceLabel(a.audience || getUnitLowercase()),
-      html: sanitizeHtml(decodeHtml(a.content ?? "")),
-    }));
+    return arr.map(a => {
+      // For standalone announcements, use customAudienceLabel if available
+      const isStandalone = a.audience?.startsWith('standalone_');
+      let label: string;
+      if (isStandalone) {
+        label = a.customAudienceLabel || ''; // Use custom label or empty for standalone
+      } else {
+        label = getAudienceLabel(a.audience || getUnitLowercase());
+      }
+      return {
+        ...a,
+        audienceLabel: label,
+        html: sanitizeHtml(decodeHtml(a.content ?? "")),
+      };
+    });
   }, [data?.announcements]);
 
   const [bulletinId, setBulletinId] = useState('');

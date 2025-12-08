@@ -63,13 +63,18 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     return allImages.find(img => img.id === imageId) || LDS_IMAGES[0];
   };
 
+  // Generate unique ID to prevent collisions when adding items quickly
+  const generateUniqueId = () => {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  };
+
   const updateField = (field: keyof BulletinData, value: any) => {
     onChange({ ...data, [field]: value });
   };
 
   const addAnnouncement = (audience?: string) => {
     const newAnnouncement: Announcement = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       title: '',
       content: '',
       category: 'general',
@@ -83,9 +88,18 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     addAnnouncement(audience);
   };
 
-  const addNewTypeSection = () => {
-    // Add a new announcement with the first available audience type
-    addAnnouncement('ward');
+  // For standalone announcements, generate a unique standalone ID so each is separate
+  const addStandaloneAnnouncement = () => {
+    const newAnnouncement: Announcement = {
+      id: generateUniqueId(),
+      title: '',
+      content: '',
+      category: 'general',
+      audience: `standalone_${generateUniqueId()}` as any, // Unique audience so it won't group
+      customAudienceLabel: '', // Free-text label, empty by default
+      images: []
+    };
+    updateField('announcements', [...data.announcements, newAnnouncement]);
   };
 
   const updateAnnouncement = (id: string, field: keyof Announcement, value: any) => {
@@ -100,15 +114,21 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   };
 
           const handleRecurringAnnouncementSelected = (announcement: any) => {
-                  const newAnnouncement: Announcement = {
-          id: Date.now().toString(),
-          title: announcement.title,
-          content: announcement.content,
-          category: 'general',
-          audience: announcement.audience,
-          // Preserve image data from recurring announcement
-          images: announcement.images
-        };
+          // Check if this is a standalone recurring announcement
+          const isStandalone = announcement.audience === 'standalone';
+
+          const newAnnouncement: Announcement = {
+            id: generateUniqueId(),
+            title: announcement.title,
+            content: announcement.content,
+            category: 'general',
+            // For standalone, create a new unique standalone audience; otherwise use the recurring announcement's audience
+            audience: isStandalone ? `standalone_${generateUniqueId()}` : announcement.audience,
+            // Preserve custom label for standalone announcements
+            customAudienceLabel: isStandalone ? (announcement.custom_audience_label || '') : undefined,
+            // Preserve image data from recurring announcement
+            images: announcement.images
+          };
           updateField('announcements', [...data.announcements, newAnnouncement]);
         };
 
@@ -264,7 +284,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
   const addMeeting = () => {
     const newMeeting: Meeting = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       title: '',
       time: '',
       location: ''
@@ -285,7 +305,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
   const addSpecialEvent = () => {
     const newEvent: SpecialEvent = {
-      id: Date.now().toString(),
+      id: generateUniqueId(),
       title: '',
       date: '',
       time: '',
@@ -314,17 +334,17 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     if (type === 'speaker') {
       updateField('agenda', [
         ...data.agenda,
-        { id: Date.now().toString(), type: 'speaker', name: '', speakerType: 'adult' }
+        { id: generateUniqueId(), type: 'speaker', name: '', speakerType: 'adult' }
       ]);
     } else if (type === 'musical') {
       updateField('agenda', [
         ...data.agenda,
-        { id: Date.now().toString(), type: 'musical', label: 'Musical Number' }
+        { id: generateUniqueId(), type: 'musical', label: 'Musical Number' }
       ]);
     } else if (type === 'testimony') {
-      updateField('agenda', [...data.agenda, { id: Date.now().toString(), type: 'testimony' }]);
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'testimony' }]);
     } else if (type === 'sacrament') {
-      updateField('agenda', [...data.agenda, { id: Date.now().toString(), type: 'sacrament' }]);
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'sacrament' }]);
     }
     setShowAddSection(false);
   };
@@ -518,8 +538,30 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     { value: 'youth', label: 'Youth' },
     { value: 'primary', label: 'Primary' },
     { value: getAudienceValue('higher_unit'), label: getHigherUnitLabel() },
-    { value: 'other', label: 'Other' }
+    { value: 'other', label: 'Other' },
+    { value: 'standalone', label: 'Standalone (No Group)' }
   ];
+
+  // State for showing the "Add New Type" dropdown
+  const [showAddTypeDropdown, setShowAddTypeDropdown] = useState(false);
+  const addTypeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler for the add type dropdown
+  useEffect(() => {
+    if (!showAddTypeDropdown) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (addTypeDropdownRef.current && !addTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowAddTypeDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAddTypeDropdown]);
+
+  // Helper to check if an audience is standalone (not grouped)
+  const isStandaloneAudience = (audience: string) => {
+    return audience.startsWith('standalone_');
+  };
 
   // Add the moveAnnouncement function near the other move functions:
   const moveAnnouncement = (idx: number, direction: -1 | 1) => {
@@ -624,7 +666,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
       // Create a single consolidated announcement with both inline images and images array
       consolidated.push({
-        id: Date.now().toString() + Math.random(),
+        id: generateUniqueId(),
         title: '', // Remove main title when consolidating
         content: contentWithHeaders, // Images are embedded inline in the content
         category: 'general',
@@ -1504,9 +1546,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </div>
             </div>
             {(() => {
-              // Group announcements by audience/type
+              // Group announcements by audience/type (but keep standalone announcements separate)
               const grouped = data.announcements.reduce((groups, announcement) => {
                 const audience = announcement.audience || 'ward';
+                // Standalone announcements each get their own "group" (single item)
                 if (!groups[audience]) {
                   groups[audience] = [];
                 }
@@ -1521,47 +1564,75 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               }
 
               return Object.entries(grouped).map(([audience, announcements]) => {
-                const audienceLabel = audienceOptions.find(opt => opt.value === audience)?.label || getAudienceDisplayName(audience);
+                const isStandalone = isStandaloneAudience(audience);
+                const audienceLabel = isStandalone
+                  ? 'Standalone'
+                  : (audienceOptions.find(opt => opt.value === audience)?.label || getAudienceDisplayName(audience));
+
+                // Get the index of this group's first announcement in the full list for move operations
+                const groupFirstIndex = data.announcements.findIndex(a => a.audience === audience);
+                const allAudienceKeys = Object.keys(grouped);
+                const groupIndex = allAudienceKeys.indexOf(audience);
+
                 return (
                   <div key={audience} className="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
                     {/* Type Header */}
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <select
-                          value={audience}
-                          onChange={e => {
-                            // Update all announcements in this group to the new audience
-                            const updated = data.announcements.map(ann => 
-                              ann.audience === audience ? { ...ann, audience: e.target.value } : ann
-                            );
-                            updateField('announcements', updated);
-                          }}
-                          className="text-lg font-semibold text-gray-900 border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
-                        >
-                          {audienceOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </select>
-                        <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'})</span>
+                      <div className="flex items-center gap-3 flex-1">
+                        {isStandalone ? (
+                          <input
+                            type="text"
+                            value={announcements[0]?.customAudienceLabel || ''}
+                            onChange={e => {
+                              const updated = data.announcements.map(ann =>
+                                ann.audience === audience ? { ...ann, customAudienceLabel: e.target.value } : ann
+                              );
+                              updateField('announcements', updated);
+                            }}
+                            placeholder="Enter section label (optional)"
+                            className="text-lg font-semibold text-gray-900 border border-gray-300 bg-white rounded px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-xs"
+                          />
+                        ) : (
+                          <>
+                            <select
+                              value={audience}
+                              onChange={e => {
+                                // Update all announcements in this group to the new audience
+                                const updated = data.announcements.map(ann =>
+                                  ann.audience === audience ? { ...ann, audience: e.target.value } : ann
+                                );
+                                updateField('announcements', updated);
+                              }}
+                              className="text-lg font-semibold text-gray-900 border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                            >
+                              {audienceOptions.filter(opt => opt.value !== 'standalone').map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'})</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => addAnnouncementToType(audience)}
-                          className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Title
-                        </button>
-                        {announcements.length === 0 && (
+                        {!isStandalone && (
+                          <button
+                            type="button"
+                            onClick={() => addAnnouncementToType(audience)}
+                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Title
+                          </button>
+                        )}
+                        {/* Remove Type button - only for empty grouped sections */}
+                        {!isStandalone && announcements.length === 0 && (
                           <button
                             type="button"
                             onClick={() => {
-                              // Remove this type section if it has no announcements
                               const updated = data.announcements.filter(ann => ann.audience !== audience);
                               updateField('announcements', updated);
                             }}
-                            className="px-3 py-1.5 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors"
+                            className="px-3 py-1.5 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors border border-red-200"
                           >
                             Remove Type
                           </button>
@@ -1583,10 +1654,11 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {announcements.map((announcement, idx) => (
+                        {announcements.map((announcement) => (
                           <div key={announcement.id} className="bg-gray-50 p-4 rounded-lg space-y-3">
                             <div className="flex-1 space-y-3">
-                              <div className="flex items-center gap-3">
+                              {/* Title row */}
+                              <div className="flex items-center gap-2">
                                 <input
                                   type="text"
                                   value={announcement.title}
@@ -1594,61 +1666,82 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   placeholder="Announcement title"
                                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                                 />
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={() => {
-                                      const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                      const sameAudience = data.announcements.filter(a => a.audience === audience);
-                                      const groupIndex = sameAudience.findIndex(a => a.id === announcement.id);
-                                      if (groupIndex > 0) {
-                                        const prevInGroup = sameAudience[groupIndex - 1];
-                                        const prevIndex = data.announcements.findIndex(a => a.id === prevInGroup.id);
-                                        const updated = [...data.announcements];
-                                        [updated[prevIndex], updated[currentIndex]] = [updated[currentIndex], updated[prevIndex]];
-                                        updateField('announcements', updated);
-                                      }
-                                    }}
-                                    disabled={idx === 0}
-                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg rounded-lg hover:bg-gray-100 transition-colors"
-                                    title="Move up"
-                                  >
-                                    ↑
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                      const sameAudience = data.announcements.filter(a => a.audience === audience);
-                                      const groupIndex = sameAudience.findIndex(a => a.id === announcement.id);
-                                      if (groupIndex < sameAudience.length - 1) {
-                                        const nextInGroup = sameAudience[groupIndex + 1];
-                                        const nextIndex = data.announcements.findIndex(a => a.id === nextInGroup.id);
-                                        const updated = [...data.announcements];
-                                        [updated[nextIndex], updated[currentIndex]] = [updated[currentIndex], updated[nextIndex]];
-                                        updateField('announcements', updated);
-                                      }
-                                    }}
-                                    disabled={idx === announcements.length - 1}
-                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-black disabled:opacity-30 text-lg rounded-lg hover:bg-gray-100 transition-colors"
-                                    title="Move down"
-                                  >
-                                    ↓
-                                  </button>
+                              </div>
+                              {/* Action buttons row */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {/* Up/Down buttons - move announcement globally in the list */}
+                                <button
+                                  onClick={() => {
+                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
+                                    if (currentIndex > 0) {
+                                      const updated = [...data.announcements];
+                                      [updated[currentIndex - 1], updated[currentIndex]] = [updated[currentIndex], updated[currentIndex - 1]];
+                                      updateField('announcements', updated);
+                                    }
+                                  }}
+                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === 0}
+                                  className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                                  title="Move up"
+                                >
+                                  ↑ Up
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
+                                    if (currentIndex < data.announcements.length - 1) {
+                                      const updated = [...data.announcements];
+                                      [updated[currentIndex], updated[currentIndex + 1]] = [updated[currentIndex + 1], updated[currentIndex]];
+                                      updateField('announcements', updated);
+                                    }
+                                  }}
+                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === data.announcements.length - 1}
+                                  className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                                  title="Move down"
+                                >
+                                  ↓ Down
+                                </button>
+                                {/* Make Standalone button - only show for grouped announcements */}
+                                {!isStandalone && (
                                   <button
                                     type="button"
-                                    onClick={() => convertToRecurring(announcement)}
-                                    className="w-8 h-8 flex items-center justify-center text-green-600 hover:bg-green-100 rounded-lg transition-colors"
-                                    title="Convert to recurring announcement"
+                                    onClick={() => {
+                                      // Convert this announcement to standalone
+                                      const updated = data.announcements.map(ann =>
+                                        ann.id === announcement.id
+                                          ? { ...ann, audience: `standalone_${generateUniqueId()}`, customAudienceLabel: announcement.title || '' }
+                                          : ann
+                                      );
+                                      updateField('announcements', updated);
+                                    }}
+                                    className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:bg-gray-100 text-sm rounded-lg transition-colors border border-gray-200"
+                                    title="Separate this announcement from the group"
                                   >
-                                    <RotateCcw className="w-4 h-4" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                    </svg>
+                                    Make Standalone
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeAnnouncement(announcement.id)}
-                                    className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => convertToRecurring(announcement)}
+                                  className="px-2 py-1 flex items-center gap-1 text-green-600 hover:bg-green-100 text-sm rounded-lg transition-colors border border-green-200"
+                                  title="Convert to recurring announcement"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                  Save as Recurring
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAnnouncement(announcement.id)}
+                                  className="px-2 py-1 flex items-center gap-1 text-red-600 hover:bg-red-100 text-sm rounded-lg transition-colors border border-red-200"
+                                  title="Delete announcement"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                  </svg>
+                                  Delete
+                                </button>
                               </div>
                               <ReactQuill
                                 value={announcement.content}
@@ -1876,14 +1969,54 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               });
             })()}
             <div className="flex flex-col sm:flex-row gap-3 mt-4">
-              <button
-                onClick={addNewTypeSection}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add New Type
-              </button>
-              
+              {/* Add New Type Dropdown */}
+              <div className="relative" ref={addTypeDropdownRef}>
+                <button
+                  onClick={() => setShowAddTypeDropdown(!showAddTypeDropdown)}
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Announcement
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showAddTypeDropdown && (
+                  <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="py-2">
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b">
+                        Grouped by Type
+                      </div>
+                      {audienceOptions.filter(opt => opt.value !== 'standalone').map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => {
+                            addAnnouncement(opt.value);
+                            setShowAddTypeDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                      <div className="border-t my-1"></div>
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        No Grouping
+                      </div>
+                      <button
+                        onClick={() => {
+                          addStandaloneAnnouncement();
+                          setShowAddTypeDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium"
+                      >
+                        Standalone Announcement
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setShowRecurringAnnouncements(true)}
                 className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base"
