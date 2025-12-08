@@ -20,7 +20,8 @@ interface RecurringAnnouncement {
   profile_slug: string;
   title: string;
   content: string;
-  audience: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other';
+  audience: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other' | 'standalone' | string;
+  custom_audience_label?: string; // Free-text label for standalone announcements
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -32,7 +33,7 @@ interface RecurringAnnouncementsModalProps {
   isOpen: boolean;
   onClose: () => void;
   profileSlug: string;
-  onAnnouncementSelected: (announcement: { title: string; content: string; audience: string; is_active: boolean; images?: Array<{ imageId: string; hideImageOnPrint?: boolean }> }) => void;
+  onAnnouncementSelected: (announcement: { title: string; content: string; audience: string; custom_audience_label?: string; is_active: boolean; images?: Array<{ imageId: string; hideImageOnPrint?: boolean }> }) => void;
 }
 
 export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSlug, onAnnouncementSelected }: RecurringAnnouncementsModalProps) {
@@ -42,7 +43,8 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    audience: 'ward' as 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other'
+    audience: 'ward' as string,
+    custom_audience_label: '' as string
   });
 
   useEffect(() => {
@@ -123,7 +125,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       }
 
       // Reset form and refresh
-      setFormData({ title: '', content: '', audience: 'ward' });
+      setFormData({ title: '', content: '', audience: 'ward', custom_audience_label: '' });
       setEditingId(null);
       await fetchRecurringAnnouncements();
     } catch (error) {
@@ -137,7 +139,8 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
     setFormData({
       title: announcement.title,
       content: announcement.content,
-      audience: announcement.audience
+      audience: announcement.audience,
+      custom_audience_label: announcement.custom_audience_label || ''
     });
   };
 
@@ -165,6 +168,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       title: announcement.title,
       content: announcement.content,
       audience: announcement.audience,
+      custom_audience_label: announcement.custom_audience_label,
       is_active: announcement.is_active,
       images: announcement.images
     });
@@ -177,7 +181,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ title: '', content: '', audience: 'ward' });
+    setFormData({ title: '', content: '', audience: 'ward', custom_audience_label: '' });
   };
 
   if (!isOpen) return null;
@@ -323,7 +327,9 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                               )}
                               <div className="flex flex-wrap gap-2 text-xs">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                  {announcement.audience.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  {announcement.audience === 'standalone'
+                                    ? (announcement.custom_audience_label || 'Standalone')
+                                    : announcement.audience.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </span>
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
                                   {announcement.is_active ? 'Active' : 'Inactive'}

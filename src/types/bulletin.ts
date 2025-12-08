@@ -13,7 +13,8 @@ export interface Announcement {
   content: string;
   category: 'general' | 'baptism' | 'birthday' | 'calling' | 'activity' | 'service' | 'other';
   date?: string;
-  audience?: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'branch' | 'district' | 'other';
+  audience?: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'branch' | 'district' | 'other' | string;
+  customAudienceLabel?: string; // Free-text label for standalone announcements
   imageId?: string; // Optional image for flyers/announcements (legacy support)
   hideImageOnPrint?: boolean; // Hide image when printing (legacy support)
   images?: AnnouncementImage[]; // Multiple images support
