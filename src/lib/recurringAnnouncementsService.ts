@@ -5,7 +5,8 @@ export interface RecurringAnnouncement {
   profile_slug: string;
   title: string;
   content: string;
-  audience: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other';
+  audience: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other' | string;
+  custom_audience_label?: string; // Free-text label for standalone announcements
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -37,13 +38,15 @@ export const recurringAnnouncementsService = {
     try {
       console.log('Service: Creating recurring announcement:', announcement);
       
-      // Create a safe version with image support
+      // Create a safe version with image and custom label support
       const safeAnnouncement = {
         profile_slug: announcement.profile_slug,
         title: announcement.title,
         content: announcement.content,
         audience: announcement.audience,
         is_active: announcement.is_active,
+        // Include custom audience label for standalone announcements
+        ...(announcement.custom_audience_label && { custom_audience_label: announcement.custom_audience_label }),
         // Include image fields
         ...(announcement.images && { images: announcement.images })
       };
@@ -142,11 +145,17 @@ export const recurringAnnouncementsService = {
 
       console.log('Processed images for recurring announcement:', images);
 
+      // Check if this is a standalone announcement
+      const isStandalone = announcement.audience?.startsWith('standalone_');
+
       const recurringAnnouncement = {
         profile_slug: profileSlug,
         title: announcement.title,
         content: announcement.content,
-        audience: announcement.audience || 'ward',
+        // For standalone, keep the standalone audience; otherwise use the audience or default to 'ward'
+        audience: isStandalone ? 'standalone' : (announcement.audience || 'ward'),
+        // Preserve custom label for standalone announcements
+        custom_audience_label: isStandalone ? (announcement.customAudienceLabel || '') : undefined,
         is_active: true,
         // Convert to images array format
         images: images.length > 0 ? images : undefined
