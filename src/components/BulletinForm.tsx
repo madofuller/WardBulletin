@@ -44,6 +44,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   const [allImages, setAllImages] = useState<any[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showRecurringAnnouncements, setShowRecurringAnnouncements] = useState(false);
+  const [deleteImageConfirm, setDeleteImageConfirm] = useState<{ show: boolean; imageId: string | null }>({ show: false, imageId: null });
 
   // Load images on mount (only if not provided externally)
   useEffect(() => {
@@ -390,22 +391,29 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     toast.error(error);
   };
 
-  const handleDeleteCustomImage = async (imageId: string) => {
-    if (confirm('Are you sure you want to delete this custom image?')) {
-      try {
-        await deleteCustomImage(imageId, userId);
-        const images = await getAllImages(userId);
-        setAllImages(images); // Refresh the images list
+  const handleDeleteCustomImage = (imageId: string) => {
+    setDeleteImageConfirm({ show: true, imageId });
+  };
 
-        // If the deleted image was selected, reset to 'none'
-        if (data.imageId === imageId) {
-          updateField('imageId', 'none');
-        }
+  const confirmDeleteImage = async () => {
+    const imageId = deleteImageConfirm.imageId;
+    if (!imageId) return;
 
-        toast.success('Custom image deleted.');
-      } catch (error) {
-        toast.error('Failed to delete image.');
+    try {
+      await deleteCustomImage(imageId, userId);
+      const images = await getAllImages(userId);
+      setAllImages(images); // Refresh the images list
+
+      // If the deleted image was selected, reset to 'none'
+      if (data.imageId === imageId) {
+        updateField('imageId', 'none');
       }
+
+      toast.success('Custom image deleted.');
+    } catch (error) {
+      toast.error('Failed to delete image.');
+    } finally {
+      setDeleteImageConfirm({ show: false, imageId: null });
     }
   };
 
@@ -2801,6 +2809,47 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
         profileSlug={profileSlug || 'default'}
         onAnnouncementSelected={handleRecurringAnnouncementSelected}
       />
+
+      {/* Delete Image Confirmation Modal */}
+      {deleteImageConfirm.show && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setDeleteImageConfirm({ show: false, imageId: null })} />
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Custom Image</h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">Are you sure you want to delete this custom image? This action cannot be undone.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                <button
+                  type="button"
+                  onClick={confirmDeleteImage}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteImageConfirm({ show: false, imageId: null })}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
