@@ -97,41 +97,6 @@ export default function BulletinSelector({
   // Use placeholderData to keep showing bulletins during refetch
   const allBulletins = fetchedBulletins && fetchedBulletins.length > 0 ? fetchedBulletins : (bulletins && bulletins.length > 0 ? bulletins : []);
 
-  // Debug: Log active bulletin status on mount and when data changes
-  useEffect(() => {
-    console.log('🔍 BulletinSelector status check:', {
-      bulletinsCount: allBulletins.length,
-      currentActiveBulletinId,
-      bulletinsWithStatus: allBulletins.map(b => ({ id: b.id, status: b.status }))
-    });
-    
-    if (allBulletins.length > 0) {
-      if (currentActiveBulletinId) {
-        const activeBulletin = allBulletins.find(b => b.id === currentActiveBulletinId);
-        if (activeBulletin) {
-          console.log('✅ Active bulletin found:', {
-            id: activeBulletin.id,
-            status: activeBulletin.status,
-            currentActiveBulletinId,
-            willShowAsActive: activeBulletin.status === 'active' || activeBulletin.id === currentActiveBulletinId
-          });
-        } else {
-          console.warn('⚠️ Active bulletin ID not found in bulletins list:', {
-            currentActiveBulletinId,
-            availableIds: allBulletins.map(b => b.id)
-          });
-        }
-      } else {
-        // Check if any bulletins have status='active'
-        const activeBulletins = allBulletins.filter(b => b.status === 'active');
-        if (activeBulletins.length > 0) {
-          console.log('📌 Found bulletins with status=active but no currentActiveBulletinId:', 
-            activeBulletins.map(b => ({ id: b.id, status: b.status }))
-          );
-        }
-      }
-    }
-  }, [allBulletins, currentActiveBulletinId]);
 
 
   const [weeklySchedulerModal, setWeeklySchedulerModal] = useState({
@@ -227,8 +192,6 @@ export default function BulletinSelector({
       // Check if any of the bulletins being scheduled are currently active
       const schedulingCurrentActive = schedules.some(s => s.bulletinId === currentActiveBulletinId);
 
-      console.log('Scheduling bulletins:', schedules);
-
       for (const schedule of schedules) {
         try {
           await bulletinService.updateBulletinSchedule(schedule.bulletinId, cachedUserId, {
@@ -236,9 +199,7 @@ export default function BulletinSelector({
             status: 'scheduled',
             autoActivate: true
           });
-          console.log(`Successfully scheduled bulletin ${schedule.bulletinId} for ${schedule.scheduledDate}`);
         } catch (error: any) {
-          console.error(`Failed to schedule bulletin ${schedule.bulletinId}:`, error);
           // Provide user-friendly error message
           const errorMessage = error?.message || 'Failed to schedule bulletin';
           toast.error(errorMessage);
@@ -270,7 +231,6 @@ export default function BulletinSelector({
         queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId] 
       });
     } catch (error: any) {
-      console.error('Error scheduling bulletins:', error);
       // Don't show duplicate error - already shown in the loop for permission errors
       // Only show generic error if it wasn't already shown
       if (!error?.message?.includes('permission') && !error?.message?.includes('Viewers cannot')) {

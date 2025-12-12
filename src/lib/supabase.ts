@@ -8,7 +8,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // Validate that required environment variables are set
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase configuration missing!'); console.error('supabaseUrl:', supabaseUrl); console.error('supabaseAnonKey:', supabaseAnonKey); throw new Error('Supabase configuration is required')
+  throw new Error('Supabase configuration is required')
 }
 
 // Create Supabase client with better error handling

@@ -37,7 +37,7 @@ export default function BulletinScheduler({
           setSelectedTime(timePart.substring(0, 5));
         }
       } catch (error) {
-        console.warn('Invalid scheduled date:', currentScheduledDate);
+        // Invalid date format, ignore
       }
     }
   }, [currentScheduledDate]);
@@ -62,7 +62,7 @@ export default function BulletinScheduler({
       onSchedule(dateTimeString, autoActivate);
       onClose();
     } catch (error) {
-      console.error('Error scheduling bulletin:', error);
+      // Scheduling error handled by toast
     }
   };
 

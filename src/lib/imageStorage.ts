@@ -46,7 +46,6 @@ export const uploadImage = async (
       });
 
     if (error) {
-      console.error('Supabase storage upload error:', error);
       throw error;
     }
 
@@ -57,7 +56,6 @@ export const uploadImage = async (
 
     return urlData.publicUrl;
   } catch (error) {
-    console.error('Error uploading image to Supabase:', error);
     throw new Error('Failed to upload image to storage');
   }
 };
@@ -72,11 +70,9 @@ export const deleteImage = async (imageId: string, userId: string): Promise<void
       .remove([filePath]);
 
     if (error) {
-      console.error('Error deleting image:', error);
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting image from Supabase:', error);
     throw new Error('Failed to delete image from storage');
   }
 };
@@ -89,7 +85,6 @@ export const getUserImages = async (userId: string): Promise<StoredImage[]> => {
       .list(userId);
 
     if (error) {
-      console.error('Error listing images:', error);
       return [];
     }
 
@@ -111,7 +106,6 @@ export const getUserImages = async (userId: string): Promise<StoredImage[]> => {
 
     return images;
   } catch (error) {
-    console.error('Error getting user images:', error);
     return [];
   }
 };
@@ -122,7 +116,6 @@ export const checkStorageAccess = async (): Promise<boolean> => {
     const { data, error } = await supabase.storage.getBucket(BUCKET_NAME);
     return !error && !!data;
   } catch (error) {
-    console.error('Error checking storage access:', error);
     return false;
   }
 };

@@ -9,7 +9,6 @@ export class BulletinScheduler {
       return; // Already running
     }
 
-    console.log('Starting bulletin scheduler...');
     this.intervalId = window.setInterval(() => {
       this.checkAndActivateScheduledBulletins();
     }, this.CHECK_INTERVAL);
@@ -22,7 +21,6 @@ export class BulletinScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('Bulletin scheduler stopped');
     }
   }
 
@@ -31,9 +29,8 @@ export class BulletinScheduler {
       // Get current user ID from session
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
-      
+
       if (!userId) {
-        console.log('No user session, skipping scheduled bulletin check');
         return;
       }
 
@@ -44,25 +41,21 @@ export class BulletinScheduler {
         return;
       }
 
-      console.log(`Found ${scheduledBulletins.length} bulletins ready for activation (local timezone)`);
-
       for (const bulletin of scheduledBulletins) {
         try {
           // Use the bulletin's created_by, but verify user has access
           await bulletinService.activateScheduledBulletin(bulletin.id, bulletin.created_by);
-          console.log(`Activated bulletin ${bulletin.id} for user ${bulletin.created_by} at local time: ${new Date().toLocaleString()}`);
         } catch (error) {
-          console.error(`Failed to activate bulletin ${bulletin.id}:`, error);
+          // Failed to activate bulletin
         }
       }
     } catch (error) {
-      console.error('Error checking scheduled bulletins:', error);
+      // Error checking scheduled bulletins
     }
   }
 
   // Manual activation method for testing
   async activateNow() {
-    console.log('Manually triggering bulletin activation check...');
     await this.checkAndActivateScheduledBulletins();
   }
 }

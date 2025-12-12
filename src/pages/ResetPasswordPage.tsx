@@ -60,7 +60,6 @@ export default function ResetPasswordPage() {
         navigate('/');
       }, 2000);
     } catch (error: any) {
-      console.error('Password update error:', error);
       setError(error.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);

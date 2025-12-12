@@ -106,14 +106,6 @@ function BulletinHeader({
   imageOpacity?: number;
   children?: React.ReactNode;
 }) {
-  console.log('🎨 [BulletinHeader] Rendering with:', {
-    hasImage: !!image,
-    imageUrl: image?.url,
-    imageName: image?.name,
-    imagePosition,
-    imageOpacity
-  });
-
   return (
     <div className="bg-gray-100 border-b-2 border-gray-300 text-center relative overflow-hidden min-h-56">
       {image?.url && (
@@ -125,8 +117,7 @@ function BulletinHeader({
             objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
             opacity: imageOpacity / 100
           }}
-          onLoad={() => console.log('✅ [BulletinHeader] Image loaded successfully:', image.url)}
-          onError={(e) => console.error('❌ [BulletinHeader] Image failed to load:', image.url, e)}
+          crossOrigin="anonymous"
         />
       )}
       <div className="relative z-10 p-12">
@@ -312,6 +303,7 @@ function AnnouncementItem({
                 className="max-w-full h-auto rounded-lg shadow-sm w-full"
                 style={{ ...getImageSizeStyle('medium'), objectFit: 'contain' }}
                 loading="lazy"
+                crossOrigin="anonymous"
               />
             ) : null;
           })()}
@@ -330,12 +322,8 @@ function AnnouncementItem({
               const imageData = getImageByIdSync(img.imageId);
               imageUrl = imageData?.url;
             }
-            // If still no URL and it's a custom image, try to construct Supabase URL
-            if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
-              // For custom images, we need the URL from the saved data
-              // If it's missing, the image might have been deleted or not saved properly
-              console.warn('Custom image URL missing for imageId:', img.imageId);
-            }
+            // If still no URL and it's a custom image, skip silently
+            // (image may have been deleted from storage)
             return imageUrl ? (
               <div key={index} className={`${img.hideImageOnPrint ? 'print:hidden' : ''}`}>
                 <img
@@ -344,9 +332,9 @@ function AnnouncementItem({
                   className="max-w-full h-auto rounded-lg shadow-sm w-full"
                   style={{ ...getImageSizeStyle(img.size), objectFit: 'contain' }}
                   loading="lazy"
+                  crossOrigin="anonymous"
                   onError={(e) => {
-                    console.error('Failed to load announcement image:', imageUrl, img);
-                    // Hide broken images
+                    // Silently hide broken images (may be deleted from storage)
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
@@ -421,16 +409,8 @@ export default function BulletinPreview({
   const selectedImage = useMemo(() => {
     if (!data.imageId || data.imageId === 'none') return null;
 
-    console.log('🖼️ [BulletinPreview] Image lookup:', {
-      imageId: data.imageId,
-      imageUrl: data.imageUrl,
-      hasAllImages: allImages.length > 0,
-      allImagesCount: allImages.length
-    });
-
     // If imageUrl is provided (from public bulletin), use it directly
     if (data.imageUrl) {
-      console.log('✅ [BulletinPreview] Using direct imageUrl:', data.imageUrl);
       return {
         id: data.imageId,
         name: 'Custom Image',
@@ -443,15 +423,12 @@ export default function BulletinPreview({
     if (allImages.length > 0) {
       const found = allImages.find(img => img.id === data.imageId);
       if (found) {
-        console.log('✅ [BulletinPreview] Found in allImages:', found);
         return found;
       }
     }
 
     // Fallback to sync lookup for preset images
-    const fallback = getImageByIdSync(data.imageId);
-    console.log('⚠️ [BulletinPreview] Using fallback getImageByIdSync:', fallback);
-    return fallback;
+    return getImageByIdSync(data.imageId);
   }, [data.imageId, data.imageUrl, allImages]);
 
   const formattedDate = useMemo(() => formatDate(data.date), [data.date]);
@@ -832,6 +809,7 @@ export default function BulletinPreview({
                                     className="max-w-full h-auto rounded-lg shadow-sm w-full"
                                     style={{ maxHeight: '200px', objectFit: 'contain' }}
                                     loading="lazy"
+                                    crossOrigin="anonymous"
                                   />
                                 ) : null;
                               })()}
@@ -847,26 +825,25 @@ export default function BulletinPreview({
                                   const imageData = getImageByIdSync(img.imageId);
                                   imageUrl = imageData?.url;
                                 }
-                                // If still no URL and it's a custom image, log warning
-                                if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
-                                  console.warn('Custom image URL missing for imageId:', img.imageId);
-                                }
+                                // If still no URL and it's a custom image, skip silently
+                                // (image may have been deleted from storage)
                                 return imageUrl ? (
                                   <div key={index} className={`${img.hideImageOnPrint ? 'print:hidden' : ''}`}>
                                     <img
                                       src={imageUrl}
                                       alt="Announcement Image"
                                       className="max-w-full h-auto rounded-lg shadow-sm w-full"
-                                      style={{ 
-                                        maxHeight: img.size === 'small' ? '120px' : 
-                                                  img.size === 'medium' ? '200px' : 
-                                                  img.size === 'large' ? '300px' : 
+                                      style={{
+                                        maxHeight: img.size === 'small' ? '120px' :
+                                                  img.size === 'medium' ? '200px' :
+                                                  img.size === 'large' ? '300px' :
                                                   img.size === 'xlarge' ? '400px' : '200px',
-                                        objectFit: 'contain' 
+                                        objectFit: 'contain'
                                       }}
                                       loading="lazy"
+                                      crossOrigin="anonymous"
                                       onError={(e) => {
-                                        console.error('Failed to load announcement image:', imageUrl, img);
+                                        // Silently hide broken images (may be deleted from storage)
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}
                                     />
@@ -1106,6 +1083,7 @@ export default function BulletinPreview({
                     src={qrUrl}
                     alt="QR Code for this bulletin"
                     className="border-2 border-gray-200 rounded-lg"
+                    crossOrigin="anonymous"
                   />
                 ) : null}
               </div>
@@ -1347,6 +1325,7 @@ export default function BulletinPreview({
                           alt={selectedImage.name}
                           className="max-w-full h-auto rounded shadow-sm"
                           style={{ maxHeight: '150px' }}
+                          crossOrigin="anonymous"
                         />
                       ) : null;
                     })()}
