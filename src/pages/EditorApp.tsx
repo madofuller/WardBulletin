@@ -67,10 +67,10 @@ function EditorApp() {
   }, [user]);
 
   const loadAllImages = async () => {
-    if (user) {
-      const images = await getAllImages(user.id);
-      setAllImages(images);
-    }
+    // Always load images - LDS_IMAGES are available to everyone
+    // Custom images are only loaded if user is logged in
+    const images = await getAllImages(user?.id);
+    setAllImages(images);
   };
 
   // Get the current profile slug (from URL or user's profile)
