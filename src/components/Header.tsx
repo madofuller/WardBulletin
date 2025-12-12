@@ -31,7 +31,8 @@ export default function Header({
   onMakeActive,
   onScheduleBulletin,
   onSaveAsTemplate,
-  currentBulletinStatus
+  currentBulletinStatus,
+  currentProfileSlug
 }: {
   user: any;
   loading: boolean;
