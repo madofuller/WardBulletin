@@ -495,11 +495,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           {data.imageId && data.imageId !== 'none' && (
             <div className="mb-4">
               {(() => {
-                const selectedImage = getImageByIdSync(data.imageId);
-                return selectedImage.url ? (
+                // Use imageUrl directly if available (for custom uploaded images)
+                // Otherwise fall back to getImageByIdSync for preset images
+                const imageUrl = data.imageUrl || getImageByIdSync(data.imageId)?.url;
+                return imageUrl ? (
                   <img
-                    src={selectedImage.url}
-                    alt={selectedImage.name}
+                    src={imageUrl}
+                    alt="Header Image"
                     className="max-w-full max-h-80 object-contain print:!max-h-96"
                   />
                 ) : null;
@@ -589,10 +591,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                             const imageData = getImageByIdSync(img.imageId);
                             imageUrl = imageData?.url;
                           }
-                          // If still no URL and it's a custom image, log warning
-                          if (!imageUrl && img.imageId && img.imageId.startsWith('custom-')) {
-                            console.warn('Custom image URL missing for imageId:', img.imageId);
-                          }
+                          // If still no URL and it's a custom image, skip silently
+                          // (image may have been deleted from storage)
                           return imageUrl ? (
                             <div key={index}>
                               <img
@@ -601,15 +601,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                 className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
                                 style={{
                                   objectFit: 'contain',
-                                  maxHeight: img.size === 'small' ? '120px' : 
-                                            img.size === 'medium' ? '200px' : 
-                                            img.size === 'large' ? '300px' : 
+                                  maxHeight: img.size === 'small' ? '120px' :
+                                            img.size === 'medium' ? '200px' :
+                                            img.size === 'large' ? '300px' :
                                             img.size === 'xlarge' ? '400px' : '200px',
                                   borderRadius: '0.5rem',
                                   boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
                                 }}
                                 onError={(e) => {
-                                  console.error('Failed to load announcement image in print layout:', imageUrl, img);
+                                  // Silently hide broken images (may be deleted from storage)
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                               />
@@ -720,7 +720,6 @@ function PrintQRCode({ profileSlug }: { profileSlug: string }) {
           errorCorrectionLevel: 'H' // Highest error correction for print
         });
       } catch (error) {
-        console.error('QR Code generation error:', error);
         // Fallback to text display
         const ctx = canvas.getContext('2d');
         if (ctx) {

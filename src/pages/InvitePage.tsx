@@ -52,7 +52,6 @@ export default function InvitePage() {
       
       if (userEmail === invitedEmail) {
         // User just signed in with correct email, automatically accept the invitation
-        console.log('Auto-accepting invitation for user:', user.email);
         handleAcceptInvitation();
       }
     }
@@ -94,13 +93,11 @@ export default function InvitePage() {
         .maybeSingle();
 
       if (error) {
-        console.warn('Error checking email:', error);
         setEmailExists(false); // Default to false if error
       } else {
         setEmailExists(!!data);
       }
     } catch (error) {
-      console.warn('Error checking email:', error);
       setEmailExists(false);
     } finally {
       setCheckingEmail(false);
@@ -126,9 +123,7 @@ export default function InvitePage() {
     setAccepting(true);
     setError('');
     try {
-      console.log('Accepting invitation:', { token, userId: user.id, email: user.email });
       const result = await profileSharingService.acceptInvitation(token, user.id);
-      console.log('Invitation accepted successfully:', result);
       
       toast.success(`You now have ${result.role} access to ${result.profile_slug}`);
 
@@ -148,7 +143,6 @@ export default function InvitePage() {
         navigate('/', { replace: true });
       }, 500);
     } catch (error: any) {
-      console.error('Error accepting invitation:', error);
       // If error is about email mismatch, handle it specially
       if (error.message?.includes('different email address')) {
         setEmailMismatch(true);

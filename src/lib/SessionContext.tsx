@@ -32,11 +32,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('Auth state change:', event, newSession);
-
       // If this is a password recovery event, redirect to reset password page
       if (event === 'PASSWORD_RECOVERY') {
-        console.log('Password recovery detected, redirecting to /reset-password');
         window.location.href = '/reset-password' + window.location.hash;
         return;
       }
@@ -73,15 +70,9 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (session?.user?.id) {
       const checkScheduledBulletins = async () => {
         try {
-          console.log('[SessionContext] Checking for scheduled bulletins...');
-          const activatedCount = await bulletinService.checkAndActivateScheduledBulletins(session.user.id);
-          if (activatedCount > 0) {
-            console.log(`✅ Activated ${activatedCount} scheduled bulletin(s)`);
-          } else {
-            console.log('[SessionContext] No bulletins to activate');
-          }
+          await bulletinService.checkAndActivateScheduledBulletins(session.user.id);
         } catch (error) {
-          console.error('Error checking scheduled bulletins:', error);
+          // Error checking scheduled bulletins
         }
       };
 

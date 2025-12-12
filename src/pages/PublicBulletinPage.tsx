@@ -45,7 +45,7 @@ export default function PublicBulletinPage() {
         // Also clear sessionStorage which Safari might use
         sessionStorage.clear();
       } catch (error) {
-        console.warn('Failed to clear stale cache:', error);
+        // Failed to clear stale cache
       }
     };
 
@@ -109,12 +109,6 @@ export default function PublicBulletinPage() {
       </div>
     );
   }
-
-  console.log('📄 [PublicBulletinPage] Creating bulletinData from publicBulletin:', {
-    imageId: publicBulletin?.imageId,
-    imageUrl: publicBulletin?.imageUrl,
-    hasImageUrl: !!publicBulletin?.imageUrl
-  });
 
   const bulletinData = publicBulletin ? {
     wardName: publicBulletin.ward_name || '',

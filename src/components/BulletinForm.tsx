@@ -136,20 +136,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   const convertToRecurring = async (announcement: Announcement) => {
     try {
       const actualProfileSlug = profileSlug || 'default';
-      
-      console.log('Converting announcement to recurring:', announcement);
-      console.log('Profile slug:', actualProfileSlug);
-      
       const result = await recurringAnnouncementsService.convertToRecurring(announcement, actualProfileSlug);
-      console.log('Conversion result:', result);
-      
+
       if (result) {
         toast.success(`"${announcement.title}" converted to recurring announcement`);
       } else {
         toast.error('Failed to convert to recurring announcement');
       }
     } catch (error) {
-      console.error('Error converting to recurring:', error);
       toast.error('Failed to convert to recurring announcement');
     }
   };
@@ -820,9 +814,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   <div className="mt-2 p-3 border border-gray-200 rounded-lg bg-white max-h-96 overflow-y-auto">
                     {/* Upload Section */}
                     <div className="mb-4">
-                      <ImageUpload 
+                      <ImageUpload
                         onImageUploaded={handleImageUploaded}
                         onError={handleImageError}
+                        userId={userId}
                       />
                       {imageError && (
                         <p className="text-red-600 text-sm mt-2">{imageError}</p>
@@ -842,7 +837,15 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           title={image.description || image.name}
                         >
                           <div
-                            onClick={() => updateField('imageId', image.id)}
+                            onClick={() => {
+                              updateField('imageId', image.id);
+                              // Also store the URL for custom images so it's available for PDF export
+                              if (image.isCustom && image.url) {
+                                updateField('imageUrl', image.url);
+                              } else {
+                                updateField('imageUrl', undefined);
+                              }
+                            }}
                             className="w-full h-full"
                           >
                             {image.url ? (
@@ -1849,7 +1852,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 alt={imageName}
                                 className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded border flex-shrink-0"
                                 onError={(e) => {
-                                  console.error('Failed to load announcement image in form:', imageUrl, img);
+                                  // Silently hide broken images (may be deleted from storage)
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                               />
@@ -1926,6 +1929,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           setAllImages(images);
                         }}
                         onError={handleImageError}
+                        userId={userId}
                       />
                     </div>
                     

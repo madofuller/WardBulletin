@@ -4,11 +4,15 @@ import { CustomImage, saveCustomImage } from '../data/images';
 interface ImageUploadProps {
   onImageUploaded: (imageId: string, imageUrl: string) => void;
   onError?: (error: string) => void;
+  userId?: string; // Pass userId to check if user is authenticated
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, userId }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Check if user is authenticated
+  const isAuthenticated = !!userId;
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,7 +58,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError }) =
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
       onError?.('Failed to upload image. Please try again.');
     } finally {
       setIsUploading(false);
@@ -79,6 +82,21 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError }) =
   const triggerFileSelect = () => {
     fileInputRef.current?.click();
   };
+
+  // If not authenticated, show login required message
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full px-4 py-3 border-2 border-dashed rounded-lg text-center border-gray-300 bg-gray-50">
+        <div className="flex flex-col items-center gap-2 text-gray-500">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <span className="font-medium text-gray-600">Sign in to Upload</span>
+          <span className="text-sm">Custom image uploads require an account</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

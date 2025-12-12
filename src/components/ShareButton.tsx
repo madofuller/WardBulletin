@@ -105,7 +105,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
           url
         });
       } catch (error) {
-        console.log('Share cancelled or failed');
+        // Share cancelled or failed
       }
     } else {
       setShowDropdown(true);
@@ -118,7 +118,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to copy link');
+      // Failed to copy link
     }
   };
 

@@ -56,8 +56,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
   const fetchRecurringAnnouncements = async () => {
     try {
       setLoading(true);
-      console.log('Fetching recurring announcements for profile:', profileSlug);
-      
+
       const { data, error } = await supabase
         .from('recurring_announcements')
         .select('*')
@@ -66,10 +65,8 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('Fetched recurring announcements:', data);
       setAnnouncements(data || []);
     } catch (error) {
-      console.error('Error fetching recurring announcements:', error);
       toast.error('Failed to load recurring announcements');
     } finally {
       setLoading(false);
@@ -102,14 +99,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
         toast.success('Recurring announcement updated successfully');
       } else {
         // Create new announcement
-        console.log('Creating recurring announcement with data:', {
-          profile_slug: profileSlug,
-          title: formData.title.trim(),
-          content: formData.content.trim(),
-          audience: formData.audience
-        });
-        
-        const { data: insertData, error } = await supabase
+        const { error } = await supabase
           .from('recurring_announcements')
           .insert({
             profile_slug: profileSlug,
@@ -120,7 +110,6 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
           .select();
 
         if (error) throw error;
-        console.log('Created recurring announcement:', insertData);
         toast.success('Recurring announcement created successfully');
       }
 
@@ -129,7 +118,6 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       setEditingId(null);
       await fetchRecurringAnnouncements();
     } catch (error) {
-      console.error('Error saving recurring announcement:', error);
       toast.error('Failed to save recurring announcement');
     }
   };
@@ -158,7 +146,6 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       toast.success('Recurring announcement deleted successfully');
       await fetchRecurringAnnouncements();
     } catch (error) {
-      console.error('Error deleting recurring announcement:', error);
       toast.error('Failed to delete recurring announcement');
     }
   };

@@ -43,7 +43,6 @@ function decodeJwtExp(token: string) {
     const decoded = jwtDecode<JwtPayload & { exp?: number }>(token);
     return decoded.exp ? decoded.exp * 1000 : null;
   } catch (e) {
-    console.error('Failed to decode JWT:', e);
     return null;
   }
 }
@@ -82,38 +81,20 @@ function EditorApp() {
   // This is more reliable for shared profiles where multiple users might activate bulletins
   const getActiveBulletinForCurrentProfile = async (profileSlug: string) => {
     try {
-      console.log('🔍 [EditorApp] Querying for active bulletin:', { profileSlug });
       const { data: activeBulletins, error: queryError } = await supabase
         .from('bulletins')
         .select('id, status')
         .eq('profile_slug', profileSlug)
         .eq('status', 'active')
         .limit(1)
-        .maybeSingle(); // Use maybeSingle instead of single to handle no results gracefully
-      
+        .maybeSingle();
+
       if (queryError) {
-        console.error('❌ [EditorApp] Error querying active bulletin:', queryError);
         return null;
       }
-      
-      if (activeBulletins) {
-        console.log('✅ [EditorApp] Active bulletin FOUND:', { 
-          profileSlug, 
-          id: activeBulletins.id, 
-          status: activeBulletins.status 
-        });
-      } else {
-        console.log('❌ [EditorApp] No active bulletin found for profile:', profileSlug);
-      }
-      
+
       return activeBulletins?.id || null;
     } catch (error) {
-      // If no active bulletin found, that's okay - return null
-      if ((error as any)?.code === 'PGRST116') {
-        console.log('🔍 [EditorApp] No active bulletin found (PGRST116)');
-        return null;
-      }
-      console.error('❌ [EditorApp] Failed to get active bulletin for profile:', error);
       return null;
     }
   };
@@ -259,8 +240,6 @@ function EditorApp() {
       }
       return fallback;
     } catch (e) {
-      // Only clear localStorage if there's an actual error, not proactively
-      console.error('localStorage error:', e);
       return fallback;
     }
   }
@@ -308,7 +287,6 @@ function EditorApp() {
       
       return bulletin;
     } catch (error) {
-      console.error('Error populating with recurring announcements:', error);
       return bulletin;
     }
   }
@@ -405,7 +383,6 @@ function EditorApp() {
           wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership
         };
       } catch (e) {
-        console.error('Failed to parse saved draft during initialization:', e);
         localStorage.removeItem(DRAFT_KEY);
       }
     }
@@ -607,8 +584,6 @@ function EditorApp() {
       
       // Check if data is too large (localStorage typically has 5-10MB limit)
       if (dataToSave.length > 3 * 1024 * 1024) { // 3MB threshold for safety
-        console.warn('Draft data too large for localStorage, attempting to clear old data');
-        
         // Try to clear old bulletin data to make space
         try {
           const keys = Object.keys(localStorage);
@@ -617,7 +592,7 @@ function EditorApp() {
               localStorage.removeItem(key);
             }
           });
-          
+
           // Try again after clearing
           if (dataToSave.length < 4 * 1024 * 1024) {
             localStorage.setItem(DRAFT_KEY, dataToSave);
@@ -625,39 +600,35 @@ function EditorApp() {
             return;
           }
         } catch (clearError) {
-          console.warn('Failed to clear old data:', clearError);
+          // Failed to clear old data
         }
-        
-        console.warn('Draft data still too large after cleanup, skipping save');
+
         setHasUnsavedChanges(true);
         return;
       }
-      
+
       localStorage.setItem(DRAFT_KEY, dataToSave);
       setHasUnsavedChanges(true);
     } catch (error) {
-      console.warn('Failed to save draft to localStorage:', error);
-      
       // If it's a quota exceeded error, try to clear old data
       if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
         try {
-          console.log('Quota exceeded, attempting to clear old data');
           const keys = Object.keys(localStorage);
           keys.forEach(key => {
             if (key.startsWith('mywardbulletin_') && key !== DRAFT_KEY) {
               localStorage.removeItem(key);
             }
           });
-          
+
           // Try one more time
           localStorage.setItem(DRAFT_KEY, JSON.stringify(newData));
           setHasUnsavedChanges(true);
           return;
         } catch (retryError) {
-          console.warn('Failed to save even after clearing old data:', retryError);
+          // Failed to save even after clearing
         }
       }
-      
+
       // Still mark as having changes, but don't save to localStorage
       setHasUnsavedChanges(true);
     }
@@ -667,14 +638,8 @@ function EditorApp() {
 
   useEffect(() => {
     (async () => {
-      if (!supabase) {
-        console.error('Supabase is null!');
-        return;
-      }
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('On app load: Supabase session error:', error);
-      }
+      if (!supabase) return;
+      await supabase.auth.getSession();
     })();
   }, []);
 
@@ -723,7 +688,6 @@ function EditorApp() {
       if (activeBulletinId === currentBulletinId) {
         if (bulletinData.status !== 'active') {
           setBulletinData(prev => ({ ...prev, status: 'active' }));
-          console.log('✅ [EditorApp] Set status to active (matches activeBulletinId)');
         }
         return;
       }
@@ -744,10 +708,9 @@ function EditorApp() {
         if (!error && data && data.status) {
           // Update bulletinData with the status
           setBulletinData(prev => ({ ...prev, status: data.status }));
-          console.log('✅ [EditorApp] Fetched status for current bulletin:', { id: currentBulletinId, status: data.status });
         }
       } catch (error) {
-        console.warn('⚠️ [EditorApp] Failed to fetch bulletin status:', error);
+        // Failed to fetch bulletin status
       }
     };
 
@@ -764,15 +727,12 @@ function EditorApp() {
       // On initial load (refresh), we want to load the saved bulletin and clear any stale draft
       const isInitialLoad = !currentBulletinId && !bulletinData.wardName;
       if (hasUnsavedChanges && !isInitialLoad) {
-        console.log('⏸️ Skipping bulletin load - user has unsaved changes');
         return;
       }
 
       // IMPORTANT: Check if the active bulletin has changed
       // This handles scheduled bulletins activating, or manual activation on another device
       if (currentBulletinId && activeBulletinId && currentBulletinId === activeBulletinId && !isInitialLoad) {
-        // Already viewing the correct active bulletin, no need to reload
-        console.log('✅ Already viewing correct active bulletin');
         return;
       }
 
@@ -782,44 +742,39 @@ function EditorApp() {
           if (currentProfileSlug !== profile?.profile_slug) {
             const bulletin = await bulletinService.getLatestBulletinByProfileSlug(currentProfileSlug);
             if (bulletin) {
-              console.log('✅ Loading active bulletin for shared profile:', bulletin.id);
               const data = convertDbBulletinToData(bulletin);
               setBulletinData(data);
               setCurrentBulletinId(bulletin.id);
               setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY); // Clear any stale draft
+              localStorage.removeItem(DRAFT_KEY);
             }
           } else if (activeBulletinId) {
             // If we're on our own profile, load the active bulletin
             // This will switch to the new active bulletin even if we were viewing a different one
             const bulletin = await bulletinService.getBulletinById(activeBulletinId);
             if (bulletin) {
-              console.log('✅ Loading active bulletin for own profile:', bulletin.id);
               const data = convertDbBulletinToData(bulletin);
               setBulletinData(data);
               setCurrentBulletinId(bulletin.id);
               setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY); // Clear any stale draft
+              localStorage.removeItem(DRAFT_KEY);
             }
           } else if (isInitialLoad) {
             // On initial load with no active bulletin, check for draft
             // But only if we don't have a currentBulletinId
             const hasDraft = !!localStorage.getItem(DRAFT_KEY);
             if (hasDraft) {
-              console.log('📝 Restoring draft on initial load');
               try {
                 const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!);
                 setBulletinData(draftData);
                 setHasUnsavedChanges(true);
               } catch (err) {
-                console.error('Failed to restore draft:', err);
                 localStorage.removeItem(DRAFT_KEY);
               }
             }
           }
         }
       } catch (err) {
-        console.error('Failed to load initial bulletin:', err);
         // If loading fails, clear the active bulletin ID to prevent infinite retries
         if (activeBulletinId) {
           await handleActiveBulletinSelect(null);
@@ -871,13 +826,11 @@ function EditorApp() {
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
-        console.error('Session refresh failed:', error);
         toast.error('Session expired. Please sign in again.');
         setShowAuthModal(true);
         return;
       }
     } catch (err) {
-      console.error('Session refresh error:', err);
       toast.error('Session expired. Please sign in again.');
       setShowAuthModal(true);
       return;
@@ -943,7 +896,6 @@ function EditorApp() {
         });
         toast.warning('Bulletin saved locally due to connection issues. It will sync when connection is restored.');
       } catch (localError) {
-        console.error('Local save also failed:', localError);
         toast.error('Error saving bulletin: ' + (error as Error).message);
       }
     } finally {
@@ -1228,7 +1180,7 @@ function EditorApp() {
         setPendingSubmissionsCount(data.length);
       }
     } catch (error) {
-      console.error('Error checking pending submissions:', error);
+      // Error checking pending submissions
     }
   };
 
@@ -1269,7 +1221,6 @@ function EditorApp() {
         // Update local bulletinData status if this is the current bulletin
         if (currentBulletinId === bulletinId) {
           setBulletinData(prev => ({ ...prev, status: 'active' }));
-          console.log('✅ [EditorApp] Updated local bulletinData.status to active for current bulletin');
         }
 
         // Refetch queries instead of invalidating to preserve data during refetch
@@ -1321,7 +1272,6 @@ function EditorApp() {
         queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
       }
     } catch (error) {
-      console.error('Error updating active bulletin:', error);
       toast.error('Error updating active bulletin: ' + (error as Error).message);
     }
   };
@@ -1336,14 +1286,45 @@ function EditorApp() {
   const handleExportPDF = async () => {
     if (printPage1Ref.current && printPage2Ref.current) {
       try {
-        // Preload images to ensure they're available for PDF generation
+        // Convert cross-origin image to base64 to bypass CORS restrictions
+        const convertImageToBase64 = async (img: HTMLImageElement): Promise<void> => {
+          // Skip if already a data URL or same origin
+          if (img.src.startsWith('data:') || img.src.startsWith(window.location.origin)) {
+            return;
+          }
+
+          try {
+            // Fetch the image through our origin to get around CORS
+            const response = await fetch(img.src);
+            const blob = await response.blob();
+
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                if (typeof reader.result === 'string') {
+                  img.src = reader.result; // Replace src with base64 data URL
+                }
+                resolve();
+              };
+              reader.onerror = () => resolve(); // Continue even on error
+              reader.readAsDataURL(blob);
+            });
+          } catch (error) {
+            // Continue without converting - html2canvas will try with useCORS
+          }
+        };
+
+        // Preload and convert images to ensure they're available for PDF generation
         const preloadImages = async () => {
           const imagePromises: Promise<void>[] = [];
-          
+
           // Get all images in the print layout
           const images = printPage1Ref.current?.querySelectorAll('img') || [];
           images.forEach((img) => {
-            if (img.src && !img.complete) {
+            // Convert cross-origin images to base64
+            if (img.src && img.src.includes('supabase.co')) {
+              imagePromises.push(convertImageToBase64(img));
+            } else if (img.src && !img.complete) {
               const promise = new Promise<void>((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => resolve(); // Continue even if image fails to load
@@ -1351,10 +1332,13 @@ function EditorApp() {
               imagePromises.push(promise);
             }
           });
-          
+
           const images2 = printPage2Ref.current?.querySelectorAll('img') || [];
           images2.forEach((img) => {
-            if (img.src && !img.complete) {
+            // Convert cross-origin images to base64
+            if (img.src && img.src.includes('supabase.co')) {
+              imagePromises.push(convertImageToBase64(img));
+            } else if (img.src && !img.complete) {
               const promise = new Promise<void>((resolve) => {
                 img.onload = () => resolve();
                 img.onerror = () => resolve(); // Continue even if image fails to load
@@ -1362,15 +1346,15 @@ function EditorApp() {
               imagePromises.push(promise);
             }
           });
-          
-          // Wait for all images to load (with timeout)
+
+          // Wait for all images to load/convert (with timeout)
           await Promise.race([
             Promise.all(imagePromises),
-            new Promise(resolve => setTimeout(resolve, 3000)) // 3 second timeout
+            new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout for conversions
           ]);
         };
 
-        // Wait for images to load
+        // Wait for images to load and convert
         await preloadImages();
 
         // Small delay to ensure layout is fully rendered
@@ -1456,7 +1440,6 @@ function EditorApp() {
         pdf.autoPrint();
         pdf.save('Ward-Bulletin.pdf');
       } catch (error) {
-        console.error('Error generating PDF:', error);
         toast.error('There was an error generating the PDF. Please try again.');
       }
     } else {
@@ -1472,7 +1455,6 @@ function EditorApp() {
         sessionStorage.clear();
         window.location.reload();
       } catch (error) {
-        console.error('Failed to clear local data:', error);
         toast.error('Failed to clear local data. Please try refreshing the page.');
       }
     }
