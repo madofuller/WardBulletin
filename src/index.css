@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Print styles - ensure images and backgrounds print correctly */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure images are visible when printing */
+  img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    max-width: 100% !important;
+    page-break-inside: avoid;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  /* Ensure the header background and image print */
+  .bg-gray-100 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: #f3f4f6 !important;
+  }
+
+  /* Force bulletin header images to print with full visibility */
+  .min-h-56 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+
+  .min-h-56 img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
 /* Print preview styles - show print styles in preview modal */
 .print-preview {
   /* Force print styles to be visible in preview */
