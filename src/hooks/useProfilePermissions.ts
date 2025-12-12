@@ -48,7 +48,6 @@ export function useProfilePermissions(profileSlug: string | null) {
         const userPermissions = await profileSharingService.getUserPermissions(profileSlug, user.id);
         setPermissions(userPermissions);
       } catch (error) {
-        console.error('Failed to load permissions:', error);
         setPermissions({
           canEdit: false,
           canView: false,
@@ -84,7 +83,6 @@ export function useProfileAccess() {
       const profiles = await profileSharingService.getSharedProfiles(user.id);
       setSharedProfiles(profiles);
     } catch (error) {
-      console.error('Failed to load shared profiles:', error);
       setSharedProfiles([]);
     } finally {
       setLoading(false);
@@ -96,7 +94,6 @@ export function useProfileAccess() {
     
     // Listen for profile share updates
     const handleProfileShareUpdate = () => {
-      console.log('Profile share updated, refetching shared profiles');
       loadSharedProfiles();
     };
     

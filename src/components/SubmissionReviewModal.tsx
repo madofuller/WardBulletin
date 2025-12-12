@@ -69,13 +69,11 @@ export default function SubmissionReviewModal({
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching submissions:', error);
         toast.error('Failed to load submissions');
       } else {
         setSubmissions(data || []);
       }
     } catch (error) {
-      console.error('Error fetching submissions:', error);
       toast.error('Failed to load submissions');
     } finally {
       setLoading(false);
@@ -110,7 +108,6 @@ export default function SubmissionReviewModal({
       onSubmissionsChanged?.();
       
     } catch (error) {
-      console.error('Error approving submission:', error);
       toast.error('Failed to approve submission');
     } finally {
       setProcessing(null);
@@ -145,7 +142,6 @@ export default function SubmissionReviewModal({
       onSubmissionRejected?.(submission);
       
     } catch (error) {
-      console.error('Error rejecting submission:', error);
       toast.error('Failed to reject submission');
     } finally {
       setProcessing(null);
@@ -243,7 +239,6 @@ export default function SubmissionReviewModal({
       toast.success(`${audience.replace('_', ' ')} announcements have been consolidated and added to the bulletin!`);
       
     } catch (error) {
-      console.error('Error approving group:', error);
       toast.error('Failed to approve group');
     } finally {
       setProcessing(null);

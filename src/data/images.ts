@@ -195,7 +195,6 @@ export const getCustomImages = async (userId?: string): Promise<CustomImage[]> =
       uploadDate: img.createdAt
     }));
   } catch (error) {
-    console.error('Error loading custom images:', error);
     return [];
   }
 };
@@ -258,7 +257,6 @@ export const saveCustomImage = async (image: CustomImage, userId?: string): Prom
       url: publicUrl
     };
   } catch (error) {
-    console.error('Error saving custom image:', error);
     throw new Error('Failed to save custom image. Please try again.');
   }
 };
@@ -275,7 +273,6 @@ export const deleteCustomImage = async (imageId: string, userId?: string): Promi
 
     await deleteImage(imageId, userId);
   } catch (error) {
-    console.error('Error deleting custom image:', error);
     throw error;
   }
 };

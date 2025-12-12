@@ -154,7 +154,6 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       errorCorrectionLevel: 'H' // Highest error correction for better mobile scanning
     }, (error) => {
       if (error) {
-        console.error('QR Code generation error:', error);
         // Fallback to simple text display
         const ctx = canvas.getContext('2d');
         if (ctx) {

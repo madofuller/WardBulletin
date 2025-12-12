@@ -65,7 +65,6 @@ export default function SavedBulletinsModal({
         // If no bulletins found with profile slug, fall back to all user bulletins
         // This handles cases where bulletins don't have a profile_slug set
         if (profileBulletins.length === 0 && cachedUserId) {
-          console.log('No bulletins found for profile slug, falling back to all user bulletins');
           return bulletinService.getUserBulletins(cachedUserId);
         }
         return profileBulletins;

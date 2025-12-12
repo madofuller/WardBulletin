@@ -139,7 +139,6 @@ export default function AnnouncementSubmissionPage() {
         }]
       });
     } catch (error) {
-      console.error("Submission error:", error);
       setErrorMessage("Failed to submit announcements. Please try again.");
       setSubmitStatus("error");
     } finally {

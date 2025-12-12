@@ -50,7 +50,6 @@ export default function WeeklySchedulerModal({
     if (isOpen && userId) {
       // Don't refetch immediately - let the parent component handle it
       // This prevents the modal from closing due to re-renders
-      console.log('WeeklySchedulerModal opened, bulletins count:', safeBulletins.length);
     }
   }, [isOpen, userId, safeBulletins.length]);
 
@@ -121,7 +120,6 @@ export default function WeeklySchedulerModal({
   const handleAddBulletin = (bulletin: any) => {
     // Defensive check: ensure bulletin exists and has required properties
     if (!bulletin || !bulletin.id) {
-      console.error('Invalid bulletin data:', bulletin);
       return;
     }
     
@@ -150,10 +148,7 @@ export default function WeeklySchedulerModal({
       
       // Remove from local state
       setScheduleItems(scheduleItems.filter((_, i) => i !== index));
-      
-      console.log(`Unscheduled bulletin ${itemToRemove.bulletinId}`);
     } catch (error) {
-      console.error('Failed to unschedule bulletin:', error);
       // Still remove from local state even if database update fails
       setScheduleItems(scheduleItems.filter((_, i) => i !== index));
     }
@@ -264,7 +259,6 @@ export default function WeeklySchedulerModal({
   const handleBulletinSelect = (bulletin: any) => {
     // Defensive check: ensure bulletin exists and has required properties
     if (!bulletin || !bulletin.id) {
-      console.error('Invalid bulletin data:', bulletin);
       return;
     }
     

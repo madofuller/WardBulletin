@@ -114,7 +114,6 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
         setSuccess('');
       }, 3000);
     } catch (err: any) {
-      console.error('Error changing password:', err);
       setError(err.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);

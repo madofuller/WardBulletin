@@ -46,10 +46,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Supabase is always configured with hardcoded values
-    
-    console.log('Starting authentication process...', { isSignUp, email });
-
     setLoading(true);
     setError('');
 
@@ -59,58 +55,33 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !supabaseAnonKey) {
-        console.error('❌ Supabase configuration missing!');
-        console.error('URL:', supabaseUrl ? 'SET' : 'MISSING');
-        console.error('Key:', supabaseAnonKey ? 'SET' : 'MISSING');
         throw new Error('Application configuration error. Please refresh the page and try again. If the problem persists, contact support.');
       }
-      
-      // Log configuration status (without exposing sensitive data)
-      console.log('✅ Supabase configured:', {
-        url: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
-        key: supabaseAnonKey ? 'SET' : 'MISSING'
-      });
 
       if (isSignUp) {
-        console.log('Attempting sign up...');
         const { error } = await supabase.auth.signUp({
           email,
           password,
         });
-        if (error) {
-          console.error('Sign up error:', error);
-          throw error;
-        }
-        console.log('Sign up successful, attempting sign in...');
-        
+        if (error) throw error;
+
         // For sign up, automatically sign them in
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (signInError) {
-          console.error('Auto sign in error:', signInError);
-          throw signInError;
-        }
-        console.log('Auto sign in successful');
+        if (signInError) throw signInError;
       } else {
-        console.log('Attempting sign in...');
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) {
-          console.error('Sign in error:', error);
-          throw error;
-        }
-        console.log('Sign in successful');
+        if (error) throw error;
       }
       
       onAuthSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Authentication error:', error);
-      
       // Handle network errors specifically
       let errorMessage = error.message || 'An unexpected error occurred';
       
@@ -161,8 +132,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
 
       setSuccessMessage('Password reset email sent! Check your inbox for further instructions.');
     } catch (error: any) {
-      console.error('Password reset error:', error);
-      
       // Handle network errors specifically
       let errorMessage = error.message || 'An unexpected error occurred';
       
