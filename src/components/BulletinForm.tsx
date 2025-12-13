@@ -829,6 +829,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       {allImages.map((image) => (
                         <div
                           key={image.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Update both imageId and imageUrl in a single onChange call to avoid race condition
+                            const newImageUrl = (image.isCustom && image.url) ? image.url : undefined;
+                            onChange({ ...data, imageId: image.id, imageUrl: newImageUrl });
+                          }}
                           className={`relative cursor-pointer rounded-lg border-2 transition-all hover:scale-105 ${
                             data.imageId === image.id
                               ? 'border-blue-500 bg-blue-50'
@@ -836,34 +843,21 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           }`}
                           title={image.description || image.name}
                         >
-                          <div
-                            onClick={() => {
-                              updateField('imageId', image.id);
-                              // Also store the URL for custom images so it's available for PDF export
-                              if (image.isCustom && image.url) {
-                                updateField('imageUrl', image.url);
-                              } else {
-                                updateField('imageUrl', undefined);
-                              }
-                            }}
-                            className="w-full h-full"
-                          >
-                            {image.url ? (
-                              <img
-                                src={image.url}
-                                alt={image.name}
-                                className="w-full h-12 object-cover rounded-t"
-                              />
-                            ) : (
-                              <div className="w-full h-12 bg-gray-100 flex items-center justify-center rounded-t">
-                                <span className="text-gray-500 text-xs">No Img</span>
-                              </div>
-                            )}
-                            <div className="p-1">
-                              <p className="text-xs text-gray-700 truncate">{image.name}</p>
+                          {image.url ? (
+                            <img
+                              src={image.url}
+                              alt={image.name}
+                              className="w-full h-12 object-cover rounded-t"
+                            />
+                          ) : (
+                            <div className="w-full h-12 bg-gray-100 flex items-center justify-center rounded-t">
+                              <span className="text-gray-500 text-xs">No Img</span>
                             </div>
+                          )}
+                          <div className="p-1">
+                            <p className="text-xs text-gray-700 truncate">{image.name}</p>
                           </div>
-                          
+
                           {/* Delete button for custom images */}
                           {'isCustom' in image && image.isCustom && (
                             <button
