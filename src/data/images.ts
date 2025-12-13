@@ -233,17 +233,17 @@ const compressImage = (base64: string, quality: number = 0.8): Promise<string> =
 // Save custom image to Supabase Storage with compression
 export const saveCustomImage = async (image: CustomImage, userId?: string): Promise<CustomImage> => {
   try {
-    // If no userId provided, get current user
+    // If no userId provided, try to get current user (but allow anonymous uploads)
     if (!userId) {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User must be authenticated to upload images');
-      userId = user.id;
+      userId = user?.id; // Will be undefined for anonymous users
     }
 
     // Compress the image first
     const compressedBase64 = await compressImage(image.url);
 
     // Upload to Supabase Storage and get public URL
+    // If no userId, it will upload to 'anonymous' folder
     const publicUrl = await uploadImage(
       image.id,
       image.name,

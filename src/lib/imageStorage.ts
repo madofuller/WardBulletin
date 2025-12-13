@@ -27,14 +27,15 @@ export const uploadImage = async (
   imageId: string,
   imageName: string,
   base64Data: string,
-  userId: string
+  userId?: string
 ): Promise<string> => {
   try {
     // Convert base64 to blob
     const blob = base64ToBlob(base64Data);
 
-    // Create file path: userId/imageId.jpg
-    const filePath = `${userId}/${imageId}.jpg`;
+    // Create file path: userId/imageId.jpg or anonymous/imageId.jpg for non-authenticated users
+    const folder = userId || 'anonymous';
+    const filePath = `${folder}/${imageId}.jpg`;
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -61,9 +62,10 @@ export const uploadImage = async (
 };
 
 // Delete image from Supabase Storage
-export const deleteImage = async (imageId: string, userId: string): Promise<void> => {
+export const deleteImage = async (imageId: string, userId?: string): Promise<void> => {
   try {
-    const filePath = `${userId}/${imageId}.jpg`;
+    const folder = userId || 'anonymous';
+    const filePath = `${folder}/${imageId}.jpg`;
 
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
