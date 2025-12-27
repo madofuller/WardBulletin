@@ -17,6 +17,12 @@ export interface RecurringAnnouncement {
 export const recurringAnnouncementsService = {
   // Get all active recurring announcements for a profile
   async getRecurringAnnouncements(profileSlug: string): Promise<RecurringAnnouncement[]> {
+    // Validate profileSlug - RLS policies will enforce security at database level
+    if (!profileSlug || profileSlug.trim() === '') {
+      console.error('Invalid profileSlug provided to getRecurringAnnouncements:', profileSlug);
+      return [];
+    }
+
     try {
       const { data, error } = await supabase
         .from('recurring_announcements')

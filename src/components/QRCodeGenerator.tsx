@@ -26,6 +26,7 @@ interface QRCodeGeneratorProps {
   currentActiveBulletinId?: string | null;
   onActiveBulletinSelect?: (bulletinId: string | null) => void;
   onProfileSlugUpdate?: (slug: string) => void;
+  onProfileUpdate?: () => void;
   onProfileChange?: (profileSlug: string) => void;
   onCreateProfileSlug?: () => void;
   onLoadBulletin?: (bulletin: any) => void;
@@ -47,6 +48,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   currentActiveBulletinId,
   onActiveBulletinSelect,
   onProfileSlugUpdate,
+  onProfileUpdate,
   onProfileChange,
   onCreateProfileSlug,
   onLoadBulletin,
@@ -215,6 +217,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
       setIsEditing(false);
       toast.success('Profile slug updated successfully!');
+
+      // Notify parent component that profile was updated
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to update profile slug');
       // Revert input to current profile slug
@@ -263,8 +270,8 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Profile & QR Code Section */}
-      {user && (
+          {/* Profile & QR Code Section */}
+          {(profile?.profile_slug || sharedProfiles.length > 0) && user && (
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile & QR Code</h3>
 
