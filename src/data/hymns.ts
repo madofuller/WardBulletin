@@ -216,7 +216,7 @@ export const LDS_HYMNS: Record<number, string> = {
   214: "I Heard the Bells on Christmas Day",
   215: "Ring Out, Wild Bells",
   216: "We Wish You a Merry Christmas",
-  217: "Come, O Thou King of Kings",
+  217: "Come, Let Us Anew",
   218: "We Are Sowing",
   219: "Because I Have Been Given Much",
   220: "Lord, I Would Follow Thee",
