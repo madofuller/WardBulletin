@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { CheckCircle, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
-import MDEditor from '@uiw/react-md-editor';
-import '@uiw/react-md-editor/markdown-editor.css';
-import '@uiw/react-markdown-preview/markdown.css';
+import HtmlEditor from '../components/HtmlEditor';
 
 interface Announcement {
   id: string;
@@ -267,13 +265,10 @@ export default function AnnouncementSubmissionPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Announcement Content *
                     </label>
-                    <MDEditor
+                    <HtmlEditor
                       value={announcement.content}
                       onChange={(value) => updateAnnouncement(announcement.id, "content", value || "")}
-                      preview="edit"
-                      hideToolbar={false}
-                      visibleDragBar={false}
-                      className="w-md-editor"
+                      placeholder="Enter announcement content..."
                     />
                   </div>
 

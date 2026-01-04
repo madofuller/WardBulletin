@@ -3,9 +3,7 @@ import { Plus, Trash2, Repeat, RotateCcw, GripVertical } from 'lucide-react';
 import { BulletinData, Announcement, AnnouncementImage, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
-import MDEditor from '@uiw/react-md-editor';
-import '@uiw/react-md-editor/markdown-editor.css';
-import '@uiw/react-markdown-preview/markdown.css';
+import HtmlEditor from './HtmlEditor';
 import { LDS_IMAGES, getImageById, getAllImages, deleteCustomImage } from '../data/images';
 import ImageUpload from './ImageUpload';
 import RecurringAnnouncementsModal from './RecurringAnnouncementsModal';
@@ -1749,13 +1747,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   Delete
                                 </button>
                               </div>
-                              <MDEditor
+                              <HtmlEditor
                                 value={announcement.content}
                                 onChange={(value) => updateAnnouncement(announcement.id, 'content', value || '')}
-                                preview="edit"
-                                hideToolbar={false}
-                                visibleDragBar={false}
-                                className="w-md-editor"
+                                placeholder="Enter announcement content..."
                               />
                   
                   {/* Announcement Image Section */}
