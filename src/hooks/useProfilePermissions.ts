@@ -83,7 +83,9 @@ export function useProfileAccess() {
       const profiles = await profileSharingService.getSharedProfiles(user.id);
       setSharedProfiles(profiles);
     } catch (error) {
+      console.error('Error loading shared profiles:', error);
       setSharedProfiles([]);
+      // Don't retry on error to prevent infinite loops
     } finally {
       setLoading(false);
     }

@@ -54,6 +54,14 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
   }, [isOpen, profileSlug]);
 
   const fetchRecurringAnnouncements = async () => {
+    // Validate profileSlug - RLS policies will enforce security at database level
+    if (!profileSlug || profileSlug.trim() === '') {
+      console.error('Invalid profileSlug provided to RecurringAnnouncementsModal');
+      setAnnouncements([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -67,7 +75,9 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       if (error) throw error;
       setAnnouncements(data || []);
     } catch (error) {
+      console.error('Error fetching recurring announcements:', error);
       toast.error('Failed to load recurring announcements');
+      setAnnouncements([]);
     } finally {
       setLoading(false);
     }
@@ -75,6 +85,12 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate profileSlug - RLS policies will enforce security at database level
+    if (!profileSlug || profileSlug.trim() === '') {
+      toast.error('Invalid profile. Cannot save recurring announcement.');
+      return;
+    }
     
     if (!formData.title.trim() || !formData.content.trim()) {
       toast.error('Please fill in both title and content');
@@ -134,6 +150,12 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this recurring announcement?')) return;
+
+    // Validate profileSlug - RLS policies will enforce security at database level
+    if (!profileSlug || profileSlug.trim() === '') {
+      toast.error('Invalid profile. Cannot delete recurring announcement.');
+      return;
+    }
 
     try {
       const { error } = await supabase

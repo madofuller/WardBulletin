@@ -13,6 +13,7 @@ interface SessionContextValue {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
+  refreshProfile?: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue>({
@@ -24,6 +25,7 @@ const SessionContext = createContext<SessionContextValue>({
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
   // Restore session on mount
   useEffect(() => {
@@ -43,7 +45,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch profile whenever we have a valid session
+  // Fetch profile whenever we have a valid session or when refresh is triggered
   useEffect(() => {
     const loadProfile = async () => {
       if (!session?.user || !supabase) {
@@ -63,7 +65,12 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     loadProfile();
-  }, [session]);
+  }, [session, profileRefreshTrigger]);
+
+  // Function to trigger profile refresh
+  const refreshProfile = () => {
+    setProfileRefreshTrigger(prev => prev + 1);
+  };
 
   // Check for scheduled bulletins that need activation when user logs in
   useEffect(() => {
@@ -87,7 +94,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [session?.user?.id]);
 
   return (
-    <SessionContext.Provider value={{ session, user: session?.user ?? null, profile }}>
+    <SessionContext.Provider value={{ session, user: session?.user ?? null, profile, refreshProfile }}>
       {children}
     </SessionContext.Provider>
   );

@@ -66,31 +66,27 @@ export default function BulletinSelector({
       }
     },
     enabled: !!cachedUserId,
-    staleTime: 0, // Always fetch fresh data to ensure active status is current
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 minutes
+    refetchOnMount: false, // Don't refetch on every mount
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+    refetchInterval: false, // Never auto-refetch
     // Keep data in cache longer to prevent disappearing during refetches
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     // Use placeholderData to keep showing bulletins during refetch
     placeholderData: (previousData) => previousData || (bulletins && bulletins.length > 0 ? bulletins : []),
   });
 
-  // Force refetch on mount to ensure we have fresh status data
+  // Only refetch once on mount if we don't have data
   useEffect(() => {
-    // Refetch immediately on mount to get fresh data
-    refetch();
+    // Only refetch if we don't have data yet
+    if (!fetchedBulletins || fetchedBulletins.length === 0) {
+      refetch();
+    }
   }, []); // Only run on mount
 
-  // Refetch bulletins when currentActiveBulletinId changes to ensure status is up to date
-  useEffect(() => {
-    if (currentActiveBulletinId && !isFetching) {
-      // Small delay to ensure the database update has propagated
-      const timeoutId = setTimeout(() => {
-        refetch();
-      }, 200);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [currentActiveBulletinId, refetch, isFetching]);
+  // Don't auto-refetch when currentActiveBulletinId changes - only refetch manually when needed
+  // This prevents infinite loops
 
   // Prefer fetched bulletins (fresh data) over passed bulletins (might be stale)
   // Only use passed bulletins if we don't have fetched data yet

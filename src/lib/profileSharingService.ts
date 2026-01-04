@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { FULL_DOMAIN } from './config';
 
+// Cache to track if organization_members table exists (to avoid repeated failed queries)
+// Default to false to prevent 500 errors - set to null if you want to test for table existence
+// null = not checked yet, true = exists, false = doesn't exist
+let orgMembersTableExists: boolean | null = false;
+
 export interface ProfileShare {
   id: string;
   profile_slug: string;
@@ -78,7 +83,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
   // Check if user has access to a profile
   async hasProfileAccess(profileSlug: string, userId: string): Promise<boolean> {
-    // Check if user owns the profile
+    // Check if user owns the profile directly
     const { data: ownerCheck } = await supabase
       .from('users')
       .select('id')
@@ -88,7 +93,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
     if (ownerCheck) return true;
 
-    // Check if user is shared with
+    // Check if user is shared with via profile_shares
     const { data: shareCheck } = await supabase
       .from('profile_shares')
       .select('id')
@@ -96,12 +101,37 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       .eq('shared_with_id', userId)
       .maybeSingle();
 
-    return !!shareCheck;
+    if (shareCheck) return true;
+
+    // Check if user has access via organization membership
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('profile_slug', profileSlug)
+        .maybeSingle();
+
+      if (org) {
+        const { data: orgMemberCheck, error } = await supabase
+          .from('organization_members')
+          .select('id')
+          .eq('organization_id', org.id)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!error && orgMemberCheck) return true;
+      }
+    } catch (error) {
+      // Table might not exist - silently continue
+      console.warn('Could not check organization_members:', error);
+    }
+
+    return false;
   },
 
   // Get user's role for a profile
   async getUserProfileRole(profileSlug: string, userId: string): Promise<'owner' | 'editor' | 'viewer' | null> {
-    // Check if user owns the profile
+    // Check if user owns the profile directly
     const { data: ownerCheck } = await supabase
       .from('users')
       .select('id')
@@ -111,7 +141,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
     if (ownerCheck) return 'owner';
 
-    // Check if user is shared with
+    // Check if user is shared with via profile_shares
     const { data: shareCheck } = await supabase
       .from('profile_shares')
       .select('role')
@@ -119,11 +149,77 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       .eq('shared_with_id', userId)
       .maybeSingle();
 
-    return (shareCheck?.role as 'owner' | 'editor' | 'viewer') || null;
+    if (shareCheck) return shareCheck.role as 'owner' | 'editor' | 'viewer';
+
+    // Check if user has access via organization membership
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('profile_slug', profileSlug)
+        .maybeSingle();
+
+      if (org) {
+        const { data: orgMemberCheck, error } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('organization_id', org.id)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!error && orgMemberCheck) return orgMemberCheck.role as 'owner' | 'editor' | 'viewer';
+      }
+    } catch (error) {
+      // Table might not exist - silently continue
+      console.warn('Could not check organization_members:', error);
+    }
+
+    return null;
   },
 
   // Share profile with another user
   async shareProfile(profileSlug: string, ownerId: string, sharedWithId: string, role: 'editor' | 'viewer'): Promise<void> {
+    // SECURITY: Validate that ownerId actually owns this profile_slug
+    const { data: ownerCheck } = await supabase
+      .from('users')
+      .select('id')
+      .eq('profile_slug', profileSlug)
+      .eq('id', ownerId)
+      .maybeSingle();
+
+    if (!ownerCheck) {
+      // Also check if they're an organization owner
+      const { data: orgCheck } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('profile_slug', profileSlug)
+        .single();
+
+      if (orgCheck) {
+        try {
+          const { data: orgMemberCheck, error } = await supabase
+            .from('organization_members')
+            .select('role')
+            .eq('organization_id', orgCheck.id)
+            .eq('user_id', ownerId)
+            .eq('role', 'owner')
+            .maybeSingle();
+
+          if (error || !orgMemberCheck) {
+            throw new Error('You do not have permission to share this profile.');
+          }
+        } catch (error) {
+          // If table doesn't exist, fall through to regular error
+          if (error instanceof Error && error.message.includes('permission')) {
+            throw error;
+          }
+          throw new Error('You do not have permission to share this profile.');
+        }
+      } else {
+        throw new Error('You do not have permission to share this profile.');
+      }
+    }
+
     const { error } = await supabase
       .from('profile_shares')
       .insert({
@@ -351,56 +447,31 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
       throw new Error('This invitation was sent to a different email address. Please sign in with the correct account.');
     }
 
-    // Check if share already exists (user might be re-accepting)
-    const { data: existingShare, error: checkError } = await supabase
+    // Use upsert to handle race conditions - this atomically creates or updates
+    const { data: newShare, error: shareError } = await supabase
       .from('profile_shares')
-      .select('id, role')
-      .eq('profile_slug', invitation.profile_slug)
-      .eq('shared_with_id', userId)
-      .maybeSingle();
+      .upsert({
+        profile_slug: invitation.profile_slug,
+        owner_id: invitation.owner_id,
+        shared_with_id: userId,
+        role: invitation.role
+      }, {
+        onConflict: 'profile_slug,shared_with_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
 
-    if (checkError) {
-      console.error('Error checking existing share:', checkError);
-      throw new Error('Failed to check existing access');
-    }
-
-    // If share exists, update it (in case role changed) and mark invitation as accepted
-    if (existingShare) {
-      console.log('Share already exists, updating role if needed');
-      const { error: updateError } = await supabase
-        .from('profile_shares')
-        .update({ role: invitation.role })
-        .eq('id', existingShare.id);
-
-      if (updateError) {
-        console.error('Error updating existing share:', updateError);
-        throw new Error('Failed to update profile access');
+    if (shareError) {
+      console.error('Error upserting share:', shareError);
+      // If it's still a duplicate key error after upsert, share already exists
+      if (shareError.code === '23505') {
+        console.log('Share already exists, marking invitation as accepted');
+      } else {
+        throw new Error(`Failed to create profile access: ${shareError.message}`);
       }
     } else {
-      // Create new share
-      const { data: newShare, error: shareError } = await supabase
-        .from('profile_shares')
-        .insert({
-          profile_slug: invitation.profile_slug,
-          owner_id: invitation.owner_id,
-          shared_with_id: userId,
-          role: invitation.role
-        })
-        .select()
-        .single();
-
-      if (shareError) {
-        console.error('Error creating share:', shareError);
-        // Check if it's a duplicate key error
-        if (shareError.code === '23505') {
-          // Duplicate key - share already exists, just mark invitation as accepted
-          console.log('Share already exists (duplicate key), marking invitation as accepted');
-        } else {
-          throw new Error(`Failed to create profile access: ${shareError.message}`);
-        }
-      } else {
-        console.log('Successfully created share:', newShare);
-      }
+      console.log('Successfully created/updated share:', newShare);
     }
 
     // Mark invitation as accepted
@@ -441,33 +512,193 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
   // Get user's accessible profiles
   async getUserAccessibleProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
-    // Get owned profiles
+    // Get owned profiles (direct ownership)
     const { data: ownedProfiles } = await supabase
       .from('users')
       .select('profile_slug')
       .eq('id', userId)
       .not('profile_slug', 'is', null);
 
-    // Get shared profiles
+    // Get shared profiles via profile_shares
     const { data: sharedProfiles } = await supabase
       .from('profile_shares')
       .select('profile_slug, role')
       .eq('shared_with_id', userId);
 
-    const owned = (ownedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: 'admin' }));
-    const shared = (sharedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: p.role }));
+    // Get profiles via organization membership (gracefully handle if table doesn't exist)
+    let orgProfiles: any[] = [];
+    
+    // Skip query if we know the table doesn't exist
+    if (orgMembersTableExists === false) {
+      // Table doesn't exist, skip query
+    } else {
+      try {
+        const { data, error } = await supabase
+          .from('organization_members')
+          .select(`
+            role,
+            organization:organization_id (
+              profile_slug
+            )
+          `)
+          .eq('user_id', userId);
+        
+        // Only use data if query succeeded and no error
+        // Check for 500 errors specifically (table doesn't exist or RLS issues)
+        if (error) {
+          // Suppress 500 errors - table likely doesn't exist
+          const isTableMissing = error.code === 'PGRST116' || 
+                                 error.code === '42P01' ||
+                                 error.status === 500 ||
+                                 error.message?.includes('500') || 
+                                 error.message?.includes('relation') || 
+                                 error.message?.includes('does not exist') ||
+                                 error.message?.includes('permission denied');
+          
+          if (isTableMissing) {
+            // Mark table as not existing to skip future queries
+            orgMembersTableExists = false;
+            orgProfiles = [];
+          } else {
+            // Other errors - log but don't break
+            console.warn('Error fetching organization_members:', error);
+            orgProfiles = [];
+          }
+        } else if (data) {
+          // Success - mark table as existing
+          orgMembersTableExists = true;
+          orgProfiles = data;
+        }
+      } catch (error: any) {
+        // Table might not exist or have RLS issues - mark as not existing
+        orgMembersTableExists = false;
+        orgProfiles = [];
+      }
+    }
 
-    return [...owned, ...shared];
+    const owned = (ownedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: 'owner' }));
+    const shared = (sharedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: p.role }));
+    const orgAccess = (orgProfiles || [])
+      .filter(p => p.organization?.profile_slug)
+      .map(p => ({ profile_slug: p.organization.profile_slug, role: p.role }));
+
+    // Combine and deduplicate (prefer higher role if duplicate)
+    const profileMap = new Map<string, string>();
+    
+    [...owned, ...shared, ...orgAccess].forEach(p => {
+      const existing = profileMap.get(p.profile_slug);
+      if (!existing || (p.role === 'owner' && existing !== 'owner')) {
+        profileMap.set(p.profile_slug, p.role);
+      }
+    });
+
+    return Array.from(profileMap.entries()).map(([profile_slug, role]) => ({ profile_slug, role }));
   },
 
   // Get shared profiles for a user (used by useProfileAccess hook)
   async getSharedProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
-    const { data: sharedProfiles, error } = await supabase
+    // Get shared profiles via profile_shares
+    const { data: sharedProfiles } = await supabase
       .from('profile_shares')
       .select('profile_slug, role')
       .eq('shared_with_id', userId);
 
-    return (sharedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: p.role }));
+    // Get profiles via organization membership (gracefully handle if table doesn't exist)
+    let orgProfiles: any[] = [];
+    
+    // Skip query if we know the table doesn't exist
+    // orgMembersTableExists defaults to false to prevent 500 errors
+    if (orgMembersTableExists === false) {
+      // Table doesn't exist, skip query - use profile_shares only
+    } else if (orgMembersTableExists === null) {
+      // Not checked yet - try a simple test query first
+      try {
+        const { error: testError } = await supabase
+          .from('organization_members')
+          .select('id')
+          .limit(0);
+        
+        if (testError) {
+          // Check if it's a table missing error
+          const isTableMissing = testError.code === 'PGRST116' || 
+                                 testError.code === '42P01' ||
+                                 testError.status === 500 ||
+                                 testError.message?.includes('500') || 
+                                 testError.message?.includes('relation') || 
+                                 testError.message?.includes('does not exist') ||
+                                 testError.message?.includes('permission denied');
+          
+          if (isTableMissing) {
+            orgMembersTableExists = false;
+            // Skip query
+          } else {
+            // Other error - assume table exists and try full query
+            orgMembersTableExists = true;
+          }
+        } else {
+          // No error - table exists
+          orgMembersTableExists = true;
+        }
+      } catch (error: any) {
+        // Test query failed - mark as not existing
+        orgMembersTableExists = false;
+      }
+    }
+    
+    // Only run full query if table exists
+    if (orgMembersTableExists === true) {
+      try {
+        const { data, error } = await supabase
+          .from('organization_members')
+          .select(`
+            role,
+            organization:organization_id (
+              profile_slug
+            )
+          `)
+          .eq('user_id', userId);
+        
+        if (error) {
+          const isTableMissing = error.code === 'PGRST116' || 
+                                 error.code === '42P01' ||
+                                 error.status === 500 ||
+                                 error.message?.includes('500') || 
+                                 error.message?.includes('relation') || 
+                                 error.message?.includes('does not exist') ||
+                                 error.message?.includes('permission denied');
+          
+          if (isTableMissing) {
+            orgMembersTableExists = false;
+            orgProfiles = [];
+          } else {
+            console.warn('Error fetching organization_members:', error);
+            orgProfiles = [];
+          }
+        } else if (data) {
+          orgProfiles = data;
+        }
+      } catch (error: any) {
+        orgMembersTableExists = false;
+        orgProfiles = [];
+      }
+    }
+
+    const shared = (sharedProfiles || []).map(p => ({ profile_slug: p.profile_slug, role: p.role }));
+    const orgAccess = (orgProfiles || [])
+      .filter(p => p.organization?.profile_slug)
+      .map(p => ({ profile_slug: p.organization.profile_slug, role: p.role }));
+
+    // Combine and deduplicate
+    const profileMap = new Map<string, string>();
+    
+    [...shared, ...orgAccess].forEach(p => {
+      const existing = profileMap.get(p.profile_slug);
+      if (!existing || (p.role === 'owner' && existing !== 'owner')) {
+        profileMap.set(p.profile_slug, p.role);
+      }
+    });
+
+    return Array.from(profileMap.entries()).map(([profile_slug, role]) => ({ profile_slug, role }));
   },
 
   // Get user permissions for a specific profile slug
@@ -480,7 +711,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
     role: 'owner' | 'editor' | 'viewer';
   }> {
     try {
-      // Check if user owns the profile
+      // Check if user owns the profile directly
       const { data: ownerCheck } = await supabase
         .from('users')
         .select('id')
@@ -499,7 +730,7 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
         };
       }
 
-      // Check if user has shared access
+      // Check if user has shared access via profile_shares
       const { data: shareCheck } = await supabase
         .from('profile_shares')
         .select('role')
@@ -508,15 +739,48 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
         .maybeSingle();
 
       if (shareCheck) {
-        const isEditor = shareCheck.role === 'editor';
+        const isEditor = shareCheck.role === 'editor' || shareCheck.role === 'owner';
         return {
           canEdit: isEditor,
           canView: true,
-          canManageShares: false, // Only owners can manage shares
-          canManageInvitations: false, // Only owners can manage invitations
+          canManageShares: shareCheck.role === 'owner', // Owners can manage shares
+          canManageInvitations: shareCheck.role === 'owner', // Owners can manage invitations
           canSchedule: isEditor,
-          role: shareCheck.role as 'editor'
+          role: shareCheck.role as 'owner' | 'editor' | 'viewer'
         };
+      }
+
+      // Check if user has access via organization membership
+      try {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('profile_slug', profileSlug)
+          .maybeSingle();
+
+        if (org) {
+          const { data: orgMemberCheck, error } = await supabase
+            .from('organization_members')
+            .select('role')
+            .eq('organization_id', org.id)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (!error && orgMemberCheck) {
+            const isEditor = orgMemberCheck.role === 'editor' || orgMemberCheck.role === 'owner';
+            return {
+              canEdit: isEditor,
+              canView: true,
+              canManageShares: orgMemberCheck.role === 'owner', // Only org owners can manage shares
+              canManageInvitations: orgMemberCheck.role === 'owner', // Only org owners can manage invitations
+              canSchedule: isEditor,
+              role: orgMemberCheck.role as 'owner' | 'editor' | 'viewer'
+            };
+          }
+        }
+      } catch (error) {
+        // Table might not exist - silently continue
+        console.warn('Could not check organization_members:', error);
       }
 
       // No access

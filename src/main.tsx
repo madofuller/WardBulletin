@@ -28,7 +28,7 @@ const initializeAnalytics = async () => {
 // Initialize analytics asynchronously after app renders to not block app loading
 setTimeout(initializeAnalytics, 100);
 
-// Suppress findDOMNode warnings from react-quill (third-party library issue)
+// Suppress any warnings from markdown editor
 const originalWarn = console.warn;
 console.warn = (...args) => {
   const message = args[0];

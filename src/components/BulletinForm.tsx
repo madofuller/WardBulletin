@@ -3,8 +3,7 @@ import { Plus, Trash2, Repeat, RotateCcw, GripVertical } from 'lucide-react';
 import { BulletinData, Announcement, AnnouncementImage, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import HtmlEditor from './HtmlEditor';
 import { LDS_IMAGES, getImageById, getAllImages, deleteCustomImage } from '../data/images';
 import ImageUpload from './ImageUpload';
 import RecurringAnnouncementsModal from './RecurringAnnouncementsModal';
@@ -1748,20 +1747,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   Delete
                                 </button>
                               </div>
-                              <ReactQuill
+                              <HtmlEditor
                                 value={announcement.content}
-                                onChange={value => updateAnnouncement(announcement.id, 'content', value)}
-                                placeholder="Announcement content..."
-                                className="quill-no-border"
-                                theme="snow"
-                                modules={{
-                                  toolbar: [
-                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                    ['bold', 'italic', 'underline', { 'color': [] }, 'link'],
-                                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                    ['clean']
-                                  ]
-                                }}
+                                onChange={(value) => updateAnnouncement(announcement.id, 'content', value || '')}
+                                placeholder="Enter announcement content..."
                               />
                   
                   {/* Announcement Image Section */}
@@ -2025,7 +2014,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
               <button
                 onClick={() => setShowRecurringAnnouncements(true)}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base"
+                disabled={!profileSlug}
+                className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!profileSlug ? 'Please set up your profile first' : 'Manage recurring announcements'}
               >
                 <Repeat className="w-4 h-4 mr-1" />
                 Recurring Announcements
@@ -2801,12 +2792,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       )}
 
       {/* Recurring Announcements Modal */}
-      <RecurringAnnouncementsModal
-        isOpen={showRecurringAnnouncements}
-        onClose={() => setShowRecurringAnnouncements(false)}
-        profileSlug={profileSlug || 'default'}
-        onAnnouncementSelected={handleRecurringAnnouncementSelected}
-      />
+      {profileSlug && (
+        <RecurringAnnouncementsModal
+          isOpen={showRecurringAnnouncements}
+          onClose={() => setShowRecurringAnnouncements(false)}
+          profileSlug={profileSlug}
+          onAnnouncementSelected={handleRecurringAnnouncementSelected}
+        />
+      )}
 
       {/* Delete Image Confirmation Modal */}
       {deleteImageConfirm.show && (

@@ -51,7 +51,7 @@ function EditorApp() {
   const [currentView, setCurrentView] = useState<'editor' | 'public'>('editor');
   const [publicBulletinData, setPublicBulletinData] = useState<any>(null);
   const [publicError, setPublicError] = useState('');
-  const { user, profile } = useSession();
+  const { user, profile, refreshProfile } = useSession();
   const queryClient = useQueryClient();
   const location = useLocation();
   const { slug } = useParams<{ slug: string }>();
@@ -1826,7 +1826,16 @@ function EditorApp() {
                     onProfileChange={handleProfileChange}
                     onCreateProfileSlug={() => setShowCreateProfileSlug(true)}
                     onProfileSlugUpdate={() => {
-                      // Optionally refresh or show success message
+                      // Refresh the profile data in SessionContext when profile slug is updated
+                      if (refreshProfile) {
+                        refreshProfile();
+                      }
+                    }}
+                    onProfileUpdate={() => {
+                      // Refresh the profile data when profile is updated
+                      if (refreshProfile) {
+                        refreshProfile();
+                      }
                     }}
                     onLoadBulletin={handleLoadSavedBulletin}
                     onDeleteBulletin={handleDeleteSavedBulletin}

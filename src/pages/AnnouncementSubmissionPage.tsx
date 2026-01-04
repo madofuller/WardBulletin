@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { CheckCircle, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import HtmlEditor from '../components/HtmlEditor';
 
 interface Announcement {
   id: string;
@@ -266,20 +265,10 @@ export default function AnnouncementSubmissionPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Announcement Content *
                     </label>
-                    <ReactQuill
+                    <HtmlEditor
                       value={announcement.content}
-                      onChange={(value) => updateAnnouncement(announcement.id, "content", value)}
-                      placeholder="Enter the full announcement details..."
-                      className="quill-no-border"
-                      theme="snow"
-                      modules={{
-                        toolbar: [
-                          [{ 'size': ['small', false, 'large', 'huge'] }],
-                          ['bold', 'italic', 'underline', { 'color': [] }, 'link'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['clean']
-                        ]
-                      }}
+                      onChange={(value) => updateAnnouncement(announcement.id, "content", value || "")}
+                      placeholder="Enter announcement content..."
                     />
                   </div>
 

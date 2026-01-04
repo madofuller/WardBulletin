@@ -14,13 +14,23 @@ export default function ResetPasswordPage() {
   const location = useLocation();
 
   useEffect(() => {
-    // Validate that we have a valid recovery session
+    // Validate that we have a valid recovery session or are in password recovery mode
     const checkSession = async () => {
+      const hash = window.location.hash;
+      const isRecoveryMode = hash.includes('type=recovery') || hash.includes('access_token=');
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setError('Invalid or expired reset link. Please request a new password reset.');
-      } else {
+
+      if (isRecoveryMode) {
+        // We have a recovery token, allow password reset
         setIsRecoveryMode(true);
+      } else if (session) {
+        // User is already logged in - redirect them away from reset page
+        // They should use account settings to change password if needed
+        setError('You are already logged in. If you need to change your password, please use the account settings.');
+      } else {
+        // No recovery token and no session
+        setError('Invalid or expired reset link. Please request a new password reset.');
       }
     };
     checkSession();
