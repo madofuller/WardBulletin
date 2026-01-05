@@ -268,22 +268,24 @@ function AnnouncementItem({
 
       <h2 className="text-xl sm:text-xl text-gray-900 mt-3">{title}</h2>
 
-      <div className="mt-2 text-gray-800 text-base leading-relaxed">
+      <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
         <div
-          className="mt-1"
+          className="mt-1 break-words"
           style={{
             '--tw-prose-bullets': 'disc',
-            '--tw-prose-list-style': 'disc'
+            '--tw-prose-list-style': 'disc',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word'
           } as React.CSSProperties}
-          dangerouslySetInnerHTML={{ 
+          dangerouslySetInnerHTML={{
             __html: html.replace(
-              /<ul>/g, 
+              /<ul>/g,
               '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
             ).replace(
-              /<ol>/g, 
+              /<ol>/g,
               '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
             ).replace(
-              /<li>/g, 
+              /<li>/g,
               '<li style="margin-left: 0.5rem; display: list-item;">'
             )
           }}
@@ -776,14 +778,16 @@ export default function BulletinPreview({
                               </span>
                             </div>
                           )}
-                          <div className="mt-2 text-gray-800 text-base leading-relaxed">
+                          <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
                             <div
-                              className="mt-1"
+                              className="mt-1 break-words"
                               style={{
                                 '--tw-prose-bullets': 'disc',
-                                '--tw-prose-list-style': 'disc'
+                                '--tw-prose-list-style': 'disc',
+                                wordBreak: 'break-word',
+                                overflowWrap: 'break-word'
                               } as React.CSSProperties}
-                              dangerouslySetInnerHTML={{ 
+                              dangerouslySetInnerHTML={{
                                 __html: a.html.replace(
                                   /<ul>/g, 
                                   '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
@@ -1294,24 +1298,26 @@ export default function BulletinPreview({
                   <h4 className="font-semibold mr-2 text-gray-900">{a.title}</h4>
                 </div>
                 
-                <div 
-                  className="text-gray-900 mb-2" 
+                <div
+                  className="text-gray-900 mb-2 break-words"
                   style={{
                     '--tw-prose-bullets': 'disc',
-                    '--tw-prose-list-style': 'disc'
+                    '--tw-prose-list-style': 'disc',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word'
                   } as React.CSSProperties}
-                  dangerouslySetInnerHTML={{ 
+                  dangerouslySetInnerHTML={{
                     __html: a.html.replace(
-                      /<ul>/g, 
+                      /<ul>/g,
                       '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
                     ).replace(
-                      /<ol>/g, 
+                      /<ol>/g,
                       '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
                     ).replace(
-                      /<li>/g, 
+                      /<li>/g,
                       '<li style="margin-left: 0.5rem; display: list-item;">'
                     )
-                  }} 
+                  }}
                 />
                 
                 {/* Announcement Image (print) */}
