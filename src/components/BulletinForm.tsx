@@ -538,6 +538,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     { value: 'young_men', label: 'Young Men' },
     { value: 'youth', label: 'Youth' },
     { value: 'primary', label: 'Primary' },
+    { value: 'sunday_school', label: 'Sunday School' },
+    { value: 'gospel_doctrine', label: 'Gospel Doctrine' },
     { value: getAudienceValue('higher_unit'), label: getHigherUnitLabel() },
     { value: 'other', label: 'Other' },
     { value: 'standalone', label: 'Standalone (No Group)' }

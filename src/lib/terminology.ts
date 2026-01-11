@@ -52,6 +52,10 @@ export function getAudienceDisplayName(audience: string): string {
       return 'Youth';
     case 'primary':
       return 'Primary';
+    case 'sunday_school':
+      return 'Sunday School';
+    case 'gospel_doctrine':
+      return 'Gospel Doctrine';
     case 'other':
       return 'Other';
     default:

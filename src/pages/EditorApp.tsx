@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import { getCurrentUnitType } from '../lib/config';
@@ -135,24 +135,24 @@ function EditorApp() {
     }
   }, [slug, sharedProfiles, sharedProfilesLoading, user, navigate]);
 
-  // Show changelog modal for new version - appears up to 3 times unless dismissed
-  useEffect(() => {
-    if (user) {
-      const CHANGELOG_VERSION = '2025.01'; // Update this when you want to show changelog again
-      const VIEW_COUNT_KEY = `changelog_views_${CHANGELOG_VERSION}`;
-      const DISMISSED_KEY = `changelog_dismissed_${CHANGELOG_VERSION}`;
-
-      const viewCount = parseInt(localStorage.getItem(VIEW_COUNT_KEY) || '0');
-      const isDismissed = localStorage.getItem(DISMISSED_KEY) === 'true';
-
-      // Show if not dismissed and viewed less than 3 times
-      if (!isDismissed && viewCount < 3) {
-        setShowChangelog(true);
-        // Increment view count
-        localStorage.setItem(VIEW_COUNT_KEY, String(viewCount + 1));
-      }
-    }
-  }, [user]);
+  // Changelog modal disabled - uncomment and update CHANGELOG_VERSION to re-enable
+  // useEffect(() => {
+  //   if (user) {
+  //     const CHANGELOG_VERSION = '2025.01'; // Update this when you want to show changelog again
+  //     const VIEW_COUNT_KEY = `changelog_views_${CHANGELOG_VERSION}`;
+  //     const DISMISSED_KEY = `changelog_dismissed_${CHANGELOG_VERSION}`;
+  //
+  //     const viewCount = parseInt(localStorage.getItem(VIEW_COUNT_KEY) || '0');
+  //     const isDismissed = localStorage.getItem(DISMISSED_KEY) === 'true';
+  //
+  //     // Show if not dismissed and viewed less than 3 times
+  //     if (!isDismissed && viewCount < 3) {
+  //       setShowChangelog(true);
+  //       // Increment view count
+  //       localStorage.setItem(VIEW_COUNT_KEY, String(viewCount + 1));
+  //     }
+  //   }
+  // }, [user]);
 
   const handleCloseChangelog = (dontShowAgain = false) => {
     const CHANGELOG_VERSION = '2025.01';
@@ -393,6 +393,7 @@ function EditorApp() {
   const bulletinRef = useRef<HTMLDivElement>(null);
   const printPage1Ref = useRef<HTMLDivElement>(null);
   const printPage2Ref = useRef<HTMLDivElement>(null);
+  const previousDataRef = useRef<string | null>(null);
 
   // Add a helper for draft key
   const DRAFT_KEY = 'draft_bulletin';
@@ -575,12 +576,19 @@ function EditorApp() {
     imageOpacity: bulletin.imageOpacity ?? 40
   });
 
-  const handleBulletinDataChange = (newData: BulletinData) => {
+  const handleBulletinDataChange = useCallback((newData: BulletinData) => {
+    // Prevent infinite loops by checking if data actually changed
+    const newDataString = JSON.stringify(newData);
+    if (previousDataRef.current === newDataString) {
+      return; // Data hasn't changed, skip update
+    }
+    previousDataRef.current = newDataString;
+    
     setBulletinData(newData);
     
     // Try to save to localStorage with error handling and quota management
     try {
-      const dataToSave = JSON.stringify(newData);
+      const dataToSave = newDataString;
       
       // Check if data is too large (localStorage typically has 5-10MB limit)
       if (dataToSave.length > 3 * 1024 * 1024) { // 3MB threshold for safety
@@ -621,7 +629,7 @@ function EditorApp() {
           });
 
           // Try one more time
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(newData));
+          localStorage.setItem(DRAFT_KEY, newDataString);
           setHasUnsavedChanges(true);
           return;
         } catch (retryError) {
@@ -632,7 +640,12 @@ function EditorApp() {
       // Still mark as having changes, but don't save to localStorage
       setHasUnsavedChanges(true);
     }
-  };
+  }, []);
+
+  // Sync ref when bulletinData changes externally (e.g., loading a bulletin)
+  useEffect(() => {
+    previousDataRef.current = JSON.stringify(bulletinData);
+  }, [bulletinData]);
 
 
 
@@ -686,16 +699,25 @@ function EditorApp() {
 
       // If we have an activeBulletinId and it matches currentBulletinId, set status to active immediately
       if (activeBulletinId === currentBulletinId) {
-        if (bulletinData.status !== 'active') {
-          setBulletinData(prev => ({ ...prev, status: 'active' }));
-        }
+        // Use functional update to check current status without adding it to dependencies
+        setBulletinData(prev => {
+          if (prev.status !== 'active') {
+            return { ...prev, status: 'active' };
+          }
+          return prev; // Return same object if no change to prevent re-render
+        });
         return;
       }
 
-      // If we already have a status and it's not active, and this isn't the active bulletin, don't fetch
-      if (bulletinData.status && bulletinData.status !== 'active') {
-        return;
-      }
+      // Use functional update to check current status
+      setBulletinData(prev => {
+        // If we already have a status and it's not active, and this isn't the active bulletin, don't fetch
+        if (prev.status && prev.status !== 'active') {
+          return prev;
+        }
+        // We need to fetch - but we can't do async inside setState, so we handle this separately
+        return prev;
+      });
 
       try {
         // Fetch just the status field for the current bulletin
@@ -706,8 +728,13 @@ function EditorApp() {
           .single();
 
         if (!error && data && data.status) {
-          // Update bulletinData with the status
-          setBulletinData(prev => ({ ...prev, status: data.status }));
+          // Update bulletinData with the status only if it changed
+          setBulletinData(prev => {
+            if (prev.status !== data.status) {
+              return { ...prev, status: data.status };
+            }
+            return prev;
+          });
         }
       } catch (error) {
         // Failed to fetch bulletin status
@@ -715,7 +742,7 @@ function EditorApp() {
     };
 
     fetchBulletinStatus();
-  }, [user, currentBulletinId, activeBulletinId, bulletinData.status]);
+  }, [user, currentBulletinId, activeBulletinId]); // Removed bulletinData.status from dependencies
 
   // Load active bulletin on startup or when active bulletin changes
   useEffect(() => {
