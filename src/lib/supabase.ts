@@ -515,6 +515,11 @@ export const bulletinService = {
       throw new Error('No valid Supabase session. Please sign in again.');
     }
 
+    // Validate required date field - database requires meeting_date NOT NULL
+    if (!bulletinData.date) {
+      throw new Error('Bulletin date is required. Please select a date before saving.');
+    }
+
     // Get user's profile_slug for bulletin association
     let effectiveProfileSlug = profileSlug;
     if (!effectiveProfileSlug) {
@@ -800,7 +805,8 @@ export const bulletinService = {
           `bulletin-${bulletin.slug}-wardMissionaries`,
           `bulletin-${bulletin.slug}-serviceMissionaries`,
           `bulletin-${bulletin.slug}-image`,
-          `bulletin-${bulletin.slug}-imagePosition`
+          `bulletin-${bulletin.slug}-imagePosition`,
+          `bulletin-${bulletin.slug}-imageOpacity`
         );
       });
 
@@ -899,6 +905,7 @@ export const bulletinService = {
           serviceMissionaries: safeJsonParse(getToken('serviceMissionaries'), []),
           imageId: getToken('image') || 'none',
           imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
+          imageOpacity: parseInt(getToken('imageOpacity') || '40', 10),
           created_at: bulletin.created_at,
           updated_at: bulletin.created_at,
           status: bulletin.status || 'draft',
@@ -1014,8 +1021,10 @@ export const bulletinService = {
             `bulletin-${bulletin.slug}-wardLeadership`,
             `bulletin-${bulletin.slug}-missionaries`,
             `bulletin-${bulletin.slug}-wardMissionaries`,
+            `bulletin-${bulletin.slug}-serviceMissionaries`,
             `bulletin-${bulletin.slug}-image`,
-            `bulletin-${bulletin.slug}-imagePosition`
+            `bulletin-${bulletin.slug}-imagePosition`,
+            `bulletin-${bulletin.slug}-imageOpacity`
           ];
           allTokenKeys.push(...tokenKeys);
         });
@@ -1118,8 +1127,10 @@ export const bulletinService = {
             wardLeadership: safeJsonParse(getToken('wardLeadership'), []),
             missionaries: safeJsonParse(getToken('missionaries'), []),
             wardMissionaries: safeJsonParse(getToken('wardMissionaries'), []),
+            serviceMissionaries: safeJsonParse(getToken('serviceMissionaries'), []),
             imageId: getToken('image') || 'none',
             imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
+            imageOpacity: parseInt(getToken('imageOpacity') || '40', 10),
             created_at: bulletin.created_at,
             updated_at: bulletin.created_at,
             status: bulletin.status || 'draft',

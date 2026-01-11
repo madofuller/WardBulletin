@@ -521,107 +521,129 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             {/* Announcements Section */}
             <div className="w-full mb-4">
               <h2 className="text-xl font-bold mb-3 print:!text-2xl print:!text-black w-full text-center">Announcements & Events</h2>
-              <ul className="space-y-4">
-            {data.announcements?.map((a: any, idx: number) => {
-              const decodedContent = sanitizeHtml(decodeHtml(a.content));
+              {(() => {
+                // Group announcements by audience (like BulletinPreview does)
+                const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
+                  const isStandalone = announcement.audience?.startsWith('standalone_');
+                  const audienceLabel = isStandalone
+                    ? (announcement.customAudienceLabel || '')
+                    : getAudienceLabel(announcement.audience || getUnitLowercase());
 
-              return (
-                <li key={idx}>
-                  {/* Audience and Category labels */}
-                  <div className="font-bold print:!text-lg print:!text-black mb-1">
-                    {getAudienceLabel(a.audience || getUnitLowercase())}
-                    {a.category && a.category !== 'general' && (
-                      <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded ml-2">{a.category}</span>
-                    )}
+                  if (!groups[audienceLabel]) {
+                    groups[audienceLabel] = [];
+                  }
+                  groups[audienceLabel].push(announcement);
+                  return groups;
+                }, {});
+
+                return (
+                  <div className="space-y-4">
+                    {Object.entries(grouped).map(([audienceLabel, announcements]) => (
+                      <div key={audienceLabel}>
+                        {/* Group header - only show once per group if there's a label */}
+                        {audienceLabel && (
+                          <div className="font-bold print:!text-lg print:!text-black mb-2 border-b border-gray-200 pb-1">
+                            {audienceLabel}
+                          </div>
+                        )}
+                        <ul className="space-y-3">
+                          {(announcements as any[]).map((a: any, idx: number) => {
+                            const decodedContent = sanitizeHtml(decodeHtml(a.content));
+                            return (
+                              <li key={idx}>
+                                <div className="font-bold print:!text-base print:!text-black">{a.title}</div>
+                                {a.category && a.category !== 'general' && (
+                                  <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">{a.category}</span>
+                                )}
+                                <div
+                                  className="text-sm print:!text-sm print:!text-black mb-2"
+                                  style={{
+                                    '--tw-prose-bullets': 'disc',
+                                    '--tw-prose-list-style': 'disc',
+                                    wordWrap: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    whiteSpace: 'pre-wrap'
+                                  } as React.CSSProperties}
+                                  dangerouslySetInnerHTML={{
+                                    __html: decodedContent.replace(
+                                      /<ul>/g,
+                                      '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
+                                    ).replace(
+                                      /<ol>/g,
+                                      '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
+                                    ).replace(
+                                      /<li>/g,
+                                      '<li style="margin-left: 0.5rem; display: list-item;">'
+                                    )
+                                  }}
+                                />
+
+                                {/* Announcement Images */}
+                                {/* Legacy single image support */}
+                                {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
+                                  <div className="mb-2">
+                                    {(() => {
+                                      const selectedImage = getImageByIdSync(a.imageId);
+                                      return selectedImage?.url ? (
+                                        <img
+                                          src={selectedImage.url}
+                                          alt={selectedImage.name}
+                                          className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
+                                          style={{
+                                            objectFit: 'contain',
+                                            maxHeight: '200px',
+                                            borderRadius: '0.5rem',
+                                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                                          }}
+                                        />
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                )}
+
+                                {/* Multiple images support */}
+                                {a.images && a.images.length > 0 && (
+                                  <div className="mb-2 space-y-2">
+                                    {a.images.map((img: any, index: number) => {
+                                      if (img.hideImageOnPrint) return null;
+                                      let imageUrl = img.imageUrl;
+                                      if (!imageUrl && img.imageId) {
+                                        const imageData = getImageByIdSync(img.imageId);
+                                        imageUrl = imageData?.url;
+                                      }
+                                      return imageUrl ? (
+                                        <div key={index}>
+                                          <img
+                                            src={imageUrl}
+                                            alt="Announcement Image"
+                                            className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
+                                            style={{
+                                              objectFit: 'contain',
+                                              maxHeight: img.size === 'small' ? '120px' :
+                                                        img.size === 'medium' ? '200px' :
+                                                        img.size === 'large' ? '300px' :
+                                                        img.size === 'xlarge' ? '400px' : '200px',
+                                              borderRadius: '0.5rem',
+                                              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                                            }}
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
-                  <div className="font-bold print:!text-base print:!text-black">{a.title}</div>
-
-                    <div
-                      className="text-sm print:!text-sm print:!text-black mb-2"
-                      style={{
-                        '--tw-prose-bullets': 'disc',
-                        '--tw-prose-list-style': 'disc'
-                      } as React.CSSProperties}
-                      dangerouslySetInnerHTML={{
-                        __html: decodedContent.replace(
-                          /<ul>/g,
-                          '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
-                        ).replace(
-                          /<ol>/g,
-                          '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
-                        ).replace(
-                          /<li>/g,
-                          '<li style="margin-left: 0.5rem; display: list-item;">'
-                        )
-                      }}
-                    />
-
-                    {/* Announcement Images */}
-                    {/* Legacy single image support */}
-                    {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
-                      <div className="mb-2">
-                        {(() => {
-                          const selectedImage = getImageByIdSync(a.imageId);
-                          return selectedImage?.url ? (
-                            <img
-                              src={selectedImage.url}
-                              alt={selectedImage.name}
-                              className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
-                              style={{
-                                objectFit: 'contain',
-                                maxHeight: '200px',
-                                borderRadius: '0.5rem',
-                                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                              }}
-                            />
-                          ) : null;
-                        })()}
-                      </div>
-                    )}
-
-                    {/* Multiple images support */}
-                    {a.images && a.images.length > 0 && (
-                      <div className="mb-2 space-y-2">
-                        {a.images.map((img: any, index: number) => {
-                          if (img.hideImageOnPrint) return null;
-                          // Use imageUrl if available (for Supabase Storage images), otherwise resolve from imageId
-                          // For custom images, imageUrl should always be present (Supabase public URL)
-                          let imageUrl = img.imageUrl;
-                          if (!imageUrl && img.imageId) {
-                            const imageData = getImageByIdSync(img.imageId);
-                            imageUrl = imageData?.url;
-                          }
-                          // If still no URL and it's a custom image, skip silently
-                          // (image may have been deleted from storage)
-                          return imageUrl ? (
-                            <div key={index}>
-                              <img
-                                src={imageUrl}
-                                alt="Announcement Image"
-                                className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
-                                style={{
-                                  objectFit: 'contain',
-                                  maxHeight: img.size === 'small' ? '120px' :
-                                            img.size === 'medium' ? '200px' :
-                                            img.size === 'large' ? '300px' :
-                                            img.size === 'xlarge' ? '400px' : '200px',
-                                  borderRadius: '0.5rem',
-                                  boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                                }}
-                                onError={(e) => {
-                                  // Silently hide broken images (may be deleted from storage)
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                </li>
-              );
-            })}
-              </ul>
+                );
+              })()}
             </div>
           </div>
         </div>

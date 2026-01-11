@@ -1,5 +1,6 @@
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { useRef, useCallback } from 'react';
 
 interface HtmlEditorProps {
   value: string;
@@ -23,12 +24,29 @@ const formats = [
 ];
 
 export default function HtmlEditor({ value, onChange, placeholder = 'Enter content...' }: HtmlEditorProps) {
+  // Track the last value to prevent infinite loops
+  const lastValueRef = useRef(value);
+
+  const handleChange = useCallback((newValue: string) => {
+    // Only call onChange if the value actually changed
+    // This prevents infinite loops when Quill re-renders
+    if (newValue !== lastValueRef.current) {
+      lastValueRef.current = newValue;
+      onChange(newValue);
+    }
+  }, [onChange]);
+
+  // Update ref when value prop changes externally
+  if (value !== lastValueRef.current) {
+    lastValueRef.current = value;
+  }
+
   return (
     <div className="html-editor">
       <ReactQuill
         theme="snow"
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         modules={modules}
         formats={formats}
