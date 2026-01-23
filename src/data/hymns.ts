@@ -217,7 +217,7 @@ export const LDS_HYMNS: Record<number, string> = {
   215: "Ring Out, Wild Bells",
   216: "We Wish You a Merry Christmas",
   217: "Come, Let Us Anew",
-  218: "We Are Sowing",
+  218: "We Give Thee But Thine Own",
   219: "Because I Have Been Given Much",
   220: "Lord, I Would Follow Thee",
   221: "Dear to the Heart of the Shepherd",
