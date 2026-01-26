@@ -901,7 +901,7 @@ function EditorApp() {
       }
 
       // Invalidate query cache to refresh saved bulletins modal
-      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id, currentProfileSlug] });
+      queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
 
       toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
         toastId: 'bulletin-save-success'
