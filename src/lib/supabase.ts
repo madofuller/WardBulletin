@@ -500,7 +500,6 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise
 // Bulletin service functions
 export const bulletinService = {
   async saveBulletin(bulletinData: any, userId: string, bulletinId?: string, profileSlug?: string) {
-    console.log(`🟢 [saveBulletin] Called with bulletinId: ${bulletinId || 'NEW'}, status: ${bulletinData.status || 'draft'}`);
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -624,14 +623,11 @@ export const bulletinService = {
           .maybeSingle();
 
         if (checkError) {
-          console.error('Error checking bulletin existence:', checkError);
           throw checkError;
         }
 
         if (!existingBulletin) {
-          console.error(`❌ [saveBulletin] Bulletin ${bulletinId} not found in database. This should not happen when updating.`);
-          console.error(`❌ [saveBulletin] This could cause duplicates. Throwing error instead of creating new bulletin.`);
-          throw new Error(`Bulletin ${bulletinId} not found. Cannot update non-existent bulletin. This may indicate a data inconsistency.`);
+          throw new Error('Bulletin not found. Cannot update non-existent bulletin.');
         }
 
         let data, error;
@@ -657,8 +653,6 @@ export const bulletinService = {
           }
           // Handle 400 Bad Request errors
           if (error.code === 'PGRST116' || error.status === 400 || error.message?.includes('400')) {
-            console.error('❌ [saveBulletin] 400 Bad Request error:', error);
-            console.error('❌ [saveBulletin] Bulletin data:', dbBulletinRecord);
             throw new Error(`Failed to save bulletin: ${error.message || 'Invalid request. Please check your data and try again.'}`);
           }
           throw error;
@@ -682,8 +676,6 @@ export const bulletinService = {
         if (error) {
           // Handle 400 Bad Request errors
           if (error.code === 'PGRST116' || error.status === 400 || error.message?.includes('400')) {
-            console.error('❌ [saveBulletin] 400 Bad Request error on insert:', error);
-            console.error('❌ [saveBulletin] Bulletin data:', dbBulletinRecord);
             throw new Error(`Failed to create bulletin: ${error.message || 'Invalid request. Please check your data and try again.'}`);
           }
           throw error;
@@ -717,7 +709,6 @@ export const bulletinService = {
     }
   },
   async getBulletinsByProfileSlug(profileSlug: string) {
-    console.log(`🔍 getBulletinsByProfileSlug called for profile: ${profileSlug}`);
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -848,7 +839,6 @@ export const bulletinService = {
               10000
             );
             if (!fallbackError && fallbackTokens) {
-              console.log(`✓ Fallback found ${fallbackTokens.length} tokens`);
               fallbackTokens.forEach(token => {
                 tokenMap.set(token.key, token.value);
               });
@@ -857,7 +847,6 @@ export const bulletinService = {
           }
 
           if (chunkTokens && chunkTokens.length > 0) {
-            console.log(`✓ Found ${chunkTokens.length} tokens via RLS for chunk`);
             chunkTokens.forEach(token => {
               tokenMap.set(token.key, token.value);
             });
@@ -868,7 +857,6 @@ export const bulletinService = {
         }
       }
 
-      console.log(`📊 Token summary for profile ${profileSlug}: Loaded ${tokenMap.size} tokens out of ${allTokenKeys.length} requested`);
 
       // Build bulletins with token data (same logic as getUserBulletins)
       const bulletinsWithData = data.map(bulletin => {
@@ -922,7 +910,6 @@ export const bulletinService = {
   },
 
   async getUserBulletins(userId: string) {
-    console.log(`🔍 getUserBulletins called for user: ${userId}`);
     // Always try to get bulletins from local storage first
     const localBulletins = this.getFromLocalStorage().filter(b => b.created_by === userId);
 
@@ -1058,7 +1045,6 @@ export const bulletinService = {
             if (chunkError) {
               console.warn(`Error fetching tokens for chunk (${chunk.length} keys):`, chunkError);
               // If RLS query fails, try fallback with created_by filter for owners
-              console.log('Attempting fallback query with created_by filter...');
               const { data: fallbackTokens, error: fallbackError } = await withTimeout(
                 supabase
                   .from('tokens')
@@ -1068,7 +1054,6 @@ export const bulletinService = {
                 10000
               );
               if (!fallbackError && fallbackTokens) {
-                console.log(`✓ Fallback found ${fallbackTokens.length} tokens`);
                 fallbackTokens.forEach(token => {
                   tokenMap.set(token.key, token.value);
                 });
@@ -1077,20 +1062,14 @@ export const bulletinService = {
             }
 
             if (chunkTokens && chunkTokens.length > 0) {
-              console.log(`✓ Found ${chunkTokens.length} tokens via RLS for chunk`);
               chunkTokens.forEach(token => {
                 tokenMap.set(token.key, token.value);
               });
-            } else {
-              console.log(`⚠ No tokens found via RLS for chunk (${chunk.length} keys)`);
             }
           } catch (chunkErr) {
-            console.warn('Error fetching token chunk:', chunkErr);
             continue; // Skip this chunk and try the next one
           }
         }
-
-        console.log(`📊 Token summary: Loaded ${tokenMap.size} tokens out of ${allTokenKeys.length} requested for user ${userId}`);
         
         // Convert map to array (for compatibility, though we use the map directly)
         allTokens.push(...Array.from(tokenMap.entries()).map(([key, value]) => ({ key, value })));
@@ -1188,8 +1167,6 @@ export const bulletinService = {
         console.warn('getUserBulletins timed out, returning local bulletins');
         return localBulletins;
       }
-      console.error('Error fetching bulletins from database:', error);
-      console.log('Returning local bulletins only due to database error');
       return localBulletins;
     }
   },
@@ -1462,18 +1439,14 @@ export const bulletinService = {
     if (image && image.startsWith('custom-')) {
       try {
         const filePath = `${userId}/${image}.jpg`;
-        console.log('🔍 [getLatestBulletinByProfileSlug] Fetching custom image URL for:', { imageId: image, filePath, userId });
         const { data: urlData } = supabase.storage
           .from('bulletin-images')
           .getPublicUrl(filePath);
         imageUrl = urlData.publicUrl;
-        console.log('✅ [getLatestBulletinByProfileSlug] Custom image URL fetched:', imageUrl);
-      } catch (error) {
-        console.error('❌ [getLatestBulletinByProfileSlug] Error fetching custom image URL:', error);
+      } catch {
+        // Silently handle custom image fetch errors
       }
     }
-
-    // Debug logging
     const result = {
       id: data.id,
       user_id: data.created_by,
@@ -1502,12 +1475,6 @@ export const bulletinService = {
       created_at: data.created_at,
       updated_at: data.created_at
     };
-
-    console.log('📋 [getLatestBulletinByProfileSlug] Returning bulletin with image data:', {
-      imageId: result.imageId,
-      imageUrl: result.imageUrl,
-      hasImageUrl: !!result.imageUrl
-    });
 
     return result;
   },
@@ -1666,14 +1633,7 @@ export const bulletinService = {
         }
       }
 
-      console.log('Successfully scheduled bulletin:', {
-        bulletinId,
-        scheduledDate: scheduleData.scheduledDate,
-        status: updateData[0].status,
-        scheduled_date: updateData[0].scheduled_date
-      });
     } catch (error) {
-      console.error('Error in updateBulletinSchedule:', error);
       throw error;
     }
   },
@@ -1701,7 +1661,6 @@ export const bulletinService = {
   },
 
   async updateBulletinStatus(bulletinId: string, userId: string, status: 'draft' | 'scheduled' | 'active' | 'archived') {
-    console.log(`🔵 [updateBulletinStatus] Updating bulletin ${bulletinId} to status: ${status}`);
     // Validate that the bulletin ID is a proper UUID (not a local_ ID)
     if (bulletinId.startsWith('local_')) {
       throw new Error('Cannot update status of unsaved bulletin. Please save the bulletin first.');
@@ -1720,8 +1679,25 @@ export const bulletinService = {
     if (fetchError) throw fetchError;
     if (!bulletin) throw new Error('Bulletin not found');
 
-    const profileOwnerId = bulletin.created_by;
     const profileSlug = bulletin.profile_slug;
+
+    // Get the actual profile owner (not the bulletin creator)
+    // This is critical for shared profiles - editors create bulletins but
+    // active_bulletin_id must be set on the profile OWNER's user record
+    let profileOwnerId = bulletin.created_by; // Default to creator for non-shared bulletins
+
+    if (profileSlug) {
+      // Look up the actual profile owner from the profile_slug
+      const { data: profileOwner } = await supabase
+        .from('users')
+        .select('id')
+        .eq('profile_slug', profileSlug)
+        .single();
+
+      if (profileOwner) {
+        profileOwnerId = profileOwner.id;
+      }
+    }
 
     // Check permissions BEFORE attempting update (prevents unnecessary operations)
     if (profileSlug) {
@@ -1782,23 +1758,16 @@ export const bulletinService = {
             .neq('id', bulletinId),
           10000
         );
-        
-        if (!profileArchiveError) {
-          console.log('Successfully archived active bulletins by profile_slug');
-        }
       }
 
-      const { error: archiveError, data: archiveData } = await withTimeout(
+      const { error: archiveError } = await withTimeout(
         archiveQuery,
         10000
       );
 
       if (archiveError) {
-        console.warn('Error archiving other active bulletins by created_by:', archiveError);
         // Don't throw - we'll try to continue and the update might still work
         // RLS might prevent archiving, but the update itself might succeed
-      } else {
-        console.log(`Successfully archived ${archiveData?.length || 0} active bulletin(s) by created_by`);
       }
     }
 
@@ -1838,7 +1807,6 @@ export const bulletinService = {
                                 error.message?.includes('unique_active_bulletin_per_profile');
 
       if (isUniqueViolation && status === 'active') {
-        console.warn(`Unique constraint violation when activating bulletin ${bulletinId}. Archiving conflicting bulletin.`);
         // Archive the conflicting active bulletin
         if (profileSlug) {
           await withTimeout(
@@ -1972,105 +1940,30 @@ export const bulletinService = {
     }
 
     // If making a bulletin active, update the profile owner's active_bulletin_id
-    // Note: The database trigger should handle this, but we do it explicitly for shared users
-    if (status === 'active') {
-      // First, clear this bulletin from being active for any other users (due to unique constraint)
-      const { error: clearError } = await withTimeout(
-        supabase
-          .from('users')
-          .update({ active_bulletin_id: null })
-          .eq('active_bulletin_id', bulletinId)
-          .neq('id', profileOwnerId),
+    // Use the set_active_bulletin RPC function which has SECURITY DEFINER to bypass RLS
+    // This allows editors to set active_bulletin_id on the profile owner's record
+    if (status === 'active' && profileSlug) {
+      const { error: rpcError } = await withTimeout(
+        supabase.rpc('set_active_bulletin', {
+          p_profile_slug: profileSlug,
+          p_bulletin_id: bulletinId
+        }),
         10000
       );
 
-      if (clearError) {
-        console.warn('Failed to clear active_bulletin_id from other users:', clearError);
-        // Don't throw - this is a cleanup operation
+      if (rpcError) {
+        // Don't throw - the bulletin status was already updated, this is for the QR code display
+        // The owner can still manually fix this if needed
       }
-
-      // Now set it for the profile owner
-      // Use retry logic to handle race conditions with the database trigger
-      let userUpdateError;
-      let retries = 3;
-      
-      while (retries > 0) {
-        const result = await withTimeout(
-          supabase
-            .from('users')
-            .update({ active_bulletin_id: bulletinId })
-            .eq('id', profileOwnerId),
-          10000
-        );
-        
-        userUpdateError = result.error;
-        
-      // If successful or not a conflict error, break
-      // Check both error.code and error.status for 409 conflicts
-      const isUserConflict = userUpdateError && (
-        userUpdateError.code === '409' || 
-        userUpdateError.code === 'PGRST116' || 
-        (userUpdateError as any).status === 409 ||
-        userUpdateError.message?.includes('Conflict') ||
-        userUpdateError.message?.includes('409')
-      );
-      
-      if (!userUpdateError || !isUserConflict) {
-        break;
-      }
-      
-      // If it's a 409 Conflict, wait and retry
-      if (isUserConflict) {
-        retries--;
-        if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
-          // Verify the user's active_bulletin_id - the trigger might have already updated it
-          const { data: currentUser } = await supabase
-            .from('users')
-            .select('active_bulletin_id')
-            .eq('id', profileOwnerId)
-            .single();
-          
-          // If the active_bulletin_id is already set correctly, consider it successful
-          if (currentUser && currentUser.active_bulletin_id === bulletinId) {
-            userUpdateError = null;
-            break;
-          }
-        }
-      }
-      }
-
-      // Only throw if it's not a conflict that was resolved by the trigger
-      // Check if it's still a conflict after retries
-      const isStillConflict = userUpdateError && (
-        userUpdateError.code === '409' || 
-        userUpdateError.code === 'PGRST116' || 
-        (userUpdateError as any).status === 409 ||
-        userUpdateError.message?.includes('Conflict') ||
-        userUpdateError.message?.includes('409')
-      );
-      
-      if (userUpdateError && !isStillConflict) {
-        throw userUpdateError;
-      }
-      
-      // If it's still a conflict after retries, verify the trigger handled it
-      if (isStillConflict) {
-        const { data: currentUser } = await supabase
+    } else if (status === 'active' && !profileSlug) {
+      // For bulletins without a profile_slug (legacy/personal), use direct update
+      await withTimeout(
+        supabase
           .from('users')
-          .select('active_bulletin_id')
-          .eq('id', profileOwnerId)
-          .single();
-        
-        if (currentUser && currentUser.active_bulletin_id === bulletinId) {
-          // The trigger already updated it, so we're good
-          console.log('User active_bulletin_id was updated by database trigger');
-        } else {
-          // Still failed after retries and verification
-          console.warn('Failed to update user active_bulletin_id after retries:', userUpdateError);
-          // Don't throw - the trigger should handle it, and this is not critical for the operation
-        }
-      }
+          .update({ active_bulletin_id: bulletinId })
+          .eq('id', profileOwnerId),
+        10000
+      );
     }
   },
 
@@ -2121,7 +2014,6 @@ export const bulletinService = {
     );
 
     if (!currentBulletin) {
-      console.error(`Bulletin ${bulletinId} not found`);
       return;
     }
 
@@ -2132,7 +2024,6 @@ export const bulletinService = {
           .from('bulletins')
           .update({ auto_activate: false })
           .eq('id', bulletinId);
-        console.log(`Bulletin ${bulletinId} is already active - disabled auto_activate`);
       }
       return; // Already active, nothing to do
     }
@@ -2159,7 +2050,6 @@ export const bulletinService = {
     // If there's a manually activated bulletin (auto_activate = false), don't override it
     const manuallyActivated = activeBulletins?.find(b => b.auto_activate === false);
     if (manuallyActivated && manuallyActivated.id !== bulletinId) {
-      console.log(`Skipping scheduled activation: bulletin ${bulletinId} - profile has manually activated bulletin ${manuallyActivated.id}`);
       // Disable auto_activate on the scheduled bulletin so it doesn't keep trying
       await supabase
         .from('bulletins')
@@ -2170,7 +2060,7 @@ export const bulletinService = {
 
     // Archive other active bulletins for this profile (only auto-activated ones)
     if (profileSlug) {
-      const { error: archiveError } = await withTimeout(
+      await withTimeout(
         supabase
           .from('bulletins')
           .update({ status: 'archived' })
@@ -2180,13 +2070,9 @@ export const bulletinService = {
           .neq('id', bulletinId),
         10000
       );
-
-      if (archiveError) {
-        console.warn('Error archiving auto-activated bulletins for profile:', archiveError);
-      }
     } else {
       // No profile_slug, archive by the bulletin's creator
-      const { error: archiveError } = await withTimeout(
+      await withTimeout(
         supabase
           .from('bulletins')
           .update({ status: 'archived' })
@@ -2196,10 +2082,6 @@ export const bulletinService = {
           .neq('id', bulletinId),
         10000
       );
-
-      if (archiveError) {
-        console.warn('Error archiving auto-activated bulletins for bulletin owner:', archiveError);
-      }
     }
 
     // Then activate the specific bulletin and disable auto_activate to prevent re-activation
@@ -2236,7 +2118,6 @@ export const bulletinService = {
                                 error.message?.includes('unique_active_bulletin_per_profile');
 
       if (isUniqueViolation) {
-        console.warn(`Unique constraint violation when activating bulletin ${bulletinId}. Another bulletin is already active.`);
         // Archive the conflicting active bulletin first
         if (profileSlug) {
           await withTimeout(
@@ -2340,15 +2221,13 @@ export const bulletinService = {
       }
     } else if (error) {
       // If activation failed, still try to disable auto_activate to prevent repeated attempts
-      console.error(`Failed to activate scheduled bulletin ${bulletinId}:`, error);
       try {
         await supabase
           .from('bulletins')
           .update({ auto_activate: false })
           .eq('id', bulletinId);
-        console.log(`Disabled auto_activate on bulletin ${bulletinId} due to activation failure`);
-      } catch (disableError) {
-        console.warn(`Failed to disable auto_activate on bulletin ${bulletinId}:`, disableError);
+      } catch {
+        // Silently handle disable failure
       }
       throw error;
     }
@@ -2430,20 +2309,6 @@ export const bulletinService = {
       throw userUpdateError;
     }
     
-    // If it's still a conflict after retries, verify the trigger handled it
-    if (isSchedulerUserConflict) {
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('active_bulletin_id')
-        .eq('id', userId)
-        .single();
-      
-      if (!currentUser || currentUser.active_bulletin_id !== bulletinId) {
-        // Still failed after retries and verification
-        console.warn('Failed to update user active_bulletin_id after retries:', userUpdateError);
-        // Don't throw - the trigger should handle it, and this is not critical for the operation
-      }
-    }
   },
 
   async getUserAccessibleProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
@@ -2475,15 +2340,13 @@ export const bulletinService = {
       for (const bulletin of scheduledBulletins) {
         try {
           await this.activateScheduledBulletin(bulletin.id, userId);
-          console.log(`Activated scheduled bulletin: ${bulletin.id} at local time: ${new Date().toLocaleString()}`);
-        } catch (error) {
-          console.error(`Failed to activate bulletin ${bulletin.id}:`, error);
+        } catch {
+          // Silently handle activation failures
         }
       }
 
       return scheduledBulletins.length;
-    } catch (error) {
-      console.error('Error checking scheduled bulletins:', error);
+    } catch {
       return 0;
     }
   }
@@ -2499,12 +2362,10 @@ export const robustService = {
         .limit(1)
         .single();
       if (error) {
-        console.warn('Connection test failed:', error);
         return false;
       }
       return true;
-    } catch (error) {
-      console.error('Connection test error:', error);
+    } catch {
       return false;
     }
   },
@@ -2512,7 +2373,6 @@ export const robustService = {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
-        console.warn('No valid session found');
         return null;
       }
       const { error: testError } = await supabase
@@ -2522,13 +2382,11 @@ export const robustService = {
         .limit(1)
         .single();
       if (testError) {
-        console.warn('Session validation failed, signing out');
         await supabase.auth.signOut();
         return null;
       }
       return session;
-    } catch (error) {
-      console.error('Session validation error:', error);
+    } catch {
       return null;
     }
   },
@@ -2536,8 +2394,7 @@ export const robustService = {
     try {
       localStorage.setItem('pending_bulletin_draft', JSON.stringify({ data: bulletinData, timestamp: Date.now() }));
       return true;
-    } catch (error) {
-      console.error('Failed to save draft:', error);
+    } catch {
       return false;
     }
   },
@@ -2550,8 +2407,7 @@ export const robustService = {
         return parsed.data;
       }
       return null;
-    } catch (error) {
-      console.error('Failed to restore draft:', error);
+    } catch {
       return null;
     }
   }
@@ -2565,7 +2421,6 @@ export const retryOperation = async <T>(operation: () => Promise<T>, maxRetries:
       return await operation();
     } catch (error) {
       lastError = error;
-      console.warn(`Operation failed (attempt ${attempt}/${maxRetries}):`, error);
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, delay * attempt));
       }
@@ -2580,8 +2435,7 @@ export const localStorageService = {
     try {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
-    } catch (error) {
-      console.error('Failed to save to localStorage:', error);
+    } catch {
       return false;
     }
   },
@@ -2589,8 +2443,7 @@ export const localStorageService = {
     try {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : null;
-    } catch (error) {
-      console.error('Failed to read from localStorage:', error);
+    } catch {
       return null;
     }
   },
@@ -2598,8 +2451,7 @@ export const localStorageService = {
     try {
       localStorage.removeItem(key);
       return true;
-    } catch (error) {
-      console.error('Failed to remove from localStorage:', error);
+    } catch {
       return false;
     }
   },
@@ -2612,8 +2464,7 @@ export const localStorageService = {
         }
       });
       return true;
-    } catch (error) {
-      console.error('Failed to clear bulletin data:', error);
+    } catch {
       return false;
     }
   }
