@@ -510,6 +510,51 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
     }
   },
 
+  // Resend invitation - extends expiration by 7 days and optionally sends email
+  async resendInvitation(invitationId: string, sendEmail: boolean = true): Promise<void> {
+    // Get existing invitation details
+    const { data: invitation, error: fetchError } = await supabase
+      .from('profile_invitations')
+      .select('*')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      throw new Error('Invitation not found');
+    }
+
+    // Calculate new expiration (7 days from now)
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+    // Update the expiration date
+    const { error: updateError } = await supabase
+      .from('profile_invitations')
+      .update({ expires_at: newExpiresAt.toISOString() })
+      .eq('id', invitationId);
+
+    if (updateError) {
+      console.error('Error updating invitation expiration:', updateError);
+      throw new Error('Failed to resend invitation. Please try again.');
+    }
+
+    // Send email notification if requested
+    if (sendEmail) {
+      try {
+        await this.sendInvitationEmail({
+          invitedEmail: invitation.invited_email,
+          profileSlug: invitation.profile_slug,
+          invitationLink: `https://${FULL_DOMAIN}/invite/${invitation.token}`,
+          role: invitation.role,
+          inviterName: await this.getInviterName(invitation.owner_id)
+        });
+      } catch (emailError) {
+        console.warn('Failed to send invitation email:', emailError);
+        // Don't throw - the invitation was updated successfully
+      }
+    }
+  },
+
   // Get user's accessible profiles
   async getUserAccessibleProfiles(userId: string): Promise<Array<{profile_slug: string; role: string}>> {
     // Get owned profiles (direct ownership)

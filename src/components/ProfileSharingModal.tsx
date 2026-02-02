@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Mail, Plus, Trash2, Edit, Eye, Crown, X, Copy, Check } from 'lucide-react';
+import { Users, Mail, Plus, Trash2, Edit, Eye, Crown, X, Copy, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { profileSharingService } from '../lib/supabase';
 import { ProfileShare, ProfileInvitation } from '../lib/profileSharingService';
@@ -105,6 +105,16 @@ export default function ProfileSharingModal({
       loadSharesAndInvitations();
     } catch (error: any) {
       toast.error('Failed to cancel invitation: ' + error.message);
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    try {
+      await profileSharingService.resendInvitation(invitationId);
+      toast.success(`Invitation resent to ${email}! Expiration extended by 7 days.`);
+      loadSharesAndInvitations();
+    } catch (error: any) {
+      toast.error('Failed to resend invitation: ' + error.message);
     }
   };
 
@@ -250,8 +260,16 @@ export default function ProfileSharingModal({
                         </div>
                         <div className="flex items-center space-x-2">
                           <button
+                            onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
+                            className="text-green-500 hover:text-green-700"
+                            title="Resend invitation (extends expiration by 7 days)"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => copyInvitationLink(invitation.token)}
                             className="text-blue-500 hover:text-blue-700"
+                            title="Copy invitation link"
                           >
                             {copiedToken === invitation.token ? (
                               <Check className="w-4 h-4" />
@@ -262,6 +280,7 @@ export default function ProfileSharingModal({
                           <button
                             onClick={() => handleCancelInvitation(invitation.id)}
                             className="text-red-500 hover:text-red-700"
+                            title="Cancel invitation"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
