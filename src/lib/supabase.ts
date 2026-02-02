@@ -1167,6 +1167,7 @@ export const bulletinService = {
           wardLeadership: [],
           missionaries: [],
           wardMissionaries: [],
+          serviceMissionaries: [],
           imageId: 'none',
           imagePosition: { x: 50, y: 50 },
           created_at: bulletin.created_at,
