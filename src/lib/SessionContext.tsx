@@ -39,6 +39,10 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         window.location.href = '/reset-password' + window.location.hash;
         return;
       }
+      // If user updated their email, refresh profile to get new email
+      if (event === 'USER_UPDATED' && newSession?.user) {
+        setProfileRefreshTrigger(prev => prev + 1);
+      }
       setSession(newSession);
     });
 
