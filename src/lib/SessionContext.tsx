@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, userService, bulletinService } from './supabase';
+import i18n from '../i18n';
 
 interface UserProfile {
   email: string;
@@ -69,6 +70,15 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const currentLocalStorage = localStorage.getItem('selectedUnitType');
             if (currentLocalStorage !== userProfile.unit_type) {
               localStorage.setItem('selectedUnitType', userProfile.unit_type);
+            }
+          }
+
+          // Sync localStorage and i18n with database value for language
+          if (userProfile.language && typeof window !== 'undefined') {
+            const currentLanguage = localStorage.getItem('selectedLanguage');
+            if (currentLanguage !== userProfile.language) {
+              localStorage.setItem('selectedLanguage', userProfile.language);
+              i18n.changeLanguage(userProfile.language);
             }
           }
         } else {
