@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, Mail, Plus, Trash2, Edit, Eye, Crown, X, Copy, Check, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { profileSharingService } from '../lib/supabase';
@@ -16,6 +17,7 @@ export default function ProfileSharingModal({
   onClose,
   profileSlug
 }: ProfileSharingModalProps) {
+  const { t } = useTranslation();
   const { user, profile } = useSession();
   const [shares, setShares] = useState<ProfileShare[]>([]);
   const [invitations, setInvitations] = useState<ProfileInvitation[]>([]);
@@ -48,7 +50,7 @@ export default function ProfileSharingModal({
       setShares(sharesData);
       setInvitations(invitationsData);
     } catch (error: any) {
-      toast.error('Failed to load sharing data: ' + error.message);
+      toast.error(t('errors.failedToLoadSharingData') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -59,29 +61,29 @@ export default function ProfileSharingModal({
 
     // Check if user has permission to invite
     if (!canInvite) {
-      toast.error('Only the profile owner can invite new users');
+      toast.error(t('sharing.onlyOwnerCanInvite'));
       return;
     }
 
     try {
       await profileSharingService.inviteUser(profileSlug, user.id, inviteEmail, inviteRole);
 
-      toast.success(`Invitation sent to ${inviteEmail}! They should receive an email shortly.`);
+      toast.success(t('sharing.invitationSentTo', { email: inviteEmail }));
       setInviteEmail('');
       setShowInviteForm(false);
       loadSharesAndInvitations();
     } catch (error: any) {
-      toast.error('Failed to send invitation: ' + error.message);
+      toast.error(t('errors.failedToSendInvitation') + ': ' + error.message);
     }
   };
 
   const handleRemoveShare = async (shareId: string) => {
     try {
       await profileSharingService.removeShare(shareId);
-      toast.success('User removed from profile');
+      toast.success(t('sharing.userRemovedFromProfile'));
       loadSharesAndInvitations();
     } catch (error: any) {
-      toast.error('Failed to remove user: ' + error.message);
+      toast.error(t('errors.failedToRemoveUser') + ': ' + error.message);
     }
   };
 
@@ -89,10 +91,10 @@ export default function ProfileSharingModal({
     setChangingRole(shareId);
     try {
       await profileSharingService.updateShareRole(shareId, newRole);
-      toast.success(`Role updated to ${newRole}`);
+      toast.success(t('sharing.roleUpdatedTo', { role: newRole }));
       loadSharesAndInvitations();
     } catch (error: any) {
-      toast.error('Failed to update role: ' + error.message);
+      toast.error(t('errors.failedToUpdateRole') + ': ' + error.message);
     } finally {
       setChangingRole(null);
     }
@@ -101,20 +103,20 @@ export default function ProfileSharingModal({
   const handleCancelInvitation = async (invitationId: string) => {
     try {
       await profileSharingService.cancelInvitation(invitationId);
-      toast.success('Invitation cancelled');
+      toast.success(t('sharing.invitationCancelled'));
       loadSharesAndInvitations();
     } catch (error: any) {
-      toast.error('Failed to cancel invitation: ' + error.message);
+      toast.error(t('errors.failedToCancelInvitation') + ': ' + error.message);
     }
   };
 
   const handleResendInvitation = async (invitationId: string, email: string) => {
     try {
       await profileSharingService.resendInvitation(invitationId);
-      toast.success(`Invitation resent to ${email}! Expiration extended by 7 days.`);
+      toast.success(t('sharing.invitationResentTo', { email }));
       loadSharesAndInvitations();
     } catch (error: any) {
-      toast.error('Failed to resend invitation: ' + error.message);
+      toast.error(t('errors.failedToResendInvitation') + ': ' + error.message);
     }
   };
 
@@ -124,9 +126,9 @@ export default function ProfileSharingModal({
       await navigator.clipboard.writeText(link);
       setCopiedToken(token);
       setTimeout(() => setCopiedToken(null), 2000);
-      toast.success('Invitation link copied to clipboard');
+      toast.success(t('sharing.invitationLinkCopied'));
     } catch (error) {
-      toast.error('Failed to copy link');
+      toast.error(t('errors.failedToCopyLink'));
     }
   };
 
@@ -156,7 +158,7 @@ export default function ProfileSharingModal({
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <Users className="w-5 h-5 mr-2" />
-            Share Profile: {profileSlug}
+            {t('sharing.shareProfile')}: {profileSlug}
           </h2>
           <button
             onClick={onClose}
@@ -170,14 +172,14 @@ export default function ProfileSharingModal({
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-500 mt-2">Loading...</p>
+              <p className="text-gray-500 mt-2">{t('common.loading')}</p>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Current Shares */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-3">
-                  Current Access ({shares.length})
+                  {t('sharing.currentAccess')} ({shares.length})
                 </h3>
                 <div className="space-y-2">
                   {shares.map((share) => {
@@ -188,15 +190,15 @@ export default function ProfileSharingModal({
                           {getRoleIcon(share.role)}
                           <div className="flex-1">
                             <div className="font-medium text-sm">
-                              {share.shared_user?.email || 'Unknown User'}
-                              {isCurrentUser && <span className="text-xs text-blue-600 ml-2">(You)</span>}
+                              {share.shared_user?.email || t('sharing.unknownUser')}
+                              {isCurrentUser && <span className="text-xs text-blue-600 ml-2">({t('sharing.you')})</span>}
                             </div>
                             <div className="flex items-center space-x-2 mt-1">
                               <span className={`px-2 py-1 text-xs rounded ${getRoleColor(share.role)}`}>
-                                {share.role}
+                                {t(`sharing.${share.role}`)}
                               </span>
                               {share.role === 'viewer' && (
-                                <span className="text-xs text-gray-500">(Read-only)</span>
+                                <span className="text-xs text-gray-500">({t('sharing.readOnly')})</span>
                               )}
                             </div>
                           </div>
@@ -212,8 +214,8 @@ export default function ProfileSharingModal({
                                   disabled={changingRole === share.id}
                                   className="text-xs px-2 py-1 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  <option value="editor">Editor</option>
-                                  <option value="viewer">Viewer</option>
+                                  <option value="editor">{t('sharing.editor')}</option>
+                                  <option value="viewer">{t('sharing.viewer')}</option>
                                 </select>
                                 {changingRole === share.id && (
                                   <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded">
@@ -224,14 +226,14 @@ export default function ProfileSharingModal({
                               <button
                                 onClick={() => handleRemoveShare(share.id)}
                                 className="text-red-500 hover:text-red-700 p-1"
-                                title="Remove access"
+                                title={t('sharing.removeAccess')}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </>
                           )}
                           {isCurrentUser && (
-                            <span className="text-xs text-gray-500 italic">Cannot modify your own access</span>
+                            <span className="text-xs text-gray-500 italic">{t('sharing.cannotModifyOwnAccess')}</span>
                           )}
                         </div>
                       </div>
@@ -244,7 +246,7 @@ export default function ProfileSharingModal({
               {invitations.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">
-                    Pending Invitations ({invitations.length})
+                    {t('sharing.pendingInvitations')} ({invitations.length})
                   </h3>
                   <div className="space-y-2">
                     {invitations.map((invitation) => (
@@ -254,7 +256,7 @@ export default function ProfileSharingModal({
                           <div>
                             <div className="font-medium text-sm">{invitation.invited_email}</div>
                             <span className={`px-2 py-1 text-xs rounded ${getRoleColor(invitation.role)}`}>
-                              {invitation.role}
+                              {t(`sharing.${invitation.role}`)}
                             </span>
                           </div>
                         </div>
@@ -262,14 +264,14 @@ export default function ProfileSharingModal({
                           <button
                             onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
                             className="text-green-500 hover:text-green-700"
-                            title="Resend invitation (extends expiration by 7 days)"
+                            title={t('sharing.resendInvitation')}
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => copyInvitationLink(invitation.token)}
                             className="text-blue-500 hover:text-blue-700"
-                            title="Copy invitation link"
+                            title={t('sharing.copyInvitationLink')}
                           >
                             {copiedToken === invitation.token ? (
                               <Check className="w-4 h-4" />
@@ -280,7 +282,7 @@ export default function ProfileSharingModal({
                           <button
                             onClick={() => handleCancelInvitation(invitation.id)}
                             className="text-red-500 hover:text-red-700"
-                            title="Cancel invitation"
+                            title={t('sharing.cancelInvitation')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -300,15 +302,15 @@ export default function ProfileSharingModal({
                       className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-500 flex items-center justify-center"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Invite New User
+                      {t('sharing.inviteNewUser')}
                     </button>
                   ) : (
                     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                      <h4 className="font-medium text-gray-900 mb-3">Invite New User</h4>
+                      <h4 className="font-medium text-gray-900 mb-3">{t('sharing.inviteNewUser')}</h4>
                       <div className="space-y-3">
                         <input
                           type="email"
-                          placeholder="Enter email address"
+                          placeholder={t('sharing.enterEmailAddress')}
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -318,11 +320,11 @@ export default function ProfileSharingModal({
                           onChange={(e) => setInviteRole(e.target.value as 'editor' | 'viewer')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         >
-                          <option value="editor">Editor - Can create, edit, schedule, and delete bulletins</option>
-                          <option value="viewer">Viewer - Can only view bulletins (read-only)</option>
+                          <option value="editor">{t('sharing.editorRoleDescription')}</option>
+                          <option value="viewer">{t('sharing.viewerRoleDescription')}</option>
                         </select>
                         <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                          <strong>Viewer role:</strong> Perfect for stakeholders, leaders, or reviewers who need to see bulletins but shouldn't edit them. Viewers can see all content but cannot make changes.
+                          <strong>{t('sharing.viewerRoleTitle')}:</strong> {t('sharing.viewerRoleExplanation')}
                         </div>
                         <div className="flex space-x-2">
                           <button
@@ -330,13 +332,13 @@ export default function ProfileSharingModal({
                             disabled={!inviteEmail}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Send Invitation
+                            {t('sharing.sendInvitation')}
                           </button>
                           <button
                             onClick={() => setShowInviteForm(false)}
                             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       </div>
@@ -349,7 +351,7 @@ export default function ProfileSharingModal({
               {!canInvite && (
                 <div className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 text-center">
                   <p className="text-sm text-gray-600">
-                    Only the profile owner can invite new users
+                    {t('sharing.onlyOwnerCanInvite')}
                   </p>
                 </div>
               )}
@@ -362,7 +364,7 @@ export default function ProfileSharingModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

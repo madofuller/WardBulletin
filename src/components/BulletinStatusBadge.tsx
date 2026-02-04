@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, CheckCircle, Archive, FileText } from 'lucide-react';
 import { BulletinStatus } from '../types/bulletin';
 
@@ -13,6 +14,8 @@ export default function BulletinStatusBadge({
   scheduledDate,
   className = ''
 }: BulletinStatusBadgeProps) {
+  const { t } = useTranslation();
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     try {
@@ -34,7 +37,7 @@ export default function BulletinStatusBadge({
       case 'draft':
         return {
           icon: FileText,
-          text: 'Draft',
+          text: t('bulletin.draftStatus'),
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-800',
           iconColor: 'text-gray-600'
@@ -42,7 +45,7 @@ export default function BulletinStatusBadge({
       case 'scheduled':
         return {
           icon: Clock,
-          text: scheduledDate ? `Scheduled for ${formatDate(scheduledDate.split('T')[0])}` : 'Scheduled',
+          text: scheduledDate ? t('bulletin.scheduledFor', { date: formatDate(scheduledDate.split('T')[0]) }) : t('bulletin.scheduledStatus'),
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-800',
           iconColor: 'text-blue-600'
@@ -50,7 +53,7 @@ export default function BulletinStatusBadge({
       case 'active':
         return {
           icon: CheckCircle,
-          text: 'Active',
+          text: t('bulletin.activeStatus'),
           bgColor: 'bg-green-100',
           textColor: 'text-green-800',
           iconColor: 'text-green-600'
@@ -58,7 +61,7 @@ export default function BulletinStatusBadge({
       case 'archived':
         return {
           icon: Archive,
-          text: 'Archived',
+          text: t('bulletin.archivedStatus'),
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-600',
           iconColor: 'text-gray-500'
@@ -66,7 +69,7 @@ export default function BulletinStatusBadge({
       default:
         return {
           icon: FileText,
-          text: 'Unknown',
+          text: t('bulletin.unknownStatus'),
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-800',
           iconColor: 'text-gray-600'

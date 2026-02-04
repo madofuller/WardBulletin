@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
 
 export default function AboutPage() {
+  const { t } = useTranslation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -83,12 +85,12 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <p className="text-gray-600 text-base font-medium">
-              MyWardBulletin.com — Free Ward Bulletin Creator
+              MyWardBulletin.com — {t('footer.freeCreator')}
             </p>
             <nav className="mt-4 space-x-4">
-              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
-              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+              <a href="/about" className="text-gray-600 hover:text-gray-900">{t('footer.about')}</a>
+              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">{t('footer.howToUse')}</a>
+              <a href="/contact" className="text-gray-600 hover:text-gray-900">{t('footer.contact')}</a>
             </nav>
           </div>
         </div>

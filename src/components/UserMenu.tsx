@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, LogOut, Save, FileText, Settings, MessageSquare, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -27,6 +28,7 @@ export default function UserMenu({
   onOpenProfileSharing,
   pendingSubmissionsCount
 }: UserMenuProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -39,10 +41,10 @@ export default function UserMenu({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+        className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors max-w-[200px]"
       >
-        <User className="w-4 h-4" />
-        <span className="text-sm font-medium">{user.email}</span>
+        <User className="w-4 h-4 flex-shrink-0" />
+        <span className="text-sm font-medium truncate">{user.email}</span>
       </button>
 
       {isOpen && (
@@ -53,8 +55,8 @@ export default function UserMenu({
           />
           <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             <div className="p-3 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              <p className="text-xs text-gray-500">Signed in</p>
+              <p className="text-sm font-medium text-gray-900 truncate" title={user.email}>{user.email}</p>
+              <p className="text-xs text-gray-500">{t('modals.signedIn')}</p>
             </div>
             
             <div className="p-2 space-y-1">
@@ -65,15 +67,15 @@ export default function UserMenu({
                 }}
                 disabled={!hasUnsavedChanges && !user}
                 className={`w-full flex items-center space-x-2 px-3 py-2 text-left rounded-lg transition-colors ${
-                  hasUnsavedChanges 
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
+                  hasUnsavedChanges
+                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
                     : 'text-gray-400 cursor-not-allowed'
                 }`}
               >
                 <Save className="w-4 h-4" />
                 <span className="text-sm">
-                  {hasUnsavedChanges ? 'Save Changes' : 'No Changes to Save'}
-                  {hasUnsavedChanges && <span className="text-xs ml-1">(unsaved changes)</span>}
+                  {hasUnsavedChanges ? t('common.save') : t('common.noChangesToSave')}
+                  {hasUnsavedChanges && <span className="text-xs ml-1">{t('common.unsavedChanges')}</span>}
                 </span>
               </button>
               
@@ -85,7 +87,7 @@ export default function UserMenu({
                 className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <FileText className="w-4 h-4" />
-                <span className="text-sm">My Bulletins</span>
+                <span className="text-sm">{t('bulletin.myBulletins')}</span>
               </button>
               
               {onOpenReviewSubmissions && (
@@ -98,7 +100,7 @@ export default function UserMenu({
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span className="text-sm">
-                    Review Submissions
+                    {t('bulletin.reviewSubmissions')}
                     {pendingSubmissionsCount && typeof pendingSubmissionsCount === 'number' && pendingSubmissionsCount > 0 ? (
                       <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
                         {pendingSubmissionsCount}
@@ -117,7 +119,7 @@ export default function UserMenu({
                   className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Settings className="w-4 h-4" />
-                  <span className="text-sm">Profile Settings</span>
+                  <span className="text-sm">{t('modals.profileSettings')}</span>
                 </button>
               )}
               {onOpenProfileSharing && (
@@ -129,7 +131,7 @@ export default function UserMenu({
                   className="w-full flex items-center space-x-2 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Users className="w-4 h-4" />
-                  <span className="text-sm">Share Profile</span>
+                  <span className="text-sm">{t('sharing.shareProfile')}</span>
                 </button>
               )}
             </div>
@@ -140,7 +142,7 @@ export default function UserMenu({
                 className="w-full flex items-center space-x-2 px-3 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">Sign Out</span>
+                <span className="text-sm">{t('common.signOut')}</span>
               </button>
             </div>
           </div>

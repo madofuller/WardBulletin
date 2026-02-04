@@ -1,10 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
 import TerminologyToggle from './TerminologyToggle';
+import LanguageSelector from './LanguageSelector';
 import BulletinActions from './BulletinActions';
 import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
-import { getUnitLabel } from '../lib/terminology';
+import { getUnitLabel, getTranslatedUnitLabel } from '../lib/terminology';
 import { BulletinData } from '../types/bulletin';
 
 export default function Header({
@@ -59,6 +61,7 @@ export default function Header({
   currentBulletinStatus?: string;
   currentProfileSlug?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <header className="bg-white shadow-lg border-b-4 border-blue-600">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -68,10 +71,10 @@ export default function Header({
             <div>
               <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
+                <p className="text-sm text-gray-600">{t('header.bulletinCreator', { unit: getTranslatedUnitLabel(t) })}</p>
                 {currentProfileSlug && (
-                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium" title={`Currently viewing profile: ${currentProfileSlug}`}>
-                    Profile: {currentProfileSlug}
+                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium truncate max-w-[150px]" title={t('header.currentlyViewingProfile', { slug: currentProfileSlug })}>
+                    {t('header.profile')}: {currentProfileSlug}
                   </span>
                 )}
               </div>
@@ -80,20 +83,21 @@ export default function Header({
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-4">
             <TerminologyToggle />
+            <LanguageSelector />
             <button
               onClick={handleNewBulletin}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-colors whitespace-nowrap"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              New Bulletin
+              <Plus className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span className="truncate">{t('common.newBulletin')}</span>
             </button>
             {!onlyNewBulletin && !hideExportPDF && (
               <button
                 onClick={handleExportPDF}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-full hover:bg-green-700 transition-colors whitespace-nowrap"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Export PDF
+                <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.exportPdf')}</span>
               </button>
             )}
             {!onlyNewBulletin && bulletinData && onMakeActive && onScheduleBulletin && onSaveAsTemplate && (
@@ -110,11 +114,11 @@ export default function Header({
             {!onlyNewBulletin && !hideQRCode && (
               <button
                 onClick={() => setShowQRCode(!showQRCode)}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-                title="View your permanent QR code that shows your active bulletin"
+                className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-sm rounded-full hover:bg-purple-700 transition-colors whitespace-nowrap"
+                title={t('qrCode.printQrCode')}
               >
-                <QrCode className="w-4 h-4 mr-2" />
-                My QR Code
+                <QrCode className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.myQrCode')}</span>
               </button>
             )}
             {!onlyNewBulletin && (user ? (
@@ -129,11 +133,11 @@ export default function Header({
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
-                title="Sign In"
+                className="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-colors whitespace-nowrap"
+                title={t('common.signIn')}
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
+                <LogIn className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.signIn')}</span>
               </button>
             ))}
           </div>
@@ -155,8 +159,9 @@ export default function Header({
         {showMobileMenu && (
           <div className="lg:hidden mt-4 pt-4 border-t border-gray-200">
             <div className="space-y-3">
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-2">
                 <TerminologyToggle />
+                <LanguageSelector />
               </div>
               <button
                 onClick={() => {
@@ -166,7 +171,7 @@ export default function Header({
                 className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                New Bulletin
+                {t('common.newBulletin')}
               </button>
               {!onlyNewBulletin && !hideExportPDF && (
                 <button
@@ -177,7 +182,7 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Export PDF
+                  {t('common.exportPdf')}
                 </button>
               )}
               {!onlyNewBulletin && user && (
@@ -194,7 +199,7 @@ export default function Header({
                   ) : (
                     <Plus className="w-4 h-4 mr-2" />
                   )}
-                  {loading ? 'Saving...' : (currentBulletinId ? 'Update Bulletin' : 'Save Bulletin')}
+                  {loading ? t('common.saving') : (currentBulletinId ? t('bulletin.updateBulletin') : t('bulletin.saveBulletin'))}
                 </button>
               )}
               {!onlyNewBulletin && !hideQRCode && (
@@ -206,7 +211,7 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
-                  My QR Code
+                  {t('common.myQrCode')}
                 </button>
               )}
               {!onlyNewBulletin && (user ? (
@@ -218,7 +223,7 @@ export default function Header({
                     }}
                     className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                   >
-                    My Bulletins
+                    {t('bulletin.myBulletins')}
                   </button>
                   <button
                     onClick={() => {
@@ -227,7 +232,7 @@ export default function Header({
                     }}
                     className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                   >
-                    Sign Out
+                    {t('common.signOut')}
                   </button>
                 </div>
               ) : (
@@ -239,7 +244,7 @@ export default function Header({
                   className="w-full flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
+                  {t('common.signIn')}
                 </button>
               ))}
             </div>

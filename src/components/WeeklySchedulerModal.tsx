@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Check, X, Clock, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { bulletinService } from '../lib/supabase';
@@ -35,6 +36,7 @@ export default function WeeklySchedulerModal({
   bulletins,
   userId
 }: WeeklySchedulerModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [scheduleItems, setScheduleItems] = useState<WeeklyScheduleItem[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -183,7 +185,7 @@ export default function WeeklySchedulerModal({
     });
     
     if (pastDates.length > 0) {
-      toast.error(`Cannot schedule bulletins for past dates: ${pastDates.join(', ')}. Please select future dates.`);
+      toast.error(t('scheduler.cannotSchedulePastDates', { dates: pastDates.join(', ') }));
       return;
     }
     
@@ -378,8 +380,8 @@ export default function WeeklySchedulerModal({
               <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Schedule</h2>
-              <p className="text-xs sm:text-sm text-gray-600">Plan your bulletins for upcoming weeks</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('scheduler.schedule')}</h2>
+              <p className="text-xs sm:text-sm text-gray-600">{t('scheduler.planYourBulletins')}</p>
             </div>
           </div>
           <button
@@ -395,7 +397,7 @@ export default function WeeklySchedulerModal({
           <div className="w-full lg:w-2/3 p-4 lg:p-6 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col min-h-0">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Calendar View</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('scheduler.calendarView')}</h3>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={getPrevMonth}
@@ -455,7 +457,7 @@ export default function WeeklySchedulerModal({
 
             {/* Available Bulletins - Hidden on mobile */}
             <div className="mt-6 flex-1 flex flex-col min-h-0 hidden lg:flex">
-              <h4 className="text-lg font-semibold text-gray-900 mb-3 flex-shrink-0">Available Bulletins</h4>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3 flex-shrink-0">{t('scheduler.availableBulletins')}</h4>
               <div className="space-y-2 flex-1 overflow-y-auto">
                 {availableBulletins.map((bulletin) => (
                   <div
@@ -474,11 +476,11 @@ export default function WeeklySchedulerModal({
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-semibold text-blue-700 text-sm">
-                          Meeting: {bulletin.date ? (
+                          {t('scheduler.meeting')}: {bulletin.date ? (
                             isNaN(new Date(bulletin.date).getTime()) ?
                               bulletin.date :
                               formatDate(bulletin.date)
-                          ) : 'No date set'}
+                          ) : t('scheduler.noDateSet')}
                         </div>
                         <div className="font-medium text-gray-900 text-sm">
                           {bulletin.ward_name}
@@ -501,7 +503,7 @@ export default function WeeklySchedulerModal({
 
           {/* Desktop: Scheduled Bulletins Table */}
           <div className="hidden lg:flex w-1/3 p-6 bg-gray-50 flex-col min-h-0">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex-shrink-0">Scheduled Bulletins</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex-shrink-0">{t('scheduler.scheduledBulletins')}</h3>
             
             {scheduleItems.length > 0 ? (
               <div className="space-y-4 flex-1 overflow-y-auto pr-2">
@@ -518,11 +520,11 @@ export default function WeeklySchedulerModal({
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="font-semibold text-blue-700 text-sm mb-1">
-                          Meeting: {item.meetingDate ? (
+                          {t('scheduler.meeting')}: {item.meetingDate ? (
                             isNaN(new Date(item.meetingDate).getTime()) ?
                               item.meetingDate :
                               formatDate(item.meetingDate)
-                          ) : 'No date set'}
+                          ) : t('scheduler.noDateSet')}
                         </div>
                         <div className="font-medium text-gray-900 text-sm mb-1">
                           {item.wardName}
@@ -541,7 +543,7 @@ export default function WeeklySchedulerModal({
                     
                     <div className="space-y-2">
                       <label className="block text-xs font-medium text-gray-700">
-                        Choose when to activate this bulletin:
+                        {t('scheduler.chooseWhenToActivate')}:
                       </label>
                       <input
                         type="date"
@@ -553,12 +555,12 @@ export default function WeeklySchedulerModal({
                       />
                       {!item.weekOf && (
                         <div className="text-xs text-orange-600 font-medium">
-                          ⚠️ Please select a date to enable scheduling
+                          ⚠️ {t('scheduler.pleaseSelectDate')}
                         </div>
                       )}
                       {item.weekOf && (
                         <div className="text-xs text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded p-2">
-                          Will activate: {formatWeekDisplay(item.weekOf)}
+                          {t('scheduler.willActivate')}: {formatWeekDisplay(item.weekOf)}
                         </div>
                       )}
                     </div>
@@ -569,8 +571,8 @@ export default function WeeklySchedulerModal({
               <div className="flex-1 flex items-center justify-center bg-white border-2 border-dashed border-gray-300 rounded-lg">
                 <div className="text-center">
                   <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm font-medium">No bulletins scheduled</p>
-                  <p className="text-xs text-gray-500">Select bulletins from the left</p>
+                  <p className="text-gray-600 text-sm font-medium">{t('scheduler.noBulletinsScheduled')}</p>
+                  <p className="text-xs text-gray-500">{t('scheduler.selectBulletinsFromLeft')}</p>
                 </div>
               </div>
             )}
@@ -581,14 +583,14 @@ export default function WeeklySchedulerModal({
         <div className="border-t border-gray-200 p-3 sm:p-4 lg:p-6 bg-gray-50">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
             <div className="text-xs sm:text-sm text-green-600 font-medium">
-              {scheduleItems.filter(item => item.weekOf).length} bulletin{scheduleItems.filter(item => item.weekOf).length !== 1 ? 's' : ''} ready to schedule
+              {t('scheduler.bulletinsReadyToSchedule', { count: scheduleItems.filter(item => item.weekOf).length })}
             </div>
             <div className="flex space-x-2 sm:space-x-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors touch-manipulation text-sm sm:text-base"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSchedule}
@@ -600,7 +602,7 @@ export default function WeeklySchedulerModal({
                 }`}
               >
                 <Check className="w-4 h-4 mr-2" />
-                Schedule {scheduleItems.filter(item => item.weekOf).length} Bulletin{scheduleItems.filter(item => item.weekOf).length !== 1 ? 's' : ''}
+                {t('scheduler.scheduleBulletins', { count: scheduleItems.filter(item => item.weekOf).length })}
               </button>
             </div>
           </div>
@@ -615,16 +617,16 @@ export default function WeeklySchedulerModal({
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {scheduleItems.find(item => item.weekOf === selectedDate) ? 'Reschedule Bulletin' : 'Select Bulletin to Schedule'}
+                    {scheduleItems.find(item => item.weekOf === selectedDate) ? t('scheduler.rescheduleBulletin') : t('scheduler.selectBulletinToSchedule')}
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {scheduleItems.find(item => item.weekOf === selectedDate) 
-                      ? `Choose a different bulletin for ${formatDate(selectedDate)}` 
-                      : `Choose which bulletin to schedule for ${formatDate(selectedDate)}`}
+                    {scheduleItems.find(item => item.weekOf === selectedDate)
+                      ? t('scheduler.chooseDifferentBulletin', { date: formatDate(selectedDate) })
+                      : t('scheduler.chooseWhichBulletin', { date: formatDate(selectedDate) })}
                   </p>
                   {scheduleItems.find(item => item.weekOf === selectedDate) && (
                     <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                      <span className="font-medium text-blue-900">Currently scheduled:</span>
+                      <span className="font-medium text-blue-900">{t('scheduler.currentlyScheduled')}:</span>
                       <span className="text-blue-700 ml-1">
                         {scheduleItems.find(item => item.weekOf === selectedDate)?.wardName} - {formatDate(scheduleItems.find(item => item.weekOf === selectedDate)?.meetingDate || '')}
                       </span>
@@ -659,25 +661,25 @@ export default function WeeklySchedulerModal({
                         <div className="text-sm text-gray-600 space-y-1">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="font-medium">Bulletin Date:</span>
+                            <span className="font-medium">{t('scheduler.bulletinDate')}:</span>
                             <span className="ml-2 font-semibold text-gray-900">{formatDate(bulletin.date)}</span>
                           </div>
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="font-medium">Type:</span>
+                            <span className="font-medium">{t('scheduler.type')}:</span>
                             <span className="ml-2">{bulletin.meeting_type}</span>
                           </div>
                           {(bulletin as any).theme && (
                             <div className="flex items-center">
                               <span className="w-4 h-4 mr-2 text-gray-400">🎨</span>
-                              <span className="font-medium">Theme:</span>
+                              <span className="font-medium">{t('scheduler.theme')}:</span>
                               <span className="ml-2">{(bulletin as any).theme}</span>
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="ml-4 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                        {scheduleItems.find(item => item.weekOf === selectedDate) ? 'Reschedule to' : 'Schedule for'}<br/>{formatDate(selectedDate)}
+                        {scheduleItems.find(item => item.weekOf === selectedDate) ? t('scheduler.rescheduleTo') : t('scheduler.scheduleFor')}<br/>{formatDate(selectedDate)}
                       </div>
                     </div>
                   </button>
@@ -696,20 +698,20 @@ export default function WeeklySchedulerModal({
               <div className="flex items-center mb-4">
                 <Calendar className="w-6 h-6 text-blue-600 mr-3" />
                 <h3 className="text-lg font-semibold text-gray-900">
-                  No Available Bulletins
+                  {t('scheduler.noAvailableBulletins')}
                 </h3>
               </div>
-              
+
               <div className="mb-6">
                 <p className="text-gray-600 mb-4">
-                  You don't have any bulletins available to schedule for <strong>{formatDate(selectedDate)}</strong>.
+                  {t('scheduler.noBulletinsForDate', { date: formatDate(selectedDate) })}
                 </p>
-                
+
                 <div className="space-y-3">
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-1">Option 1: Create New Bulletin</h4>
+                    <h4 className="font-medium text-blue-900 mb-1">{t('scheduler.option1CreateNew')}</h4>
                     <p className="text-sm text-blue-700 mb-3">
-                      Create a new bulletin template that you can schedule for this date.
+                      {t('scheduler.createNewBulletinDescription')}
                     </p>
                     <button
                       onClick={() => {
@@ -720,14 +722,14 @@ export default function WeeklySchedulerModal({
                       }}
                       className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Create New Bulletin
+                      {t('scheduler.createNewBulletin')}
                     </button>
                   </div>
-                  
+
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-1">Option 2: Reschedule Existing</h4>
+                    <h4 className="font-medium text-gray-900 mb-1">{t('scheduler.option2Reschedule')}</h4>
                     <p className="text-sm text-gray-600 mb-3">
-                      Move an already scheduled bulletin to this date.
+                      {t('scheduler.rescheduleExistingDescription')}
                     </p>
                     <button
                       onClick={() => {
@@ -736,18 +738,18 @@ export default function WeeklySchedulerModal({
                       }}
                       className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
                     >
-                      Reschedule Existing
+                      {t('scheduler.rescheduleExisting')}
                     </button>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowNoBulletinsModal(false)}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

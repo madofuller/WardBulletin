@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, Check, X, AlertCircle } from 'lucide-react';
 import { BulletinStatus } from '../types/bulletin';
 import { toast } from 'react-toastify';
@@ -20,6 +21,7 @@ export default function BulletinScheduler({
   currentScheduledDate,
   currentAutoActivate = false
 }: BulletinSchedulerProps) {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(currentScheduledDate || '');
   const [selectedTime, setSelectedTime] = useState('00:00');
   const [autoActivate, setAutoActivate] = useState(currentAutoActivate);
@@ -52,7 +54,7 @@ export default function BulletinScheduler({
     const now = new Date();
     
     if (scheduledDateTime < now) {
-      toast.error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
+      toast.error(t('bulletin.pastDateError'));
       return;
     }
 
@@ -79,7 +81,7 @@ export default function BulletinScheduler({
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <Calendar className="w-5 h-5 mr-2" />
-            Schedule Bulletin
+            {t('bulletin.scheduleBulletin')}
           </h2>
           <button
             onClick={onClose}
@@ -94,14 +96,14 @@ export default function BulletinScheduler({
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start">
               <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
               <div className="text-sm text-blue-800">
-                This bulletin is currently scheduled. Update the schedule or change to draft status.
+                {t('bulletin.currentlyScheduled')}
               </div>
             </div>
           )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Activation Date
+              {t('bulletin.activationDate')}
             </label>
             <input
               type="date"
@@ -114,7 +116,7 @@ export default function BulletinScheduler({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Activation Time
+              {t('bulletin.activationTime')}
             </label>
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -136,9 +138,9 @@ export default function BulletinScheduler({
               className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="auto-activate" className="ml-2 text-sm text-gray-700">
-              <span className="font-medium">Auto-activate bulletin</span>
+              <span className="font-medium">{t('bulletin.autoActivateBulletin')}</span>
               <p className="text-gray-500 text-xs mt-1">
-                Automatically make this bulletin active at the scheduled time, archiving any currently active bulletin.
+                {t('bulletin.autoActivateDescription')}
               </p>
             </label>
           </div>
@@ -147,7 +149,7 @@ export default function BulletinScheduler({
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
               <div className="text-sm text-red-800">
-                Cannot schedule for a date/time in the past. Please select a future date and time.
+                {t('bulletin.cannotSchedulePast')}
               </div>
             </div>
           )}
@@ -158,7 +160,7 @@ export default function BulletinScheduler({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSchedule}
@@ -166,7 +168,7 @@ export default function BulletinScheduler({
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
             <Check className="w-4 h-4 mr-1" />
-            Schedule Bulletin
+            {t('bulletin.scheduleBulletin')}
           </button>
         </div>
       </div>

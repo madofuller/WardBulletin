@@ -99,6 +99,8 @@ export interface Database {
           role: string
           profile_slug: string | null
           active_bulletin_id: string | null
+          unit_type: 'ward' | 'branch'
+          language: string
           created_at: string
         }
         Insert: {
@@ -107,6 +109,8 @@ export interface Database {
           role?: string
           profile_slug?: string | null
           active_bulletin_id?: string | null
+          unit_type?: 'ward' | 'branch'
+          language?: string
           created_at?: string
         }
         Update: {
@@ -115,6 +119,8 @@ export interface Database {
           role?: string
           profile_slug?: string | null
           active_bulletin_id?: string | null
+          unit_type?: 'ward' | 'branch'
+          language?: string
           created_at?: string
         }
       }
@@ -463,7 +469,7 @@ export const userService = {
   async getUserProfile(userId: string) {
     const { data, error } = await supabase
       .from('users')
-      .select('email, profile_slug, role, active_bulletin_id') // Only select existing columns
+      .select('email, profile_slug, role, active_bulletin_id, unit_type, language')
       .eq('id', userId);
     if (error) throw error;
     return data;
@@ -482,7 +488,25 @@ export const userService = {
       .from('users')
       .update({ active_bulletin_id: bulletinId })
       .eq('id', userId);
-    
+
+    if (error) throw error;
+  },
+
+  async updateUnitType(userId: string, unitType: 'ward' | 'branch') {
+    const { error } = await supabase
+      .from('users')
+      .update({ unit_type: unitType })
+      .eq('id', userId);
+
+    if (error) throw error;
+  },
+
+  async updateLanguage(userId: string, language: string) {
+    const { error } = await supabase
+      .from('users')
+      .update({ language: language })
+      .eq('id', userId);
+
     if (error) throw error;
   }
 };
@@ -1332,7 +1356,7 @@ export const bulletinService = {
     // First get the user by profile_slug and their active bulletin
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, active_bulletin_id')
+      .select('id, active_bulletin_id, unit_type, language')
       .eq('profile_slug', profileSlug)
       .maybeSingle(); // Use maybeSingle to handle not found case properly
 
@@ -1451,6 +1475,8 @@ export const bulletinService = {
       id: data.id,
       user_id: data.created_by,
       profile_slug: data.profile_slug,
+      profile_unit_type: userData.unit_type || 'ward',
+      profile_language: userData.language || 'en',
       ward_name: wardName || '',
       date: data.meeting_date,
       meeting_type: data.meeting_type,

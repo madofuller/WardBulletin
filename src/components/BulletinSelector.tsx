@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Calendar, FileText, AlertCircle, Plus, Clock, Eye, Trash2, CheckCircle } from 'lucide-react';
 import { bulletinService } from '../lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,6 +44,8 @@ export default function BulletinSelector({
   profileSlug,
   permissions
 }: BulletinSelectorProps) {
+  const { t } = useTranslation();
+
   // Cache the last seen user ID so we can fetch local bulletins even if the
   // session temporarily becomes unavailable
   useEffect(() => {
@@ -127,9 +130,9 @@ export default function BulletinSelector({
   if (loading && allBulletins.length === 0) {
     return (
       <div className="space-y-3">
-        <h4 className="font-medium text-gray-900">Select Active Bulletin for QR Code</h4>
+        <h4 className="font-medium text-gray-900">{t('bulletin.selectActiveBulletin')}</h4>
         <p className="text-sm text-gray-600">
-          Choose which bulletin people will see when they scan your QR code
+          {t('bulletin.selectActiveBulletinDescription')}
         </p>
         <SkeletonList items={3} className="max-h-64" />
       </div>
@@ -148,8 +151,8 @@ export default function BulletinSelector({
     return (
       <div className="text-center py-8">
         <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-600">No saved bulletins found</p>
-        <p className="text-sm text-gray-500">Create and save a bulletin first</p>
+        <p className="text-gray-600">{t('modals.noBulletinsSaved')}</p>
+        <p className="text-sm text-gray-500">{t('modals.createFirstBulletin')}</p>
       </div>
     );
   }
@@ -203,11 +206,11 @@ export default function BulletinSelector({
         }
       }
 
-      toast.success(`${schedules.length} bulletin(s) scheduled successfully!`);
+      toast.success(t('success.bulletinsScheduledSuccessfully', { count: schedules.length }));
 
       // If we scheduled the currently active bulletin, it's no longer active
       if (schedulingCurrentActive) {
-        toast.info('Note: Your currently active bulletin has been scheduled. Select a new active bulletin for your QR code.');
+        toast.info(t('bulletin.activeScheduledNote'));
       }
 
       queryClient.invalidateQueries({ 
@@ -244,7 +247,7 @@ export default function BulletinSelector({
 
   const confirmDelete = async () => {
     if (!confirmationModal.bulletinId || !user) {
-      toast.error('User not authenticated');
+      toast.error(t('errors.userNotAuthenticated'));
       return;
     }
 
@@ -270,9 +273,9 @@ export default function BulletinSelector({
     try {
       // Delete on server in background
       await bulletinService.deleteBulletin(bulletinId, user.id);
-      toast.success('Bulletin deleted successfully');
+      toast.success(t('success.bulletinDeletedSuccessfully'));
     } catch (error: any) {
-      toast.error('Failed to delete bulletin: ' + error.message);
+      toast.error(t('errors.deleteBulletinFailed') + ': ' + error.message);
       // Revert optimistic update on error
       const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
       queryClient.invalidateQueries({ queryKey });
@@ -281,19 +284,19 @@ export default function BulletinSelector({
 
   const handleStatusChange = async (bulletinId: string, newStatus: BulletinStatus) => {
     if (!user) {
-      toast.error('User not authenticated');
+      toast.error(t('errors.userNotAuthenticated'));
       return;
     }
 
     // Check if bulletin is saved to database (not a local draft)
     if (bulletinId.startsWith('local_')) {
-      toast.error('Please save this bulletin before changing its status');
+      toast.error(t('bulletin.saveBulletinFirst'));
       return;
     }
 
     // Check permissions - viewers cannot change bulletin status
     if (permissions && permissions.role === 'viewer') {
-      toast.error('Viewers cannot change bulletin status. Contact the profile owner for editor access.');
+      toast.error(t('sharing.viewerCannotChangeStatus'));
       return;
     }
 
@@ -334,14 +337,14 @@ export default function BulletinSelector({
         queryClient.setQueryData(['user-bulletins', user.id], userBulletins);
       }
 
-      const statusLabels = {
-        draft: 'Saved',
-        scheduled: 'Scheduled',
-        active: 'QR Active',
-        archived: 'Archived'
+      const statusLabels: Record<BulletinStatus, string> = {
+        draft: t('bulletin.draftStatus'),
+        scheduled: t('bulletin.scheduledStatus'),
+        active: t('bulletin.qrActive'),
+        archived: t('bulletin.archivedStatus')
       };
 
-      toast.success(`Bulletin set to ${statusLabels[newStatus]}`);
+      toast.success(t('bulletin.bulletinSetTo', { status: statusLabels[newStatus] }));
 
       // Notify parent component if bulletin became active
       if (newStatus === 'active') {
@@ -449,17 +452,17 @@ export default function BulletinSelector({
             }
           >
             <CheckCircle className="w-3 h-3 mr-1" />
-            <span>{bulletin.status === 'active' || bulletin.id === currentActiveBulletinId ? 'QR Active' : 'Make Active'}</span>
+            <span>{bulletin.status === 'active' || bulletin.id === currentActiveBulletinId ? t('bulletin.qrActive') : t('bulletin.makeQrActive')}</span>
           </button>
 
           {onLoadBulletin && (
             <button
               onClick={() => onLoadBulletin(bulletin)}
               className="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-xs"
-              title="Load this bulletin in the editor"
+              title={t('bulletin.loadBulletin')}
             >
               <Eye className="w-3 h-3 mr-1" />
-              <span>Load</span>
+              <span>{t('bulletin.load')}</span>
             </button>
           )}
 
@@ -468,14 +471,14 @@ export default function BulletinSelector({
               onClick={() => handleDelete(bulletin.id)}
               disabled={deletingId === bulletin.id}
               className="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Delete this bulletin"
+              title={t('bulletin.deleteBulletin')}
             >
               {deletingId === bulletin.id ? (
                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
               ) : (
                 <>
                   <Trash2 className="w-3 h-3 mr-1" />
-                  <span>Delete</span>
+                  <span>{t('common.delete')}</span>
                 </>
               )}
             </button>
@@ -489,9 +492,9 @@ export default function BulletinSelector({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="font-medium text-gray-900">Select Active Bulletin for QR Code</h4>
+          <h4 className="font-medium text-gray-900">{t('bulletin.selectActiveBulletin')}</h4>
           <p className="text-sm text-gray-600">
-            Choose which bulletin people will see when they scan your QR code
+            {t('bulletin.selectActiveBulletinDescription')}
           </p>
         </div>
         {showScheduling && (
@@ -503,7 +506,7 @@ export default function BulletinSelector({
             className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors"
           >
             <Calendar className="w-4 h-4 mr-2" />
-            Monthly Schedule
+            {t('bulletin.monthlySchedule')}
           </button>
         )}
       </div>
@@ -516,7 +519,7 @@ export default function BulletinSelector({
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Check className="w-4 h-4 mr-1 text-green-600" />
-              Currently Active
+              {t('bulletin.currentlyActive')}
             </h5>
             <div className="space-y-2">
               {activeBulletins.map(bulletin => renderBulletinCard(bulletin))}
@@ -530,8 +533,8 @@ export default function BulletinSelector({
             <div className="flex items-center">
               <AlertCircle className="w-4 h-4 text-yellow-600 mr-2" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">No Active Bulletin</p>
-                <p className="text-xs text-yellow-700">Select a bulletin below to make it active for your QR code.</p>
+                <p className="text-sm font-medium text-yellow-800">{t('bulletin.noActiveBulletin')}</p>
+                <p className="text-xs text-yellow-700">{t('bulletin.selectBulletinBelow')}</p>
               </div>
             </div>
           </div>
@@ -542,14 +545,14 @@ export default function BulletinSelector({
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
               <Clock className="w-4 h-4 mr-1 text-blue-600" />
-              Scheduled to Activate
+              {t('bulletin.scheduledToActivate')}
             </h5>
             <div className="space-y-2">
               {scheduledBulletins.map(bulletin => renderBulletinCard(bulletin))}
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
               <p className="text-xs text-blue-800">
-                💡 <strong>Scheduled bulletins</strong> will automatically become active at their scheduled time, replacing the current active bulletin.
+                💡 <strong>{t('bulletin.scheduledBulletins')}</strong> {t('bulletin.scheduledBulletinsDescription')}
               </p>
             </div>
           </div>
@@ -560,7 +563,7 @@ export default function BulletinSelector({
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
               <FileText className="w-4 h-4 mr-1 text-gray-600" />
-              Draft Bulletins
+              {t('bulletin.draftBulletins')}
             </h5>
             <div className="space-y-2">
               {draftBulletins.map(bulletin => renderBulletinCard(bulletin))}
@@ -573,7 +576,7 @@ export default function BulletinSelector({
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
               <AlertCircle className="w-4 h-4 mr-1 text-gray-500" />
-              Archived Bulletins
+              {t('bulletin.archivedBulletins')}
             </h5>
             <div className="space-y-2">
               {archivedBulletins.map(bulletin => renderBulletinCard(bulletin))}
@@ -583,7 +586,7 @@ export default function BulletinSelector({
       </div>
       
       <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-        <p>💡 <strong>Tip:</strong> The selected bulletin will be shown when people scan your QR code. You can change this anytime without updating the QR code itself.</p>
+        <p>💡 <strong>{t('bulletin.tip')}:</strong> {t('bulletin.qrCodeTip')}</p>
       </div>
 
 
@@ -621,10 +624,10 @@ export default function BulletinSelector({
         isOpen={confirmationModal.isOpen}
         onClose={() => setConfirmationModal({ isOpen: false, bulletinId: null })}
         onConfirm={confirmDelete}
-        title="Delete Bulletin"
-        message="Are you sure you want to delete this bulletin? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('bulletin.deleteBulletin')}
+        message={t('modals.confirmDeleteBulletin') + ' ' + t('modals.thisActionCannotBeUndone')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         variant="danger"
       />
     </div>

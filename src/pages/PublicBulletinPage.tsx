@@ -110,6 +110,9 @@ export default function PublicBulletinPage() {
     );
   }
 
+  // Extract unit_type from the profile for terminology
+  const profileUnitType = publicBulletin?.profile_unit_type as 'ward' | 'branch' | undefined;
+
   const bulletinData = publicBulletin ? {
     wardName: publicBulletin.ward_name || '',
     date: publicBulletin.date || '',
@@ -168,6 +171,7 @@ export default function PublicBulletinPage() {
         loading={isLoading}
         error={error ? (error as Error).message || 'Bulletin not found' : ''}
         onBackToEditor={() => navigate('/')}
+        unitTypeOverride={profileUnitType}
       />
     </>
   );

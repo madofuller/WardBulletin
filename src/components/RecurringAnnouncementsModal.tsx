@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, Edit3, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -37,6 +38,7 @@ interface RecurringAnnouncementsModalProps {
 }
 
 export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSlug, onAnnouncementSelected }: RecurringAnnouncementsModalProps) {
+  const { t } = useTranslation();
   const [announcements, setAnnouncements] = useState<RecurringAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       setAnnouncements(data || []);
     } catch (error) {
       console.error('Error fetching recurring announcements:', error);
-      toast.error('Failed to load recurring announcements');
+      toast.error(t('errors.failedToLoadRecurringAnnouncements'));
       setAnnouncements([]);
     } finally {
       setLoading(false);
@@ -88,12 +90,12 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
     
     // Validate profileSlug - RLS policies will enforce security at database level
     if (!profileSlug || profileSlug.trim() === '') {
-      toast.error('Invalid profile. Cannot save recurring announcement.');
+      toast.error(t('errors.invalidProfile'));
       return;
     }
-    
+
     if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Please fill in both title and content');
+      toast.error(t('validation.fillTitleAndContent'));
       return;
     }
 
@@ -112,7 +114,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
           .eq('profile_slug', profileSlug);
 
         if (error) throw error;
-        toast.success('Recurring announcement updated successfully');
+        toast.success(t('success.recurringAnnouncementUpdated'));
       } else {
         // Create new announcement
         const { error } = await supabase
@@ -126,7 +128,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
           .select();
 
         if (error) throw error;
-        toast.success('Recurring announcement created successfully');
+        toast.success(t('success.recurringAnnouncementCreated'));
       }
 
       // Reset form and refresh
@@ -134,7 +136,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       setEditingId(null);
       await fetchRecurringAnnouncements();
     } catch (error) {
-      toast.error('Failed to save recurring announcement');
+      toast.error(t('errors.failedToSaveRecurringAnnouncement'));
     }
   };
 
@@ -149,11 +151,11 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this recurring announcement?')) return;
+    if (!confirm(t('modals.confirmDeleteRecurringAnnouncement'))) return;
 
     // Validate profileSlug - RLS policies will enforce security at database level
     if (!profileSlug || profileSlug.trim() === '') {
-      toast.error('Invalid profile. Cannot delete recurring announcement.');
+      toast.error(t('errors.invalidProfile'));
       return;
     }
 
@@ -165,10 +167,10 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
         .eq('profile_slug', profileSlug);
 
       if (error) throw error;
-      toast.success('Recurring announcement deleted successfully');
+      toast.success(t('success.recurringAnnouncementDeleted'));
       await fetchRecurringAnnouncements();
     } catch (error) {
-      toast.error('Failed to delete recurring announcement');
+      toast.error(t('errors.failedToDeleteRecurringAnnouncement'));
     }
   };
 
@@ -181,11 +183,11 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       is_active: announcement.is_active,
       images: announcement.images
     });
-    toast.success(`"${announcement.title}" added to current bulletin`);
+    toast.success(t('success.announcementAddedToBulletin', { title: announcement.title }));
   };
 
   const handleCopy = (announcement: RecurringAnnouncement) => {
-    toast.success(`"${announcement.title}" copied to current bulletin`);
+    toast.success(t('success.announcementCopiedToBulletin', { title: announcement.title }));
   };
 
   const resetForm = () => {
@@ -214,57 +216,57 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                 <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-                  Recurring Announcements
+                  {t('recurring.recurringAnnouncements')}
                 </h3>
-                
+
                 {/* Form Section */}
                 <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <h4 className="text-md font-medium text-gray-700 mb-3">Create New Recurring Announcement</h4>
+                  <h4 className="text-md font-medium text-gray-700 mb-3">{t('recurring.createNewRecurringAnnouncement')}</h4>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Title
+                        {t('recurring.title')}
                       </label>
                       <input
                         type="text"
                         value={formData.title}
                         onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder="Enter announcement title"
+                        placeholder={t('recurring.enterAnnouncementTitle')}
                         required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Content
+                        {t('recurring.content')}
                       </label>
                       <textarea
                         value={formData.content}
                         onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                        placeholder="Enter announcement content"
+                        placeholder={t('recurring.enterAnnouncementContent')}
                         required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Audience
+                        {t('recurring.audience')}
                       </label>
                       <select
                         value={formData.audience}
                         onChange={(e) => setFormData(prev => ({ ...prev, audience: e.target.value as any }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       >
-                        <option value="ward">Ward</option>
-                        <option value="relief_society">Relief Society</option>
-                        <option value="elders_quorum">Elders Quorum</option>
-                        <option value="youth">Youth</option>
-                        <option value="primary">Primary</option>
-                        <option value="stake">Stake</option>
-                        <option value="other">Other</option>
+                        <option value="ward">{t('audiences.ward')}</option>
+                        <option value="relief_society">{t('audiences.reliefSociety')}</option>
+                        <option value="elders_quorum">{t('audiences.eldersQuorum')}</option>
+                        <option value="youth">{t('audiences.youth')}</option>
+                        <option value="primary">{t('audiences.primary')}</option>
+                        <option value="stake">{t('audiences.stake')}</option>
+                        <option value="other">{t('audiences.other')}</option>
                       </select>
                     </div>
 
@@ -277,19 +279,19 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                         {loading ? (
                           <>
                             <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                            Saving...
+                            {t('common.saving')}
                           </>
                         ) : (
-                          'Save Recurring Announcement'
+                          t('recurring.saveRecurringAnnouncement')
                         )}
                       </button>
-                      
+
                       <button
                         type="button"
                         onClick={resetForm}
                         className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm font-medium"
                       >
-                        Reset
+                        {t('common.reset')}
                       </button>
                     </div>
                   </form>
@@ -297,15 +299,15 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
 
                 {/* Existing Announcements Section */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-700 mb-3">Existing Recurring Announcements</h4>
+                  <h4 className="text-md font-medium text-gray-700 mb-3">{t('recurring.existingRecurringAnnouncements')}</h4>
                   {loading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
                     </div>
                   ) : announcements.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      <p>No recurring announcements found.</p>
-                      <p className="text-sm mt-1">Create your first one above!</p>
+                      <p>{t('recurring.noRecurringAnnouncementsFound')}</p>
+                      <p className="text-sm mt-1">{t('recurring.createFirstOne')}</p>
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -341,7 +343,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                                     : announcement.audience.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </span>
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
-                                  {announcement.is_active ? 'Active' : 'Inactive'}
+                                  {announcement.is_active ? t('recurring.active') : t('recurring.inactive')}
                                 </span>
                               </div>
                             </div>
@@ -352,23 +354,23 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                               >
                                 <Copy className="h-3 w-3 mr-1" />
-                                Use
+                                {t('common.use')}
                               </button>
-                              
+
                               <button
                                 onClick={() => handleEdit(announcement)}
                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                               >
                                 <Edit3 className="h-3 w-3 mr-1" />
-                                Edit
+                                {t('common.edit')}
                               </button>
-                              
+
                               <button
                                 onClick={() => handleDelete(announcement.id)}
                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />
-                                Delete
+                                {t('common.delete')}
                               </button>
                             </div>
                           </div>
@@ -387,7 +389,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
               onClick={onClose}
               className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
