@@ -75,7 +75,7 @@
     "general": "一般"
   },
   "header": {
-    "myWardBulletin": "マイワード週報",
+    "myWardBulletin": "MyWardBulletin",
     "bulletinCreator": "{{unit}}週報作成",
     "profile": "プロフィール",
     "currentlyViewingProfile": "プロフィール: {{slug}}",

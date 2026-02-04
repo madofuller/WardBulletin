@@ -75,7 +75,7 @@
     "general": "General"
   },
   "header": {
-    "myWardBulletin": "MiBoletínDeBarrio",
+    "myWardBulletin": "MyWardBulletin",
     "bulletinCreator": "Creador de Boletín de {{unit}}",
     "profile": "Perfil",
     "currentlyViewingProfile": "Perfil: {{slug}}",

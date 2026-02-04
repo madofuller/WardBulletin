@@ -75,7 +75,7 @@
     "general": "一般"
   },
   "header": {
-    "myWardBulletin": "我的支會公告",
+    "myWardBulletin": "MyWardBulletin",
     "bulletinCreator": "{{unit}}公告編輯器",
     "profile": "個人資料",
     "currentlyViewingProfile": "目前檢視的資料：{{slug}}",

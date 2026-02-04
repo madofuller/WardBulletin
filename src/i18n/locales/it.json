@@ -75,7 +75,7 @@
     "general": "Generale"
   },
   "header": {
-    "myWardBulletin": "IlMioBollettinoRione",
+    "myWardBulletin": "MyWardBulletin",
     "bulletinCreator": "Creatore Bollettino {{unit}}",
     "profile": "Profilo",
     "currentlyViewingProfile": "Profilo: {{slug}}",

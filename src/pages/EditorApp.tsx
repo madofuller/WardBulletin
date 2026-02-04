@@ -4,6 +4,7 @@ import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbru
 import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
 import { getCurrentUnitType } from '../lib/config';
+import { getUnitLabel } from '../lib/terminology';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { supabase, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
@@ -1511,9 +1512,9 @@ function EditorApp() {
             <a href="/" className="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-shadow no-underline" style={{ textDecoration: 'none' }}>
               <Logo size={40} />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{t('header.myWardBulletin')}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm text-gray-600">{t('header.bulletinCreator', { unit: t('terminology.ward') })}</p>
+                  <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
                   {currentProfileSlug && (
                     <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium" title={t('header.currentlyViewingProfile', { slug: currentProfileSlug })}>
                       {t('qrCode.profile')} {currentProfileSlug}
