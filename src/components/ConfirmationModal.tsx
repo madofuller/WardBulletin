@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -22,10 +23,12 @@ export default function ConfirmationModal({
   cancelText,
   variant
 }: ConfirmationModalProps) {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
-  
-  const finalConfirmText = confirmText || 'Confirm';
-  const finalCancelText = cancelText || 'Cancel';
+
+  const finalConfirmText = confirmText || t('common.confirm');
+  const finalCancelText = cancelText || t('common.cancel');
   const finalVariant = variant || 'warning';
 
   const getVariantStyles = () => {
@@ -128,4 +131,4 @@ export default function ConfirmationModal({
       </div>
     </div>
   );
-} 
+}

@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { decodeHtml } from '../lib/decodeHtml';
 import { LDS_IMAGES, getImageByIdSync } from '../data/images';
@@ -15,18 +16,34 @@ import {
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
   getAudienceDisplayName,
-  getLeadershipMessageLabel
+  getLeadershipMessageLabel,
+  getTranslatedUnitLabel,
+  UnitType
 } from '../lib/terminology';
 
-// Function to format date from ISO format to natural format
-function formatDate(dateString: string): string {
+// Function to format date from ISO format to natural format with locale support
+function formatDate(dateString: string, locale: string = 'en'): string {
   if (!dateString) return '';
   try {
     const [year, month, day] = dateString.split('-').map(Number);
+
+    // Map i18n language codes to proper locale codes
+    const localeMap: Record<string, string> = {
+      'en': 'en-US',
+      'zh': 'zh-TW',
+      'pt': 'pt-BR',
+      'es': 'es-ES',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR'
+    };
+    const resolvedLocale = localeMap[locale] || locale;
+
     if (year && month && day) {
       const date = new Date(year, month - 1, day);
-      // Use user's browser locale and timezone
-      return date.toLocaleDateString(undefined, {
+      return date.toLocaleDateString(resolvedLocale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -35,7 +52,7 @@ function formatDate(dateString: string): string {
     // Fallback
     const date = new Date(dateString);
     if (!isNaN(date.getTime())) {
-      return date.toLocaleDateString(undefined, {
+      return date.toLocaleDateString(resolvedLocale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -289,12 +306,13 @@ function shortenMissionName(missionName: string): string {
   return shortened;
 }
 
-const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> } }>(({ data, refs }, ref) => {
+const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
   const { user, profile } = useSession();
+  const { t, i18n } = useTranslation();
 
   // Dynamic audience labels based on terminology
   const getAudienceLabel = (audience: string): string => {
-    return getAudienceDisplayName(audience);
+    return getAudienceDisplayName(audience, unitTypeOverride);
   };
 
   // Helper function to check if ward info entry has meaningful data
@@ -339,7 +357,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               {/* Unit Leadership Table */}
               {filteredWardLeadership.length > 0 && (
                 <div className="w-full mb-2">
-                  <h2 className="text-lg font-bold mb-2 print:!text-lg print:!text-black w-full text-center">{getUnitLeadershipLabel().toUpperCase()}</h2>
+                  <h2 className="text-lg font-bold mb-2 print:!text-lg print:!text-black w-full text-center">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
                    <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                      <tbody>
                        {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
@@ -362,7 +380,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               {/* Missionaries Table */}
               {filteredMissionaries.length > 0 && (
                 <div className="w-full mb-2">
-                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">MISSIONARIES</h3>
+                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">{t('bulletin.missionaries').toUpperCase()}</h3>
                   <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                     <tbody>
                       {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
@@ -376,7 +394,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     </tbody>
                   </table>
                   {filteredMissionaries.length > 12 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredMissionaries.length - 12} more missionaries</p>
+                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredMissionaries.length - 12} {t('bulletin.moreMissionaries')}</p>
                   )}
                 </div>
               )}
@@ -384,7 +402,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               {/* Missionaries from our ward */}
               {filteredWardMissionaries.length > 0 && (
                 <div className="w-full mb-1">
-                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{getUnitMissionariesLabel().toUpperCase()}</h3>
+                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
                   {(() => {
                     const missionaryCount = filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
@@ -415,7 +433,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                           {missionary.email ? (
                             <span className="text-gray-700">{missionary.email}</span>
                           ) : (
-                            <span className="text-gray-400">No email</span>
+                            <span className="text-gray-400">{t('bulletin.noEmail')}</span>
                           )}
                         </div>
                       </div>
@@ -424,7 +442,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     );
                   })()}
                   {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} more ward missionaries</p>
+                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} {t('bulletin.moreWardMissionaries')}</p>
                   )}
                 </div>
               )}
@@ -432,7 +450,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               {/* Service Missionaries */}
               {filteredServiceMissionaries.length > 0 && (
                 <div className="w-full mb-1">
-                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">SERVICE MISSIONARIES</h3>
+                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
                   {(() => {
                     const serviceMissionaryCount = filteredServiceMissionaries.length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
@@ -446,7 +464,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     } else {
                       fontSize = '8px';
                     }
-                    
+
                     return (
                       <div className="space-y-1" style={{ fontSize }}>
                         {filteredServiceMissionaries.map((missionary: any, idx: number) => (
@@ -458,7 +476,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                               {missionary.serviceName ? (
                                 <span className="text-gray-600">{missionary.serviceName}</span>
                               ) : (
-                                <span className="text-gray-400">No service listed</span>
+                                <span className="text-gray-400">{t('bulletin.noServiceListed')}</span>
                               )}
                             </div>
                           </div>
@@ -477,7 +495,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                  <PrintQRCode profileSlug={profile.profile_slug} />
                </div>
                <p className="text-sm print:!text-base print:!text-black font-medium">
-                 Scan with your phone to view
+                 {t('qrCode.scanQrCodeToAccess')}
                </p>
              </div>
            )}
@@ -486,10 +504,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
         {/* Front Cover (right) */}
         <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
-          <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || `${getUnitLabel()} Name`}</h1>
-          <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
-          <p className="text-base mb-1 print:!text-xl print:!text-black">The Church of Jesus Christ of Latter-day Saints</p>
-          <p className="text-base mb-4 print:!text-xl print:!text-black">Sacrament Meeting</p>
+          <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
+          <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+          <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
+          <p className="text-base mb-4 print:!text-xl print:!text-black">{t('bulletin.sacramentMeeting')}</p>
 
           {/* Image Display - moved below text, above theme */}
           {data.imageId && data.imageId !== 'none' && (
@@ -501,7 +519,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 return imageUrl ? (
                   <img
                     src={imageUrl}
-                    alt="Header Image"
+                    alt={t('bulletin.headerImage')}
                     className="max-w-full max-h-80 object-contain print:!max-h-96"
                   />
                 ) : null;
@@ -518,16 +536,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         {/* Announcements (left) - Unit Information */}
         <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-between text-left print:!text-xl print:!text-black">
           <div className="flex-1 overflow-y-hidden">
-            {/* Announcements Section */}
-            <div className="w-full mb-4">
-              <h2 className="text-xl font-bold mb-3 print:!text-2xl print:!text-black w-full text-center">Announcements & Events</h2>
+            {/* Announcements Section - Optimized for Print */}
+            <div className="w-full mb-2">
+              <h2 className="text-lg font-bold mb-2 print:!text-xl print:!text-black w-full text-center">{t('printPreview.announcementsAndEvents')}</h2>
               {(() => {
                 // Group announcements by audience (like BulletinPreview does)
                 const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
                   const isStandalone = announcement.audience?.startsWith('standalone_');
                   const audienceLabel = isStandalone
                     ? (announcement.customAudienceLabel || '')
-                    : getAudienceLabel(announcement.audience || getUnitLowercase());
+                    : getAudienceLabel(announcement.audience || getUnitLowercase(unitTypeOverride));
 
                   if (!groups[audienceLabel]) {
                     groups[audienceLabel] = [];
@@ -536,28 +554,64 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   return groups;
                 }, {});
 
+                // Flatten all announcements into a single array for two-column layout
+                const allItems: { audienceLabel: string; announcement: any; isHeader: boolean }[] = [];
+                Object.entries(grouped).forEach(([audienceLabel, announcements]) => {
+                  if (audienceLabel) {
+                    allItems.push({ audienceLabel, announcement: null, isHeader: true });
+                  }
+                  (announcements as any[]).forEach(a => {
+                    allItems.push({ audienceLabel, announcement: a, isHeader: false });
+                  });
+                });
+
+                // Calculate dynamic font size based on announcement count
+                const totalAnnouncements = (data.announcements || []).length;
+                const contentFontSize = totalAnnouncements <= 4 ? '11px' :
+                                        totalAnnouncements <= 8 ? '10px' :
+                                        totalAnnouncements <= 12 ? '9px' : '8px';
+                const titleFontSize = totalAnnouncements <= 4 ? '12px' :
+                                      totalAnnouncements <= 8 ? '11px' :
+                                      totalAnnouncements <= 12 ? '10px' : '9px';
+                const headerFontSize = totalAnnouncements <= 4 ? '13px' :
+                                       totalAnnouncements <= 8 ? '12px' : '11px';
+
                 return (
-                  <div className="space-y-4">
+                  <div className="columns-2 gap-4" style={{ columnFill: 'balance' }}>
                     {Object.entries(grouped).map(([audienceLabel, announcements]) => (
-                      <div key={audienceLabel}>
+                      <div key={audienceLabel} className="break-inside-avoid-column mb-2">
                         {/* Group header - only show once per group if there's a label */}
                         {audienceLabel && (
-                          <div className="font-bold print:!text-lg print:!text-black mb-2 border-b border-gray-200 pb-1">
+                          <div
+                            className="font-bold print:!text-black mb-1 border-b border-gray-300 pb-0.5"
+                            style={{ fontSize: headerFontSize }}
+                          >
                             {audienceLabel}
                           </div>
                         )}
-                        <ul className="space-y-3">
+                        <ul className="space-y-1.5">
                           {(announcements as any[]).map((a: any, idx: number) => {
                             const decodedContent = sanitizeHtml(decodeHtml(a.content));
                             return (
-                              <li key={idx}>
-                                <div className="font-bold print:!text-base print:!text-black">{a.title}</div>
+                              <li key={idx} className="break-inside-avoid-column">
+                                <div
+                                  className="font-semibold print:!text-black leading-tight"
+                                  style={{ fontSize: titleFontSize }}
+                                >
+                                  {a.title}
+                                </div>
                                 {a.category && a.category !== 'general' && (
-                                  <span className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">{a.category}</span>
+                                  <span
+                                    className="text-gray-600 bg-gray-100 px-1 py-0.5 rounded inline-block mb-0.5"
+                                    style={{ fontSize: '8px' }}
+                                  >
+                                    {a.category}
+                                  </span>
                                 )}
                                 <div
-                                  className="text-sm print:!text-sm print:!text-black mb-2"
+                                  className="print:!text-black mb-1 leading-tight"
                                   style={{
+                                    fontSize: contentFontSize,
                                     '--tw-prose-bullets': 'disc',
                                     '--tw-prose-list-style': 'disc',
                                     wordWrap: 'break-word',
@@ -567,33 +621,36 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                   dangerouslySetInnerHTML={{
                                     __html: decodedContent.replace(
                                       /<ul>/g,
-                                      '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 1rem;">'
+                                      '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
                                     ).replace(
                                       /<ol>/g,
-                                      '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 1rem;">'
+                                      '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
                                     ).replace(
                                       /<li>/g,
-                                      '<li style="margin-left: 0.5rem; display: list-item;">'
+                                      '<li style="margin-left: 0; display: list-item;">'
+                                    ).replace(
+                                      /<p>/g,
+                                      '<p style="margin: 0 0 0.25rem 0;">'
                                     )
                                   }}
                                 />
 
-                                {/* Announcement Images */}
+                                {/* Announcement Images - Smaller for print */}
                                 {/* Legacy single image support */}
                                 {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
-                                  <div className="mb-2">
+                                  <div className="mb-1">
                                     {(() => {
                                       const selectedImage = getImageByIdSync(a.imageId);
                                       return selectedImage?.url ? (
                                         <img
                                           src={selectedImage.url}
                                           alt={selectedImage.name}
-                                          className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
+                                          className="h-auto rounded shadow-sm"
                                           style={{
                                             objectFit: 'contain',
-                                            maxHeight: '200px',
-                                            borderRadius: '0.5rem',
-                                            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                                            maxHeight: '80px',
+                                            maxWidth: '120px',
+                                            borderRadius: '0.25rem'
                                           }}
                                         />
                                       ) : null;
@@ -601,10 +658,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                   </div>
                                 )}
 
-                                {/* Multiple images support */}
+                                {/* Multiple images support - Compact for print */}
                                 {a.images && a.images.length > 0 && (
-                                  <div className="mb-2 space-y-2">
-                                    {a.images.map((img: any, index: number) => {
+                                  <div className="mb-1 flex flex-wrap gap-1">
+                                    {a.images.slice(0, 2).map((img: any, index: number) => {
                                       if (img.hideImageOnPrint) return null;
                                       let imageUrl = img.imageUrl;
                                       if (!imageUrl && img.imageId) {
@@ -612,27 +669,28 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                         imageUrl = imageData?.url;
                                       }
                                       return imageUrl ? (
-                                        <div key={index}>
-                                          <img
-                                            src={imageUrl}
-                                            alt="Announcement Image"
-                                            className="max-w-full h-auto rounded-lg shadow-sm print:!rounded-lg print:!shadow-sm"
-                                            style={{
-                                              objectFit: 'contain',
-                                              maxHeight: img.size === 'small' ? '120px' :
-                                                        img.size === 'medium' ? '200px' :
-                                                        img.size === 'large' ? '300px' :
-                                                        img.size === 'xlarge' ? '400px' : '200px',
-                                              borderRadius: '0.5rem',
-                                              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
-                                            }}
-                                            onError={(e) => {
-                                              (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
-                                          />
-                                        </div>
+                                        <img
+                                          key={index}
+                                          src={imageUrl}
+                                          alt="Announcement"
+                                          className="h-auto rounded shadow-sm"
+                                          style={{
+                                            objectFit: 'contain',
+                                            maxHeight: '60px',
+                                            maxWidth: '90px',
+                                            borderRadius: '0.25rem'
+                                          }}
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
                                       ) : null;
                                     })}
+                                    {a.images.filter((img: any) => !img.hideImageOnPrint).length > 2 && (
+                                      <span style={{ fontSize: '8px' }} className="text-gray-500 self-end">
+                                        +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 2} more
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </li>
@@ -650,40 +708,40 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
         {/* Program (right) - Front Cover */}
         <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
-          <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || `${getUnitLabel()} Name`}</h2>
-          <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">Sacrament Meeting</h3>
-          <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date)}</p>
+          <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
+          <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
+          <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
 
           <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
             <tbody>
-              <ProgramTableRow label="Presiding" value={data.leadership?.presiding} />
-              <ProgramTableRow label="Conducting" value={data.leadership?.conducting} />
-              <ProgramTableRow label={data.leadership?.choristerLabel || 'Chorister'} value={data.leadership?.chorister} />
-              <ProgramTableRow label={data.leadership?.organistLabel || 'Organist'} value={data.leadership?.organist} />
+              <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />
+              <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
+              <ProgramTableRow label={data.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')} value={data.leadership?.chorister} />
+              <ProgramTableRow label={data.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')} value={data.leadership?.organist} />
               {data.leadership?.preludeMusic && (
-                <ProgramTableRow label="Prelude Music" value={data.leadership?.preludeMusic} />
+                <ProgramTableRow label={t('bulletin.preludeMusic')} value={data.leadership?.preludeMusic} />
               )}
               <ProgramTableRow
-                label="Opening Hymn"
+                label={t('bulletin.openingHymn')}
                 value={data.musicProgram?.openingHymnNumber}
                 extra={data.musicProgram?.openingHymnTitle}
               />
-              <ProgramTableRow label="Invocation" value={data.prayers?.opening} />
+              <ProgramTableRow label={t('bulletin.invocation')} value={data.prayers?.opening} />
               <tr>
                 <td colSpan={3} className="text-center font-medium text-lg print:!text-xl print:!text-black">
-                  {getUnitLabel()} Business
+                  {t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
                 </td>
               </tr>
               {data.agenda?.map((item: any, idx: number) => (
                 item.type === 'speaker' ? (
-                  <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'} value={item.name} />
+                  <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker')} value={item.name} />
                 ) : item.type === 'musical' ? (
-                  <ProgramTableRow key={idx} label={item.label || 'Musical Number'} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
+                  <ProgramTableRow key={idx} label={item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
                 ) : item.type === 'testimony' ? (
                   <React.Fragment key={idx}>
                     <tr>
                       <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">
-                        Bearing of Testimonies
+                        {t('bulletin.bearingOfTestimonies')}
                         {item.note && (
                           <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black">
                             {item.note}
@@ -695,22 +753,22 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 ) : item.type === 'sacrament' && data.meetingType === 'sacrament' ? (
                   <React.Fragment key={idx}>
                     <ProgramTableRow
-                      label="Sacrament Hymn"
+                      label={t('bulletin.sacramentHymn')}
                       value={data.musicProgram?.sacramentHymnNumber}
                       extra={data.musicProgram?.sacramentHymnTitle}
                     />
                     <tr>
-                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">Administration of the Sacrament</td>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">{t('bulletin.administrationOfSacrament')}</td>
                     </tr>
                   </React.Fragment>
                 ) : null
               ))}
               <ProgramTableRow
-                label="Closing Hymn"
+                label={t('bulletin.closingHymn')}
                 value={data.musicProgram?.closingHymnNumber}
                 extra={data.musicProgram?.closingHymnTitle}
               />
-              <ProgramTableRow label="Benediction" value={data.prayers?.closing} />
+              <ProgramTableRow label={t('bulletin.benediction')} value={data.prayers?.closing} />
             </tbody>
           </table>
         </div>

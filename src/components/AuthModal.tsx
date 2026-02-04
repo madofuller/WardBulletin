@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 interface AuthModalProps {
@@ -11,6 +12,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefillEmail }: AuthModalProps) {
+  const { t } = useTranslation();
   const [isSignUp, setIsSignUp] = useState(mode === 'signup');
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState(prefillEmail || '');
@@ -171,7 +173,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
       <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-md w-full mx-2 sm:mx-4">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-900">
-            {isForgotPassword ? 'Reset Password' : (isSignUp ? 'Create Account' : 'Sign In')}
+            {isForgotPassword ? t('auth.resetPassword') : (isSignUp ? t('auth.createAccount') : t('common.signIn'))}
           </h3>
           <button
             onClick={onClose}
@@ -184,10 +186,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
         <div className="mb-6">
           <p className="text-gray-600 text-sm">
             {isForgotPassword
-              ? 'Enter your email address and we\'ll send you a link to reset your password.'
+              ? t('auth.resetPasswordDescription')
               : (isSignUp
-                ? 'Create a free account to save and manage your bulletins with your own permanent QR code.'
-                : 'Sign in to access your saved bulletins and manage your QR codes.')
+                ? t('auth.createAccountDescription')
+                : t('auth.signInDescription'))
             }
           </p>
         </div>
@@ -208,7 +210,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
+                {t('auth.emailAddress')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -228,14 +230,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? t('auth.sending') : t('auth.sendResetLink')}
             </button>
           </form>
         ) : (
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
+                {t('auth.emailAddress')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -252,7 +254,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -268,7 +270,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
               </div>
               {isSignUp && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Password must be at least 6 characters
+                  {t('auth.passwordMinLength')}
                 </p>
               )}
               {!isSignUp && (
@@ -277,7 +279,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
                   onClick={toggleForgotPassword}
                   className="text-xs text-blue-600 hover:text-blue-700 mt-1"
                 >
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </button>
               )}
             </div>
@@ -287,7 +289,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
+              {loading ? t('common.loading') : (isSignUp ? t('auth.createAccount') : t('common.signIn'))}
             </button>
           </form>
         )}
@@ -298,7 +300,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
               onClick={toggleForgotPassword}
               className="text-blue-600 hover:text-blue-700 text-sm"
             >
-              Back to sign in
+              {t('auth.backToSignIn')}
             </button>
           ) : (
             <>
@@ -308,14 +310,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
                   className="text-blue-600 hover:text-blue-700 text-sm"
                 >
                   {isSignUp
-                    ? 'Already have an account? Sign in'
-                    : "Don't have an account? Create one"
+                    ? t('auth.haveAccount')
+                    : t('auth.dontHaveAccount')
                   }
                 </button>
               )}
               {mode === 'signup' && (
                 <p className="text-sm text-gray-500">
-                  You must create an account with the invited email to accept this invitation.
+                  {t('auth.mustCreateAccountWithInvitedEmail')}
                 </p>
               )}
             </>
@@ -327,12 +329,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
             <div className="flex items-start space-x-2">
               <User className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-blue-700">
-                <p className="font-medium">Why create an account?</p>
+                <p className="font-medium">{t('auth.whyCreateAccount')}</p>
                 <ul className="mt-1 space-y-1">
-                  <li>• Save bulletins with persistent QR codes</li>
-                  <li>• Get your own permanent QR code link</li>
-                  <li>• Access your bulletins from any device</li>
-                  <li>• Share bulletins with your ward members</li>
+                  <li>• {t('auth.saveBulletinsWithQr')}</li>
+                  <li>• {t('auth.getPermanentQrCode')}</li>
+                  <li>• {t('auth.accessFromAnyDevice')}</li>
+                  <li>• {t('auth.shareBulletinsWithWardMembers')}</li>
                 </ul>
               </div>
             </div>

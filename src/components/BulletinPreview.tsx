@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { decodeHtml } from '../lib/decodeHtml';
@@ -12,7 +13,9 @@ import {
   getHigherUnitLabel,
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
-  getAudienceDisplayName
+  getAudienceDisplayName,
+  getTranslatedUnitLabel,
+  UnitType
 } from '../lib/terminology';
 
 interface BulletinPreviewProps {
@@ -22,14 +25,12 @@ interface BulletinPreviewProps {
   onImagePositionChange?: (position: { x: number; y: number }) => void;
   onImageOpacityChange?: (opacity: number) => void;
   allImages?: ImageData[];
+  unitTypeOverride?: UnitType;
 }
 
 /* ---------------------------------- Consts --------------------------------- */
 
-// Dynamic audience labels based on terminology
-const getAudienceLabel = (audience: string): string => {
-  return getAudienceDisplayName(audience);
-};
+// Dynamic audience labels based on terminology - moved to component for unitTypeOverride support
 
 const imagePositions = {
   top: { x: 50, y: 25 },
@@ -62,13 +63,29 @@ const hasUnitInfo = (data?: BulletinData): boolean => {
 // Legacy alias for compatibility
 const hasWardInfo = hasUnitInfo;
 
-const formatDate = (dateString?: string) => {
-  if (!dateString) return 'Date';
+const formatDate = (dateString?: string, locale: string = 'en') => {
+  if (!dateString) return '';
   const [y, m, d] = dateString.split('-').map(Number);
-  // Use UTC to avoid timezone shifts, then format manually
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'October', 'November', 'December'];
-  return `${monthNames[(m ?? 1) - 1]} ${d ?? 1}, ${y}`;
+  // Create date in local timezone to avoid timezone shifts
+  const date = new Date(y, (m ?? 1) - 1, d ?? 1);
+  // Map i18n language codes to proper locale codes
+  const localeMap: Record<string, string> = {
+    'en': 'en-US',
+    'zh': 'zh-TW',
+    'pt': 'pt-BR',
+    'es': 'es-ES',
+    'fr': 'fr-FR',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR'
+  };
+  const resolvedLocale = localeMap[locale] || locale;
+  return date.toLocaleDateString(resolvedLocale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 };
 
 /* ----------------------------- Reusable pieces ----------------------------- */
@@ -141,7 +158,8 @@ function ImagePositionControls({
   current,
   onChange,
   opacity = 40,
-  onOpacityChange
+  onOpacityChange,
+  t
 }: {
   show: boolean;
   onToggle: () => void;
@@ -150,6 +168,7 @@ function ImagePositionControls({
   onChange: (p: { x: number; y: number }) => void;
   opacity?: number;
   onOpacityChange?: (opacity: number) => void;
+  t: (key: string) => string;
 }) {
   return (
     <div className="absolute top-2 right-2 z-20">
@@ -163,7 +182,7 @@ function ImagePositionControls({
         <div className="absolute top-full right-0 mt-1 bg-white rounded-lg shadow-lg border p-3 min-w-48">
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-2">Position</label>
+              <label className="text-xs font-medium text-gray-700 block mb-2">{t('form.position')}</label>
               <div className="space-y-1">
                 {Object.entries(positions).map(([key, pos]) => (
                   <button
@@ -176,7 +195,7 @@ function ImagePositionControls({
                     }`}
                     title={key.charAt(0).toUpperCase() + key.slice(1)}
                   >
-                    {key === 'center' ? '● Center' : key === 'top' ? '↑ Top' : '↓ Bottom'}
+                    {key === 'center' ? `● ${t('form.center')}` : key === 'top' ? `↑ ${t('form.top')}` : `↓ ${t('form.bottom')}`}
                   </button>
                 ))}
               </div>
@@ -184,7 +203,7 @@ function ImagePositionControls({
             {onOpacityChange && (
               <div>
                 <label className="text-xs font-medium text-gray-700 block mb-2 flex items-center justify-between">
-                  <span>Opacity</span>
+                  <span>{t('form.opacity')}</span>
                   <input
                     type="number"
                     min="0"
@@ -208,8 +227,8 @@ function ImagePositionControls({
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>Transparent</span>
-                  <span>Opaque</span>
+                  <span>{t('form.transparent')}</span>
+                  <span>{t('form.opaque')}</span>
                 </div>
               </div>
             )}
@@ -359,7 +378,15 @@ export default function BulletinPreview({
   onImageOpacityChange,
   onThemeSelectClick,
   allImages = [],
+  unitTypeOverride,
 }: BulletinPreviewProps) {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+
+  // Dynamic audience labels based on terminology
+  const getAudienceLabel = (audience: string): string => {
+    return getAudienceDisplayName(audience, unitTypeOverride);
+  };
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
 
   // Handle mobile viewport - switch away from wardinfo if on mobile and that tab is active and there's no ward info
@@ -433,7 +460,7 @@ export default function BulletinPreview({
     return getImageByIdSync(data.imageId);
   }, [data.imageId, data.imageUrl, allImages]);
 
-  const formattedDate = useMemo(() => formatDate(data.date), [data.date]);
+  const formattedDate = useMemo(() => formatDate(data.date, i18n.language), [data.date, i18n.language]);
 
   const sanitizedAnnouncements = useMemo(() => {
     const arr = data?.announcements ?? [];
@@ -444,7 +471,7 @@ export default function BulletinPreview({
       if (isStandalone) {
         label = a.customAudienceLabel || ''; // Use custom label or empty for standalone
       } else {
-        label = getAudienceLabel(a.audience || getUnitLowercase());
+        label = getAudienceLabel(a.audience || getUnitLowercase(unitTypeOverride));
       }
       return {
         ...a,
@@ -452,7 +479,7 @@ export default function BulletinPreview({
         html: sanitizeHtml(decodeHtml(a.content ?? "")),
       };
     });
-  }, [data?.announcements]);
+  }, [data?.announcements, unitTypeOverride]);
 
   const [bulletinId, setBulletinId] = useState('');
   useEffect(() => {
@@ -488,7 +515,7 @@ export default function BulletinPreview({
                   `}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab === 'program' ? 'Program' : tab === 'announcements' ? 'Announcements' : `${getUnitLabel()} Info`}
+                  {tab === 'program' ? t('bulletin.program') : tab === 'announcements' ? t('bulletin.announcements') : t('bulletin.unitInfo', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
                 </button>
               </li>
             ))}
@@ -503,7 +530,7 @@ export default function BulletinPreview({
             <BulletinHeader
               wardName={data?.wardName}
               dateLabel={formattedDate}
-              heading="Sacrament Meeting"
+              heading={t('bulletin.sacramentMeeting')}
               image={selectedImage}
               imagePosition={imagePosition}
               imageOpacity={data.imageOpacity ?? 40}
@@ -517,6 +544,7 @@ export default function BulletinPreview({
                 onChange={handleImagePositionChange}
                 opacity={data.imageOpacity ?? 40}
                 onOpacityChange={onImageOpacityChange}
+                t={t}
               />
             )}
           </div>
@@ -524,22 +552,22 @@ export default function BulletinPreview({
           {/* Leadership */}
           <div className="space-y-1">
             <DottedLine rightAlign={data?.leadership?.presiding}>
-              <span>Presiding</span>
+              <span>{t('form.presiding')}</span>
             </DottedLine>
             {data?.leadership?.conducting && (
               <DottedLine rightAlign={data.leadership.conducting}>
-                <span>Conducting</span>
+                <span>{t('form.conducting')}</span>
               </DottedLine>
             )}
             <DottedLine rightAlign={data?.leadership?.chorister}>
-              <span>{data?.leadership?.choristerLabel || 'Chorister'}</span>
+              <span>{data?.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')}</span>
             </DottedLine>
             <DottedLine rightAlign={data?.leadership?.organist}>
-              <span>{data?.leadership?.organistLabel || 'Organist'}</span>
+              <span>{data?.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')}</span>
             </DottedLine>
             {data?.leadership?.preludeMusic && (
               <DottedLine rightAlign={data.leadership.preludeMusic}>
-                <span>Prelude Music</span>
+                <span>{t('form.preludeMusic')}</span>
               </DottedLine>
             )}
           </div>
@@ -555,14 +583,15 @@ export default function BulletinPreview({
           {(data?.musicProgram?.openingHymnNumber || data?.musicProgram?.openingHymnTitle) && (
             <div className="space-y-1">
               <DottedLine rightAlign={data?.musicProgram?.openingHymnNumber}>
-                <span>Opening Hymn</span>
+                <span>{t('bulletin.openingHymn')}</span>
               </DottedLine>
               <div className="text-center py-1">
                 <p className="italic">
                   <a
                     href={getSongUrl(
                       data?.musicProgram?.openingHymnNumber,
-                      data?.musicProgram?.openingHymnType || 'hymn'
+                      data?.musicProgram?.openingHymnType || 'hymn',
+                      currentLang
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -571,7 +600,8 @@ export default function BulletinPreview({
                     {data?.musicProgram?.openingHymnTitle ||
                       getSongTitle(
                         data?.musicProgram?.openingHymnNumber,
-                        data?.musicProgram?.openingHymnType || 'hymn'
+                        data?.musicProgram?.openingHymnType || 'hymn',
+                        currentLang
                       )}
                   </a>
                 </p>
@@ -582,13 +612,13 @@ export default function BulletinPreview({
           {/* Opening Prayer */}
           {data?.prayers?.opening && (
             <DottedLine rightAlign={data.prayers.opening}>
-              <span>Invocation</span>
+              <span>{t('bulletin.invocation')}</span>
             </DottedLine>
           )}
 
           {/* Unit Business */}
           <div className="text-center">
-            <p className="font-medium text-gray-900">{getUnitLabel()} Business</p>
+            <p className="font-medium text-gray-900">{t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</p>
           </div>
 
 
@@ -601,25 +631,25 @@ export default function BulletinPreview({
                 <div key={idx} className="space-y-1">
                   {item.type === 'speaker' && (
                     <DottedLine rightAlign={item.name}>
-                      <span>{item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'}</span>
+                      <span>{item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker')}</span>
                     </DottedLine>
                   )}
                   {item.type === 'musical' && (
                     <>
                       <DottedLine rightAlign={item.hymnNumber || item.songName}>
-                        <span>{item.label || 'Musical Number'}</span>
+                        <span>{item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')}</span>
                       </DottedLine>
                       {(item.hymnNumber || item.hymnTitle) && (
                         <div className="text-center py-1">
                           <p className="italic">
                             {item.hymnNumber ? (
                               <a
-                                href={getSongUrl(item.hymnNumber, item.hymnType || 'hymn')}
+                                href={getSongUrl(item.hymnNumber, item.hymnType || 'hymn', currentLang)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-700 underline hover:text-blue-900"
                               >
-                                {item.hymnTitle || getSongTitle(item.hymnNumber, item.hymnType || 'hymn')}
+                                {item.hymnTitle || getSongTitle(item.hymnNumber, item.hymnType || 'hymn', currentLang)}
                               </a>
                             ) : item.songName}
                           </p>
@@ -634,7 +664,7 @@ export default function BulletinPreview({
                   )}
                   {item.type === 'testimony' && (
                     <div className="text-center py-2">
-                      <p className="font-bold text-lg text-gray-900">Bearing of Testimonies</p>
+                      <p className="font-bold text-lg text-gray-900">{t('bulletin.bearingOfTestimonies')}</p>
                       {item.note && (
                         <p className="text-sm text-gray-700 italic mt-1">{item.note}</p>
                       )}
@@ -645,14 +675,15 @@ export default function BulletinPreview({
                       {(data?.musicProgram?.sacramentHymnNumber || data?.musicProgram?.sacramentHymnTitle) && (
                         <div className="space-y-1">
                           <DottedLine rightAlign={data?.musicProgram?.sacramentHymnNumber}>
-                            <span>Sacrament Hymn</span>
+                            <span>{t('bulletin.sacramentHymn')}</span>
                           </DottedLine>
                           <div className="text-center py-1">
                             <p className="italic">
                               <a
                                 href={getSongUrl(
                                   data?.musicProgram?.sacramentHymnNumber,
-                                  data?.musicProgram?.sacramentHymnType || 'hymn'
+                                  data?.musicProgram?.sacramentHymnType || 'hymn',
+                                  currentLang
                                 )}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -661,7 +692,8 @@ export default function BulletinPreview({
                                 {data?.musicProgram?.sacramentHymnTitle ||
                                   getSongTitle(
                                     data?.musicProgram?.sacramentHymnNumber,
-                                    data?.musicProgram?.sacramentHymnType || 'hymn'
+                                    data?.musicProgram?.sacramentHymnType || 'hymn',
+                                    currentLang
                                   )}
                               </a>
                             </p>
@@ -669,7 +701,7 @@ export default function BulletinPreview({
                         </div>
                       )}
                       <div className="text-center">
-                        <p className="text-lg font-bold text-gray-900">Administration of the Sacrament</p>
+                        <p className="text-lg font-bold text-gray-900">{t('bulletin.administrationOfSacrament')}</p>
                       </div>
                     </>
                   )}
@@ -682,14 +714,15 @@ export default function BulletinPreview({
           {(data?.musicProgram?.closingHymnNumber || data?.musicProgram?.closingHymnTitle) && (
             <div className="space-y-1">
               <DottedLine rightAlign={data?.musicProgram?.closingHymnNumber}>
-                <span>Closing Hymn</span>
+                <span>{t('bulletin.closingHymn')}</span>
               </DottedLine>
               <div className="text-center py-1">
                 <p className="italic">
                   <a
                     href={getSongUrl(
                       data?.musicProgram?.closingHymnNumber,
-                      data?.musicProgram?.closingHymnType || 'hymn'
+                      data?.musicProgram?.closingHymnType || 'hymn',
+                      currentLang
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -698,7 +731,8 @@ export default function BulletinPreview({
                     {data?.musicProgram?.closingHymnTitle ||
                       getSongTitle(
                         data?.musicProgram?.closingHymnNumber,
-                        data?.musicProgram?.closingHymnType || 'hymn'
+                        data?.musicProgram?.closingHymnType || 'hymn',
+                        currentLang
                       )}
                   </a>
                 </p>
@@ -709,14 +743,14 @@ export default function BulletinPreview({
           {/* Closing Prayer */}
           {data?.prayers?.closing && (
             <DottedLine rightAlign={data.prayers.closing}>
-              <span>Benediction</span>
+              <span>{t('bulletin.benediction')}</span>
             </DottedLine>
           )}
 
           {/* Bishopric Message */}
           {data?.bishopricMessage && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-bold text-blue-900 mb-2">Bishopric Message</h3>
+              <h3 className="font-bold text-blue-900 mb-2">{t('terminology.bishopricMessage', { leadershipBody: t('terminology.bishopric') })}</h3>
               <p className="text-blue-800 italic">{data.bishopricMessage}</p>
             </div>
           )}
@@ -730,7 +764,7 @@ export default function BulletinPreview({
             <BulletinHeader
               wardName={data?.wardName}
               dateLabel={formattedDate}
-              heading="Announcements"
+              heading={t('bulletin.announcements')}
               image={selectedImage}
               imagePosition={imagePosition}
               imageOpacity={data.imageOpacity ?? 40}
@@ -744,6 +778,7 @@ export default function BulletinPreview({
                 onChange={handleImagePositionChange}
                 opacity={data.imageOpacity ?? 40}
                 onOpacityChange={onImageOpacityChange}
+                t={t}
               />
             )}
           </div>
@@ -865,14 +900,14 @@ export default function BulletinPreview({
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>No announcements for this week.</p>
+              <p>{t('bulletin.noAnnouncementsThisWeek')}</p>
             </div>
           )}
 
           {/* Meetings */}
           {Array.isArray(data?.meetings) && data.meetings.length > 0 && (
             <div className="mt-6">
-              <h3 className="font-bold text-gray-900 mb-3">Meetings & Activities</h3>
+              <h3 className="font-bold text-gray-900 mb-3">{t('bulletin.meetingsAndActivities')}</h3>
               <div className="space-y-3">
                 {data.meetings.map((m, i) => (
                   <div key={i} className="border-l-4 border-green-500 pl-4">
@@ -890,7 +925,7 @@ export default function BulletinPreview({
           {/* Special Events */}
           {Array.isArray(data?.specialEvents) && data.specialEvents.length > 0 && (
             <div className="mt-6">
-              <h3 className="font-bold text-gray-900 mb-3">Special Events</h3>
+              <h3 className="font-bold text-gray-900 mb-3">{t('bulletin.specialEvents')}</h3>
               <div className="space-y-3">
                 {data.specialEvents.map((e, i) => (
                   <div key={i} className="border-l-4 border-purple-500 pl-4">
@@ -907,12 +942,12 @@ export default function BulletinPreview({
           {/* Submission Link */}
           {!hideTabs && bulletinId && (
             <div className="mt-6 p-4 bg-green-50 rounded-lg text-center">
-              <p className="text-green-800 mb-2">Have an announcement to share?</p>
+              <p className="text-green-800 mb-2">{t('bulletin.haveAnnouncementToShare')}</p>
               <a
                 href={`/submit/${bulletinId}`}
                 className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-full hover:bg-green-700 transition-colors"
               >
-                📝 Submit Announcement
+                📝 {t('bulletin.submitAnnouncement')}
               </a>
             </div>
           )}
@@ -925,14 +960,14 @@ export default function BulletinPreview({
           {/* Ward Leadership Section */}
           {Array.isArray(data.wardLeadership) && data.wardLeadership.some(e => e && (e.title || e.name || e.phone)) && (
             <>
-              <h3 className="text-base font-bold mb-3 text-center">{getUnitLeadershipLabel()}</h3>
+              <h3 className="text-base font-bold mb-3 text-center">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full border text-sm">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="px-3 py-2 border">Title</th>
-                      <th className="px-3 py-2 border text-center">Name</th>
-                      <th className="px-3 py-2 border">Contact</th>
+                      <th className="px-3 py-2 border">{t('form.title')}</th>
+                      <th className="px-3 py-2 border text-center">{t('form.name')}</th>
+                      <th className="px-3 py-2 border">{t('form.contact')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -952,13 +987,13 @@ export default function BulletinPreview({
           {/* Missionaries Section */}
           {Array.isArray(data.missionaries) && data.missionaries.some(e => e && (e.name || e.phone)) && (
             <>
-              <h3 className="text-base font-bold mb-3 text-center mt-8">Missionaries</h3>
+              <h3 className="text-base font-bold mb-3 text-center mt-8">{t('form.missionaries')}</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full border text-sm">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="px-3 py-2 border text-center">Name</th>
-                      <th className="px-3 py-2 border">Contact</th>
+                      <th className="px-3 py-2 border text-center">{t('form.name')}</th>
+                      <th className="px-3 py-2 border">{t('form.contact')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -977,7 +1012,7 @@ export default function BulletinPreview({
           {/* Ward Missionaries Section */}
           {Array.isArray(data.wardMissionaries) && data.wardMissionaries.some(e => e && (e.name || e.mission || e.setApartDate || e.expectedReturnDate || e.email)) && (
             <>
-              <h3 className="text-base font-bold mb-3 text-center mt-8">{getUnitMissionariesLabel()}</h3>
+              <h3 className="text-base font-bold mb-3 text-center mt-8">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h3>
               {(() => {
                 // Sort by expected return date (earliest first)
                 const sorted = [...(data?.wardMissionaries || [])].sort((a, b) => {
@@ -995,8 +1030,8 @@ export default function BulletinPreview({
                       <div key={idx} className="border border-gray-300 rounded-lg p-3">
                         <div className="font-bold text-sm mb-2">{e.name}</div>
                         {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
-                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">Set Apart: {formatDate(e.setApartDate)}</div>}
-                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">Expected Return: {formatDate(e.expectedReturnDate)}</div>}
+                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.setApartDate')}: {formatDate(e.setApartDate, i18n.language)}</div>}
+                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.expectedReturn')}: {formatDate(e.expectedReturnDate, i18n.language)}</div>}
                         {e.email && <div className="text-xs text-gray-600 font-normal">{e.email}</div>}
                       </div>
                     ))}
@@ -1006,11 +1041,11 @@ export default function BulletinPreview({
                     <table className="min-w-full border text-sm">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th className="px-3 py-2 border">Name</th>
-                          <th className="px-3 py-2 border">Mission</th>
-                          <th className="px-3 py-2 border">Set Apart Date</th>
-                          <th className="px-3 py-2 border">Expected Return</th>
-                          <th className="px-3 py-2 border">Email</th>
+                          <th className="px-3 py-2 border">{t('form.name')}</th>
+                          <th className="px-3 py-2 border">{t('form.mission')}</th>
+                          <th className="px-3 py-2 border">{t('form.setApartDate')}</th>
+                          <th className="px-3 py-2 border">{t('form.expectedReturn')}</th>
+                          <th className="px-3 py-2 border">{t('form.email')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1018,8 +1053,8 @@ export default function BulletinPreview({
                           <tr key={idx}>
                             <td className="border px-3 py-2 font-bold">{e.name}</td>
                             <td className="border px-3 py-2 font-normal">{e.mission}</td>
-                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? formatDate(e.setApartDate) : ''}</td>
-                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? formatDate(e.expectedReturnDate) : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? formatDate(e.setApartDate, i18n.language) : ''}</td>
+                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? formatDate(e.expectedReturnDate, i18n.language) : ''}</td>
                             <td className="border px-3 py-2 font-normal">{e.email}</td>
                           </tr>
                         ))}
@@ -1034,7 +1069,7 @@ export default function BulletinPreview({
           {/* Service Missionaries Section */}
           {Array.isArray(data.serviceMissionaries) && data.serviceMissionaries.some(e => e && (e.name || e.serviceName)) && (
             <>
-              <h3 className="text-base font-bold mb-3 text-center mt-8">Service Missionaries</h3>
+              <h3 className="text-base font-bold mb-3 text-center mt-8">{t('form.serviceMissionaries')}</h3>
               {(() => {
                 const serviceMissionaries = data?.serviceMissionaries || [];
                 
@@ -1052,8 +1087,8 @@ export default function BulletinPreview({
                     <table className="min-w-full border text-sm">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th className="px-3 py-2 border">Name(s)</th>
-                          <th className="px-3 py-2 border">Calling</th>
+                          <th className="px-3 py-2 border">{t('form.name')}</th>
+                          <th className="px-3 py-2 border">{t('form.calling')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1079,8 +1114,8 @@ export default function BulletinPreview({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">QR Code</h3>
-              <p className="text-gray-600 mb-4">Scan this QR code to access the digital bulletin</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('qrCode.qrCode')}</h3>
+              <p className="text-gray-600 mb-4">{t('qrCode.scanQrCodeToAccess')}</p>
               <div className="flex justify-center">
                 {qrUrl ? (
                   <img
@@ -1092,7 +1127,7 @@ export default function BulletinPreview({
                 ) : null}
               </div>
               <p className="text-xs text-gray-500 mt-4">
-                No ward information available. Add ward leadership and missionary details in the editor to display them here.
+                {t('bulletin.noWardInfoAvailable')}
               </p>
             </div>
           )}
@@ -1104,21 +1139,21 @@ export default function BulletinPreview({
         <BulletinHeader
           wardName={data?.wardName}
           dateLabel={formattedDate}
-          heading="Sacrament Meeting"
+          heading={t('bulletin.sacramentMeeting')}
           image={selectedImage}
           imagePosition={imagePosition}
         />
 
         {/* Leadership */}
         <div className="space-y-1">
-          <DottedLine rightAlign={data?.leadership?.presiding}><span>Presiding</span></DottedLine>
+          <DottedLine rightAlign={data?.leadership?.presiding}><span>{t('form.presiding')}</span></DottedLine>
           {data?.leadership?.conducting && (
-            <DottedLine rightAlign={data.leadership.conducting}><span>Conducting</span></DottedLine>
+            <DottedLine rightAlign={data.leadership.conducting}><span>{t('form.conducting')}</span></DottedLine>
           )}
-          <DottedLine rightAlign={data?.leadership?.chorister}><span>{data?.leadership?.choristerLabel || 'Chorister'}</span></DottedLine>
-          <DottedLine rightAlign={data?.leadership?.organist}><span>{data?.leadership?.organistLabel || 'Organist'}</span></DottedLine>
+          <DottedLine rightAlign={data?.leadership?.chorister}><span>{data?.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')}</span></DottedLine>
+          <DottedLine rightAlign={data?.leadership?.organist}><span>{data?.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')}</span></DottedLine>
           {data?.leadership?.preludeMusic && (
-            <DottedLine rightAlign={data.leadership.preludeMusic}><span>Prelude Music</span></DottedLine>
+            <DottedLine rightAlign={data.leadership.preludeMusic}><span>{t('form.preludeMusic')}</span></DottedLine>
           )}
         </div>
 
@@ -1132,13 +1167,14 @@ export default function BulletinPreview({
         {/* Opening Hymn */}
         {(data?.musicProgram?.openingHymnNumber || data?.musicProgram?.openingHymnTitle) && (
           <div className="space-y-1">
-            <DottedLine rightAlign={data?.musicProgram?.openingHymnNumber}><span>Opening Hymn</span></DottedLine>
+            <DottedLine rightAlign={data?.musicProgram?.openingHymnNumber}><span>{t('bulletin.openingHymn')}</span></DottedLine>
             <div className="text-center py-1">
               <p className="italic">
                 <a
                   href={getSongUrl(
                     data?.musicProgram?.openingHymnNumber,
-                    data?.musicProgram?.openingHymnType || 'hymn'
+                    data?.musicProgram?.openingHymnType || 'hymn',
+                    currentLang
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -1147,7 +1183,8 @@ export default function BulletinPreview({
                   {data?.musicProgram?.openingHymnTitle ||
                     getSongTitle(
                       data?.musicProgram?.openingHymnNumber,
-                      data?.musicProgram?.openingHymnType || 'hymn'
+                      data?.musicProgram?.openingHymnType || 'hymn',
+                      currentLang
                     )}
                 </a>
               </p>
@@ -1157,12 +1194,12 @@ export default function BulletinPreview({
 
         {/* Opening Prayer */}
         {data?.prayers?.opening && (
-          <DottedLine rightAlign={data.prayers.opening}><span>Invocation</span></DottedLine>
+          <DottedLine rightAlign={data.prayers.opening}><span>{t('bulletin.invocation')}</span></DottedLine>
         )}
 
         {/* Unit Business */}
         <div className="text-center">
-          <p className="font-medium text-gray-900">{getUnitLabel()} Business</p>
+          <p className="font-medium text-gray-900">{t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</p>
         </div>
 
 
@@ -1173,25 +1210,25 @@ export default function BulletinPreview({
               <div key={idx} className="space-y-1">
                 {item.type === 'speaker' && (
                   <DottedLine rightAlign={item.name}>
-                    <span>{item.speakerType === 'youth' ? 'Youth Speaker' : 'Speaker'}</span>
+                    <span>{item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker')}</span>
                   </DottedLine>
                 )}
                 {item.type === 'musical' && (
                   <>
                     <DottedLine rightAlign={item.hymnNumber || item.songName}>
-                      <span>{item.label || 'Musical Number'}</span>
+                      <span>{item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')}</span>
                     </DottedLine>
                     {(item.hymnNumber || item.hymnTitle) && (
                       <div className="text-center py-1">
                         <p className="italic">
                           {item.hymnNumber ? (
                             <a
-                              href={getSongUrl(item.hymnNumber, item.hymnType || 'hymn')}
+                              href={getSongUrl(item.hymnNumber, item.hymnType || 'hymn', currentLang)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-700 underline hover:text-blue-900"
                             >
-                              {item.hymnTitle || getSongTitle(item.hymnNumber, item.hymnType || 'hymn')}
+                              {item.hymnTitle || getSongTitle(item.hymnNumber, item.hymnType || 'hymn', currentLang)}
                             </a>
                           ) : item.songName}
                         </p>
@@ -1207,7 +1244,7 @@ export default function BulletinPreview({
                 {item.type === 'testimony' && (
                   <div className="text-center py-3 my-2">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 shadow-sm">
-                      <p className="font-bold text-lg text-gray-800 tracking-wide">Bearing of Testimonies</p>
+                      <p className="font-bold text-lg text-gray-800 tracking-wide">{t('bulletin.bearingOfTestimonies')}</p>
                       {item.note && (
                         <p className="text-sm text-gray-600 mt-1 italic">{item.note}</p>
                       )}
@@ -1218,13 +1255,14 @@ export default function BulletinPreview({
                   <>
                     {(data?.musicProgram?.sacramentHymnNumber || data?.musicProgram?.sacramentHymnTitle) && (
                       <div className="space-y-1">
-                        <DottedLine rightAlign={data?.musicProgram?.sacramentHymnNumber}><span>Sacrament Hymn</span></DottedLine>
+                        <DottedLine rightAlign={data?.musicProgram?.sacramentHymnNumber}><span>{t('bulletin.sacramentHymn')}</span></DottedLine>
                         <div className="text-center py-1">
                           <p className="italic">
                             <a
                               href={getSongUrl(
                                 data?.musicProgram?.sacramentHymnNumber,
-                                data?.musicProgram?.sacramentHymnType || 'hymn'
+                                data?.musicProgram?.sacramentHymnType || 'hymn',
+                                currentLang
                               )}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -1233,7 +1271,8 @@ export default function BulletinPreview({
                               {data?.musicProgram?.sacramentHymnTitle ||
                                 getSongTitle(
                                   data?.musicProgram?.sacramentHymnNumber,
-                                  data?.musicProgram?.sacramentHymnType || 'hymn'
+                                  data?.musicProgram?.sacramentHymnType || 'hymn',
+                                  currentLang
                                 )}
                             </a>
                           </p>
@@ -1241,7 +1280,7 @@ export default function BulletinPreview({
                       </div>
                     )}
                     <div className="text-center">
-                      <p className="font-medium text-gray-900">Administration of the Sacrament</p>
+                      <p className="font-medium text-gray-900">{t('bulletin.administrationOfSacrament')}</p>
                     </div>
                   </>
                 )}
@@ -1253,13 +1292,14 @@ export default function BulletinPreview({
         {/* Closing Hymn */}
         {(data?.musicProgram?.closingHymnNumber || data?.musicProgram?.closingHymnTitle) && (
           <div className="space-y-1">
-            <DottedLine rightAlign={data?.musicProgram?.closingHymnNumber}><span>Closing Hymn</span></DottedLine>
+            <DottedLine rightAlign={data?.musicProgram?.closingHymnNumber}><span>{t('bulletin.closingHymn')}</span></DottedLine>
             <div className="text-center py-1">
               <p className="italic">
                 <a
                   href={getSongUrl(
                     data?.musicProgram?.closingHymnNumber,
-                    data?.musicProgram?.closingHymnType || 'hymn'
+                    data?.musicProgram?.closingHymnType || 'hymn',
+                    currentLang
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -1268,7 +1308,8 @@ export default function BulletinPreview({
                   {data?.musicProgram?.closingHymnTitle ||
                     getSongTitle(
                       data?.musicProgram?.closingHymnNumber,
-                      data?.musicProgram?.closingHymnType || 'hymn'
+                      data?.musicProgram?.closingHymnType || 'hymn',
+                      currentLang
                     )}
                 </a>
               </p>
@@ -1278,7 +1319,7 @@ export default function BulletinPreview({
 
         {/* Closing Prayer */}
         {data?.prayers?.closing && (
-          <DottedLine rightAlign={data.prayers.closing}><span>Benediction</span></DottedLine>
+          <DottedLine rightAlign={data.prayers.closing}><span>{t('bulletin.benediction')}</span></DottedLine>
         )}
 
         {/* Announcements (print) */}
@@ -1341,13 +1382,13 @@ export default function BulletinPreview({
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-400">No announcements</div>
+          <div className="text-center text-gray-400">{t('bulletin.noAnnouncements')}</div>
         )}
 
         {/* Meetings (print) */}
         {Array.isArray(data?.meetings) && data.meetings.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-300">
-            <h3 className="text-base font-bold mb-3 text-center">Meetings This Week</h3>
+            <h3 className="text-base font-bold mb-3 text-center">{t('bulletin.meetingsThisWeek')}</h3>
             <div className="space-y-3">
               {data.meetings.map((m, i) => (
                 <div key={i} className="text-sm bg-gray-50 p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -1368,7 +1409,7 @@ export default function BulletinPreview({
         {/* Special Events (print) */}
         {Array.isArray(data?.specialEvents) && data.specialEvents.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-300">
-            <h3 className="text-base font-bold mb-3 text-center">Special Events</h3>
+            <h3 className="text-base font-bold mb-3 text-center">{t('bulletin.specialEvents')}</h3>
             <div className="space-y-3">
               {data.specialEvents.map((e, i) => (
                 <div key={i} className="text-sm bg-gray-50 p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center">
@@ -1381,7 +1422,7 @@ export default function BulletinPreview({
                       {e.date ? new Date(e.date).toLocaleDateString() : ''}{e.time ? ` - ${e.time}` : ''}
                     </span>
                     <span className="text-gray-600">{e.location}</span>
-                    {e.contact && <span className="text-gray-600">Contact: {e.contact}</span>}
+                    {e.contact && <span className="text-gray-600">{t('form.contact')}: {e.contact}</span>}
                   </div>
                 </div>
               ))}

@@ -1,27 +1,33 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Home } from 'lucide-react';
 import BulletinPreview from './BulletinPreview';
 import { BulletinData } from '../types/bulletin';
+import { UnitType } from '../lib/terminology';
 
 interface PublicBulletinViewProps {
   bulletinData: BulletinData | null;
   loading: boolean;
   error: string;
   onBackToEditor: () => void;
+  unitTypeOverride?: UnitType;
 }
 
-export default function PublicBulletinView({ 
-  bulletinData, 
-  loading, 
-  error, 
-  onBackToEditor 
+export default function PublicBulletinView({
+  bulletinData,
+  loading,
+  error,
+  onBackToEditor,
+  unitTypeOverride
 }: PublicBulletinViewProps) {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading bulletin...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -40,16 +46,16 @@ export default function PublicBulletinView({
             </div>
             
             {/* Title */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Bulletin Not Available</h2>
-            
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('bulletin.bulletinNotAvailable')}</h2>
+
             {/* Description */}
             <div className="text-gray-600 mb-6 space-y-2">
-              <p>This bulletin link doesn't exist or may have been removed.</p>
-              <p className="text-sm">This could happen if:</p>
+              <p>{t('bulletin.bulletinNotAvailableDescription')}</p>
+              <p className="text-sm">{t('bulletin.couldHappenIf')}</p>
               <ul className="text-sm text-left max-w-sm mx-auto space-y-1">
-                <li>• The link was typed incorrectly</li>
-                <li>• The bulletin was deleted</li>
-                <li>• The ward hasn't published a bulletin yet</li>
+                <li>• {t('bulletin.linkTypedIncorrectly')}</li>
+                <li>• {t('bulletin.bulletinWasDeleted')}</li>
+                <li>• {t('bulletin.wardNotPublished')}</li>
               </ul>
             </div>
             
@@ -60,22 +66,22 @@ export default function PublicBulletinView({
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <Home className="w-4 h-4 mr-2" />
-                Create Your Own Bulletin
+                {t('bulletin.createYourOwnBulletin')}
               </button>
-              
+
               <button
                 onClick={() => window.history.back()}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Go Back
+                {t('common.back')}
               </button>
             </div>
-            
+
             {/* Help Text */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                Need help? Contact your ward bulletin specialist or visit{' '}
+                {t('bulletin.needHelp')}{' '}
                 <a href="/contact" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
               </p>
             </div>
@@ -96,21 +102,21 @@ export default function PublicBulletinView({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            
+
             {/* Title */}
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">No Bulletin Published</h2>
-            
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('bulletin.noBulletinPublished')}</h2>
+
             {/* Description */}
             <div className="text-gray-600 mb-6 space-y-2">
-              <p>This ward hasn't published any bulletins yet.</p>
-              <p className="text-sm">The bulletin administrator may be:</p>
+              <p>{t('bulletin.wardNotPublishedYet')}</p>
+              <p className="text-sm">{t('bulletin.bulletinAdminMayBe')}</p>
               <ul className="text-sm text-left max-w-sm mx-auto space-y-1">
-                <li>• Setting up their first bulletin</li>
-                <li>• Working on the current week's bulletin</li>
-                <li>• Taking a break from publishing</li>
+                <li>• {t('bulletin.settingUpFirstBulletin')}</li>
+                <li>• {t('bulletin.workingOnCurrentWeek')}</li>
+                <li>• {t('bulletin.takingBreak')}</li>
               </ul>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="space-y-3">
               <button
@@ -118,22 +124,22 @@ export default function PublicBulletinView({
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 <Home className="w-4 h-4 mr-2" />
-                Create Your Own Bulletin
+                {t('bulletin.createYourOwnBulletin')}
               </button>
-              
+
               <button
                 onClick={() => window.history.back()}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Go Back
+                {t('common.back')}
               </button>
             </div>
-            
+
             {/* Help Text */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500">
-                Want to create bulletins for your ward? Visit{' '}
+                {t('bulletin.wantToCreateBulletins')}{' '}
                 <a href="/" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
               </p>
             </div>
@@ -147,18 +153,18 @@ export default function PublicBulletinView({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Bulletin Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-8">
-        <BulletinPreview data={bulletinData} hideImageControls={true} />
+        <BulletinPreview data={bulletinData} hideImageControls={true} unitTypeOverride={unitTypeOverride} />
         
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-600 text-sm">
-            Built with MyWardBulletin.com
+            {t('bulletin.builtWithMyWardBulletin')}
           </p>
           <button
             onClick={onBackToEditor}
             className="mt-2 text-blue-600 hover:text-blue-700 text-sm underline"
           >
-            Create your own bulletin
+            {t('bulletin.createYourOwnBulletin')}
           </button>
         </div>
       </main>

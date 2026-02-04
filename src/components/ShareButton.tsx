@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share2, MessageCircle, Copy, Check } from 'lucide-react';
 
 interface ShareButtonProps {
@@ -28,6 +29,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
   size = 'md',
   bulletinData = null
 }) => {
+  const { t } = useTranslation();
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -164,10 +166,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       <button
         onClick={handleNativeShare}
         className={`inline-flex items-center space-x-2 rounded-lg transition-colors ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-        aria-label="Share"
+        aria-label={t('common.share')}
       >
         <Share2 className="w-4 h-4" />
-        <span className="hidden sm:inline">Share</span>
+        <span className="hidden sm:inline">{t('common.share')}</span>
       </button>
 
       {showDropdown && (
@@ -234,7 +236,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({
                 ) : (
                   <Copy className="w-4 h-4 text-gray-600" />
                 )}
-                <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+                <span>{copied ? t('success.copied') : t('qrCode.copyLink')}</span>
               </button>
             </div>
           </div>

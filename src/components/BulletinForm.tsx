@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Trash2, Repeat, RotateCcw, GripVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BulletinData, Announcement, AnnouncementImage, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
 import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
@@ -17,7 +18,10 @@ import {
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
   getAudienceDisplayName,
-  getAudienceValue
+  getAudienceValue,
+  getTranslatedUnitLabel,
+  getTranslatedUnitLowercase,
+  getTranslatedHigherUnitLabel
 } from '../lib/terminology';
 
 interface BulletinFormProps {
@@ -30,6 +34,8 @@ interface BulletinFormProps {
 }
 
 export default function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);
@@ -153,7 +159,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       const agendaSongType = songTypes[`agenda-${id}`] || 'hymn';
       updateAgendaItem(id, {
         hymnNumber: value,
-        hymnTitle: isValidSongNumber(value, agendaSongType) ? getSongTitle(value, agendaSongType) : '',
+        hymnTitle: isValidSongNumber(value, agendaSongType, currentLang) ? getSongTitle(value, agendaSongType, currentLang) : '',
         hymnType: agendaSongType
       });
       return;
@@ -165,23 +171,23 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     if (field === 'openingHymnNumber') {
       hymnData.openingHymnNumber = value;
       hymnData.openingHymnType = fieldSongType;
-      if (isValidSongNumber(value, fieldSongType)) {
-        hymnData.openingHymnTitle = getSongTitle(value, fieldSongType);
+      if (isValidSongNumber(value, fieldSongType, currentLang)) {
+        hymnData.openingHymnTitle = getSongTitle(value, fieldSongType, currentLang);
       }
     } else if (field === 'sacramentHymnNumber') {
       hymnData.sacramentHymnNumber = value;
       hymnData.sacramentHymnType = fieldSongType;
-      if (isValidSongNumber(value, fieldSongType)) {
-        hymnData.sacramentHymnTitle = getSongTitle(value, fieldSongType);
+      if (isValidSongNumber(value, fieldSongType, currentLang)) {
+        hymnData.sacramentHymnTitle = getSongTitle(value, fieldSongType, currentLang);
       }
     } else if (field === 'closingHymnNumber') {
       hymnData.closingHymnNumber = value;
       hymnData.closingHymnType = fieldSongType;
-      if (isValidSongNumber(value, fieldSongType)) {
-        hymnData.closingHymnTitle = getSongTitle(value, fieldSongType);
+      if (isValidSongNumber(value, fieldSongType, currentLang)) {
+        hymnData.closingHymnTitle = getSongTitle(value, fieldSongType, currentLang);
       }
     }
-    
+
     updateField('musicProgram', hymnData);
   };
 
@@ -191,9 +197,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       setActiveHymnSearch(null);
       return;
     }
-    
+
     const fieldSongType = songTypes[field] || 'hymn';
-    const results = searchSongsByTitle(searchTerm, fieldSongType);
+    const results = searchSongsByTitle(searchTerm, fieldSongType, currentLang);
     setHymnSearchResults(results);
     setActiveHymnSearch(field);
   };
@@ -518,9 +524,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       if (item.id !== id) return item;
       if (item.type === 'musical' && 'hymnNumber' in changes) {
         const hymnNumber = changes.hymnNumber;
-        const number = parseInt(hymnNumber || '');
-        if (hymnNumber && isValidSongNumber(hymnNumber, getSongTypeForField(`agenda-${id}`))) {
-          return { ...item, ...changes, hymnTitle: getSongTitle(hymnNumber, getSongTypeForField(`agenda-${id}`)) };
+        if (hymnNumber && isValidSongNumber(hymnNumber, getSongTypeForField(`agenda-${id}`), currentLang)) {
+          return { ...item, ...changes, hymnTitle: getSongTitle(hymnNumber, getSongTypeForField(`agenda-${id}`), currentLang) };
         } else {
           return { ...item, ...changes, hymnTitle: '' };
         }
@@ -529,20 +534,20 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     }));
   };
 
-  // Add audience options at the top of the file
+  // Add audience options - using translated labels
   const audienceOptions = [
-    { value: getAudienceValue('unit'), label: getUnitLabel() },
-    { value: 'relief_society', label: 'Relief Society' },
-    { value: 'elders_quorum', label: 'Elders Quorum' },
-    { value: 'young_women', label: 'Young Women' },
-    { value: 'young_men', label: 'Young Men' },
-    { value: 'youth', label: 'Youth' },
-    { value: 'primary', label: 'Primary' },
-    { value: 'sunday_school', label: 'Sunday School' },
-    { value: 'gospel_doctrine', label: 'Gospel Doctrine' },
-    { value: getAudienceValue('higher_unit'), label: getHigherUnitLabel() },
-    { value: 'other', label: 'Other' },
-    { value: 'standalone', label: 'Standalone (No Group)' }
+    { value: getAudienceValue('unit'), label: getTranslatedUnitLabel(t) },
+    { value: 'relief_society', label: t('terminology.reliefSociety') },
+    { value: 'elders_quorum', label: t('terminology.eldersQuorum') },
+    { value: 'young_women', label: t('terminology.youngWomen') },
+    { value: 'young_men', label: t('terminology.youngMen') },
+    { value: 'youth', label: t('terminology.youth') },
+    { value: 'primary', label: t('terminology.primary') },
+    { value: 'sunday_school', label: t('terminology.sundaySchool') },
+    { value: 'gospel_doctrine', label: t('terminology.gospelDoctrine') },
+    { value: getAudienceValue('higher_unit'), label: getTranslatedHigherUnitLabel(t) },
+    { value: 'other', label: t('common.other') },
+    { value: 'standalone', label: t('form.standaloneAnnouncement') }
   ];
 
   // State for showing the "Add New Type" dropdown
@@ -705,7 +710,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 `}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
               >
-                {tab === 'program' ? 'Program' : tab === 'announcements' ? 'Announcements' : `${getUnitLabel()} Info`}
+                {tab === 'program' ? t('bulletin.program') : tab === 'announcements' ? t('bulletin.announcements') : t('bulletin.unitInfo', { unit: getTranslatedUnitLabel(t) })}
               </button>
             </li>
           ))}
@@ -717,32 +722,32 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
           {/* Basic Information */}
           <section className="space-y-4">
             <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
-              Basic Information
+              {t('form.basicInformation')}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{getUnitNameLabel()}</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.wardName', { unit: getTranslatedUnitLabel(t) })}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
                     value={data.wardName || ''}
                     onChange={(e) => updateField('wardName', e.target.value)}
-                    placeholder={`e.g., Sunset Hills ${getUnitLabel()}`}
+                    placeholder={t('form.wardNamePlaceholder', { unit: getTranslatedUnitLabel(t) })}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('wardName', data.wardName)}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Date</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.date')}</label>
                 <input
                   type="date"
                   value={data.date || ''}
@@ -753,12 +758,12 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             </div>
             <div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Theme/Scripture</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.themeScripture')}</label>
                 <input
                   type="text"
                   value={data.theme || ''}
                   onChange={(e) => updateField('theme', e.target.value)}
-                  placeholder="Weekly theme or scripture reference"
+                  placeholder={t('form.weeklyThemePlaceholder')}
                   className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -766,7 +771,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
             {/* Image Selection */}
             <div>
-              <label className="block text-base font-medium text-gray-700 mb-2">Bulletin Image</label>
+              <label className="block text-base font-medium text-gray-700 mb-2">{t('form.bulletinImage')}</label>
               <div className="space-y-3">
                 {/* Selected Image Display */}
                 <div className="p-3 border border-gray-300 rounded-lg bg-white">
@@ -791,15 +796,15 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             onClick={() => updateField('imageId', 'none')}
                             className="text-red-600 hover:text-red-800 text-sm"
                           >
-                            Remove
+                            {t('common.remove')}
                           </button>
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-500">No valid image selected</div>
+                        <div className="text-sm text-gray-500">{t('form.noValidImageSelected')}</div>
                       );
                     })()
                   ) : (
-                    <div className="text-sm text-gray-500">No image selected</div>
+                    <div className="text-sm text-gray-500">{t('form.noImageSelected')}</div>
                   )}
                 </div>
 
@@ -807,7 +812,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 <details className="group">
                   <summary className="cursor-pointer p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                     <span className="text-sm font-medium text-gray-700">
-                      Choose Image ({allImages.length} available)
+                      {t('form.chooseImage')} ({allImages.length} {t('form.available')})
                     </span>
                     <span className="float-right text-gray-400 group-open:rotate-180 transition-transform">▼</span>
                   </summary>
@@ -884,46 +889,46 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
           {/* Leadership */}
           <section className="space-y-4">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">Leadership</h3>
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">{t('form.leadership')}</h3>
             {/* First Row: 2 fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Presiding</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.presiding')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
                     value={data.leadership.presiding || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, presiding: e.target.value })}
-                    placeholder="e.g., Bishop Dave Stratham"
+                    placeholder={t('form.presidingPlaceholder')}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('presiding', data.leadership.presiding)}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Conducting</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.conducting')}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
                     type="text"
                     value={data.leadership.conducting || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, conducting: e.target.value })}
-                    placeholder="e.g., 1st Counselor John Smith"
+                    placeholder={t('form.conductingPlaceholder')}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('conducting', data.leadership.conducting || '')}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
@@ -932,7 +937,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             {/* Second Row: 3 fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Chorister</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.chorister')}</label>
                 <div className="flex items-center gap-1.5 mb-2 h-[34px]">
                   <span
                     className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Chorister' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
@@ -941,7 +946,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Chorister' });
                     }}
                   >
-                    Chorister
+                    {t('form.chorister')}
                   </span>
                   <span
                     className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Music Leader' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
@@ -950,7 +955,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Music Leader' });
                     }}
                   >
-                    Music Leader
+                    {t('form.musicLeader')}
                   </span>
                 </div>
                 <div className="flex gap-2 md:flex-col md:gap-0">
@@ -958,21 +963,21 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     type="text"
                     value={data.leadership.chorister || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, chorister: e.target.value })}
-                    placeholder={`e.g., Debbie Hanes (${choristerLabel})`}
+                    placeholder={t('form.choristerPlaceholder', { label: choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister') })}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('chorister', data.leadership.chorister)}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Organist</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.organist')}</label>
                 <div className="flex items-center gap-1.5 mb-2 h-[34px]">
                   <span
                     className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Organist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
@@ -981,7 +986,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       updateField('leadership', { ...data.leadership, organistLabel: 'Organist' });
                     }}
                   >
-                    Organist
+                    {t('form.organist')}
                   </span>
                   <span
                     className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Pianist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
@@ -990,7 +995,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       updateField('leadership', { ...data.leadership, organistLabel: 'Pianist' });
                     }}
                   >
-                    Pianist
+                    {t('form.pianist')}
                   </span>
                 </div>
                 <div className="flex gap-2 md:flex-col md:gap-0">
@@ -998,21 +1003,21 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     type="text"
                     value={data.leadership.organist || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, organist: e.target.value })}
-                    placeholder={`e.g., Tom Webster (${organistLabel})`}
+                    placeholder={t('form.organistPlaceholder', { label: organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist') })}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('organist', data.leadership.organist)}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">Prelude Music</label>
+                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.preludeMusic')}</label>
                 {/* Add spacing to match toggle button height for alignment */}
                 <div className="h-[34px] mb-2"></div>
                 <div className="flex gap-2 md:flex-col md:gap-0">
@@ -1020,16 +1025,16 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     type="text"
                     value={data.leadership.preludeMusic || ''}
                     onChange={(e) => updateField('leadership', { ...data.leadership, preludeMusic: e.target.value })}
-                    placeholder="e.g., Hymn 1"
+                    placeholder={t('form.hymnExamplePlaceholder')}
                     className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => saveDefault('preludeMusic', data.leadership.preludeMusic || '')}
                     className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
                 </div>
               </div>
@@ -1038,10 +1043,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
           {/* Music Program */}
           <section className="space-y-4">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">Music Program</h3>
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">{t('bulletin.openingHymn')}</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.openingHymn')} {t('form.hymnNumber')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -1052,7 +1057,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Hymns
+                    {t('form.hymns')}
                   </button>
                   <button
                     type="button"
@@ -1063,7 +1068,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Children's Songs
+                    {t('form.childrensSongs')}
                   </button>
                 </div>
                 <input
@@ -1072,17 +1077,17 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   onChange={(e) => handleHymnNumberChange('openingHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('openingHymnNumber')}
                   className={`w-full px-3 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    Boolean(data.musicProgram.openingHymnNumber) && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber')) === false
+                    Boolean(data.musicProgram.openingHymnNumber) && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber'), currentLang) === false
                       ? 'border-red-300 bg-red-50'
                       : 'border-gray-300'
                   }`}
                 />
-                {Boolean(data.musicProgram.openingHymnNumber) && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber')) === false && (
-                  <p className="text-sm text-red-600 mt-1">Invalid {getSongTypeForField('openingHymnNumber') === 'hymn' ? 'hymn' : 'song'} number</p>
+                {Boolean(data.musicProgram.openingHymnNumber) && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber'), currentLang) === false && (
+                  <p className="text-sm text-red-600 mt-1">{getSongTypeForField('openingHymnNumber') === 'hymn' ? t('form.invalidHymnNumber') : t('form.invalidSongNumber')}</p>
                 )}
               </div>
               <div className="relative hymn-search-container">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hymn Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.openingHymnTitle')}</label>
                 <input
                   type="text"
                   value={data.musicProgram.openingHymnTitle || ''}
@@ -1095,9 +1100,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       handleHymnTitleSearch('openingHymnNumber', data.musicProgram.openingHymnTitle);
                     }
                   }}
-                  placeholder="Search for hymn title or enter manually"
+                  placeholder={t('form.searchHymnPlaceholder')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    data.musicProgram.openingHymnNumber && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber'))
+                    data.musicProgram.openingHymnNumber && isValidSongNumber(data.musicProgram.openingHymnNumber, getSongTypeForField('openingHymnNumber'), currentLang)
                       ? 'border-green-300 bg-green-50'
                       : 'border-gray-300'
                   }`}
@@ -1125,7 +1130,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sacrament Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.sacramentHymnNumber')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -1136,7 +1141,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Hymns
+                    {t('form.hymns')}
                   </button>
                   <button
                     type="button"
@@ -1147,7 +1152,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Children's Songs
+                    {t('form.childrensSongs')}
                   </button>
                 </div>
                 <input
@@ -1156,17 +1161,17 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   onChange={(e) => handleHymnNumberChange('sacramentHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('sacramentHymnNumber')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    Boolean(data.musicProgram.sacramentHymnNumber) && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber')) === false
+                    Boolean(data.musicProgram.sacramentHymnNumber) && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber'), currentLang) === false
                       ? 'border-red-300 bg-red-50'
                       : 'border-gray-300'
                   }`}
                 />
-                {Boolean(data.musicProgram.sacramentHymnNumber) && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber')) === false && (
-                  <p className="text-sm text-red-600 mt-1">Invalid {getSongTypeForField('sacramentHymnNumber') === 'hymn' ? 'hymn' : 'song'} number</p>
+                {Boolean(data.musicProgram.sacramentHymnNumber) && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber'), currentLang) === false && (
+                  <p className="text-sm text-red-600 mt-1">{getSongTypeForField('sacramentHymnNumber') === 'hymn' ? t('form.invalidHymnNumber') : t('form.invalidSongNumber')}</p>
                 )}
               </div>
               <div className="relative hymn-search-container">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sacrament Hymn Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.sacramentHymnTitle')}</label>
                 <input
                   type="text"
                   value={data.musicProgram.sacramentHymnTitle || ''}
@@ -1179,9 +1184,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       handleHymnTitleSearch('sacramentHymnNumber', data.musicProgram.sacramentHymnTitle);
                     }
                   }}
-                  placeholder="Search for hymn title or enter manually"
+                  placeholder={t('form.searchHymnPlaceholder')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    data.musicProgram.sacramentHymnNumber && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber'))
+                    data.musicProgram.sacramentHymnNumber && isValidSongNumber(data.musicProgram.sacramentHymnNumber, getSongTypeForField('sacramentHymnNumber'), currentLang)
                       ? 'border-green-300 bg-green-50'
                       : 'border-gray-300'
                   }`}
@@ -1209,7 +1214,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Closing Hymn Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.closingHymnNumber')}</label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
@@ -1220,7 +1225,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Hymns
+                    {t('form.hymns')}
                   </button>
                   <button
                     type="button"
@@ -1231,7 +1236,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Children's Songs
+                    {t('form.childrensSongs')}
                   </button>
                 </div>
                 <input
@@ -1240,17 +1245,17 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   onChange={(e) => handleHymnNumberChange('closingHymnNumber', e.target.value)}
                   placeholder={getPlaceholderForField('closingHymnNumber')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    Boolean(data.musicProgram.closingHymnNumber) && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber')) === false
+                    Boolean(data.musicProgram.closingHymnNumber) && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber'), currentLang) === false
                       ? 'border-red-300 bg-red-50'
                       : 'border-gray-300'
                   }`}
                 />
-                {Boolean(data.musicProgram.closingHymnNumber) && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber')) === false && (
-                  <p className="text-sm text-red-600 mt-1">Invalid {getSongTypeForField('closingHymnNumber') === 'hymn' ? 'hymn' : 'song'} number</p>
+                {Boolean(data.musicProgram.closingHymnNumber) && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber'), currentLang) === false && (
+                  <p className="text-sm text-red-600 mt-1">{getSongTypeForField('closingHymnNumber') === 'hymn' ? t('form.invalidHymnNumber') : t('form.invalidSongNumber')}</p>
                 )}
               </div>
               <div className="relative hymn-search-container">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Closing Hymn Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.closingHymnTitle')}</label>
                 <input
                   type="text"
                   value={data.musicProgram.closingHymnTitle || ''}
@@ -1263,9 +1268,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       handleHymnTitleSearch('closingHymnNumber', data.musicProgram.closingHymnTitle);
                     }
                   }}
-                  placeholder="Search for hymn title or enter manually"
+                  placeholder={t('form.searchHymnPlaceholder')}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    data.musicProgram.closingHymnNumber && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber'))
+                    data.musicProgram.closingHymnNumber && isValidSongNumber(data.musicProgram.closingHymnNumber, getSongTypeForField('closingHymnNumber'), currentLang)
                       ? 'border-green-300 bg-green-50'
                       : 'border-gray-300'
                   }`}
@@ -1295,25 +1300,25 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
           {/* Prayers */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Prayers</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('form.prayers')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Invocation</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.invocation')}</label>
                 <input
                   type="text"
                   value={data.prayers.opening || ''}
                   onChange={(e) => updateField('prayers', { ...data.prayers, opening: e.target.value })}
-                  placeholder="Invocation name"
+                  placeholder={t('form.invocationNamePlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Benediction</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.benediction')}</label>
                 <input
                   type="text"
                   value={data.prayers.closing || ''}
                   onChange={(e) => updateField('prayers', { ...data.prayers, closing: e.target.value })}
-                  placeholder="Benediction name"
+                  placeholder={t('form.benedictionNamePlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -1322,31 +1327,31 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
 
           {/* Agenda */}
           <section className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Agenda</h3>
+            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">{t('form.agenda')}</h3>
             <div className="space-y-3">
             {data.agenda.map((item, idx) => (
               <div key={item.id} className="bg-gray-50 p-4 rounded-lg flex flex-wrap gap-2 items-center">
                 {item.type === 'testimony' ? (
                   <div className="w-full space-y-2">
-                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">Bearing of Testimonies</span>
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.bearingOfTestimonies')}</span>
                     <input
                       type="text"
                       value={item.note || ''}
                       onChange={e => updateAgendaItem(item.id, { note: e.target.value })}
-                      placeholder="e.g., Youth after FSY"
+                      placeholder={t('form.youthPerformerPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 ) : item.type === 'sacrament' ? (
                   <div className="w-full flex items-center justify-center">
-                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">Administration of the Sacrament</span>
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.administrationOfSacrament')}</span>
                   </div>
                 ) : item.type === 'speaker' ? (
                   <>
-                    <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder="Speaker name" className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
+                    <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder={t('form.speakerName')} className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
                     <select value={item.speakerType || 'adult'} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
-                      <option value="youth">Youth Speaker</option>
-                      <option value="adult">Speaker</option>
+                      <option value="youth">{t('bulletin.youthSpeaker')}</option>
+                      <option value="adult">{t('bulletin.speaker')}</option>
                     </select>
                   </>
                 ) : (
@@ -1362,7 +1367,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        Hymns
+                        {t('form.hymns')}
                       </button>
                       <button
                         type="button"
@@ -1373,7 +1378,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                       >
-                        Children's Songs
+                        {t('form.childrensSongs')}
                       </button>
                     </div>
 
@@ -1384,8 +1389,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         onChange={e => updateAgendaItem(item.id, { label: e.target.value })}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="Musical Number">Musical Number</option>
-                        <option value="Intermediate Hymn">Intermediate Hymn</option>
+                        <option value="Musical Number">{t('bulletin.musicalNumber')}</option>
+                        <option value="Intermediate Hymn">{t('form.intermediateHymn')}</option>
                       </select>
                     </div>
 
@@ -1449,23 +1454,23 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     {/* Additional Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Song Name (if not hymn)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.songNameIfNotHymn')}</label>
                         <input
                           type="text"
                           value={item.songName || ''}
                           onChange={e => updateAgendaItem(item.id, { songName: e.target.value })}
-                          placeholder="e.g., Special musical number"
+                          placeholder={t('form.specialMusicalPlaceholder')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Performers (optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.performersOptional')}</label>
                         <input
                           type="text"
                           value={item.performers || ''}
                           onChange={e => updateAgendaItem(item.id, { performers: e.target.value })}
-                          placeholder="e.g., Primary children"
+                          placeholder={t('form.performerPlaceholder')}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
@@ -1486,28 +1491,28 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 onClick={() => handleAddSection('speaker')}
                 className="px-4 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors flex-1"
               >
-                Add Speaker
+                {t('form.addSpeaker')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('musical')}
                 className="px-4 py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors flex-1"
               >
-                Add Musical Number
+                {t('form.addMusicalNumber')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('testimony')}
                 className="px-4 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors flex-1"
               >
-                Add Testimonies
+                {t('form.addTestimonies')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('sacrament')}
                 className="px-4 py-3 bg-orange-600 text-white rounded-lg text-base font-medium hover:bg-orange-700 transition-colors flex-1"
               >
-                Add Sacrament
+                {t('form.addSacrament')}
               </button>
             </div>
           </section>
@@ -1518,14 +1523,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
           {/* Announcements Section */}
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="text-lg font-medium text-gray-900">Announcements</h3>
+              <h3 className="text-lg font-medium text-gray-900">{t('bulletin.announcements')}</h3>
               {data.announcements.length > 1 && (
                 <button
                   onClick={consolidateAnnouncements}
                   className="px-4 py-2 text-base bg-blue-600 text-white rounded hover:bg-blue-700"
-                  title="Group multiple announcements by their target audience (Ward, Relief Society, etc.) into single consolidated entries. Original titles will be preserved as headers within the content."
+                  title={t('form.consolidateTooltip')}
                 >
-                  Consolidate
+                  {t('form.consolidate')}
                 </button>
               )}
             </div>
@@ -1539,14 +1544,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-blue-900 mb-1">💡 New: {getUnitLabel()} Member Submissions</h4>
+                  <h4 className="text-sm font-medium text-blue-900 mb-1">💡 {t('form.newMemberSubmissions', { unit: getTranslatedUnitLabel(t) })}</h4>
                   <p className="text-sm text-blue-800 mb-2">
-                    {getUnitLabel()} members can now submit announcements directly! Share your submissions link with the {getUnitLowercase()} to let them add announcements that you can review and approve.
+                    {t('form.membersCanSubmit', { unit: getTranslatedUnitLabel(t), unitLower: getTranslatedUnitLowercase(t) })}
                   </p>
                   <div className="flex items-center space-x-2 text-sm text-blue-700">
-                    <span>📋 Get your submissions link from the QR Code modal</span>
+                    <span>📋 {t('form.getSubmissionsLinkFromQr')}</span>
                     <span>•</span>
-                    <span>✅ Review submissions in the toolbar</span>
+                    <span>✅ {t('form.reviewSubmissionsInToolbar')}</span>
                   </div>
                 </div>
               </div>
@@ -1595,7 +1600,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               );
                               updateField('announcements', updated);
                             }}
-                            placeholder="Enter section label (optional)"
+                            placeholder={t('form.sectionLabelPlaceholder')}
                             className="text-lg font-semibold text-gray-900 border border-gray-300 bg-white rounded px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent max-w-xs"
                           />
                         ) : (
@@ -1627,7 +1632,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             <Plus className="w-4 h-4 mr-1" />
-                            Add Title
+                            {t('form.addTitle')}
                           </button>
                         )}
                         {/* Remove Type button - only for empty grouped sections */}
@@ -1640,7 +1645,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             }}
                             className="px-3 py-1.5 text-red-600 text-sm rounded-lg hover:bg-red-50 transition-colors border border-red-200"
                           >
-                            Remove Type
+                            {t('form.removeType')}
                           </button>
                         )}
                       </div>
@@ -1649,13 +1654,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     {/* Announcement Titles under this Type */}
                     {announcements.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
-                        <p className="mb-2">No announcements yet for {audienceLabel}</p>
+                        <p className="mb-2">{t('form.noAnnouncementsYetFor', { audience: audienceLabel })}</p>
                         <button
                           type="button"
                           onClick={() => addAnnouncementToType(audience)}
                           className="text-blue-600 hover:text-blue-800 underline"
                         >
-                          Add your first announcement
+                          {t('form.addYourFirstAnnouncement')}
                         </button>
                       </div>
                     ) : (
@@ -1669,7 +1674,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   type="text"
                                   value={announcement.title}
                                   onChange={(e) => updateAnnouncement(announcement.id, 'title', e.target.value)}
-                                  placeholder="Announcement title"
+                                  placeholder={t('form.announcementTitlePlaceholder')}
                                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                                 />
                               </div>
@@ -1687,9 +1692,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   }}
                                   disabled={data.announcements.findIndex(a => a.id === announcement.id) === 0}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                                  title="Move up"
+                                  title={t('form.moveUp')}
                                 >
-                                  ↑ Up
+                                  ↑ {t('form.up')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -1702,9 +1707,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   }}
                                   disabled={data.announcements.findIndex(a => a.id === announcement.id) === data.announcements.length - 1}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                                  title="Move down"
+                                  title={t('form.moveDown')}
                                 >
-                                  ↓ Down
+                                  ↓ {t('form.down')}
                                 </button>
                                 {/* Make Standalone button - only show for grouped announcements */}
                                 {!isStandalone && (
@@ -1720,44 +1725,44 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                       updateField('announcements', updated);
                                     }}
                                     className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:bg-gray-100 text-sm rounded-lg transition-colors border border-gray-200"
-                                    title="Separate this announcement from the group"
+                                    title={t('form.makeStandalone')}
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                     </svg>
-                                    Make Standalone
+                                    {t('form.makeStandalone')}
                                   </button>
                                 )}
                                 <button
                                   type="button"
                                   onClick={() => convertToRecurring(announcement)}
                                   className="px-2 py-1 flex items-center gap-1 text-green-600 hover:bg-green-100 text-sm rounded-lg transition-colors border border-green-200"
-                                  title="Convert to recurring announcement"
+                                  title={t('form.saveAsRecurring')}
                                 >
                                   <RotateCcw className="w-4 h-4" />
-                                  Save as Recurring
+                                  {t('form.saveAsRecurring')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => removeAnnouncement(announcement.id)}
                                   className="px-2 py-1 flex items-center gap-1 text-red-600 hover:bg-red-100 text-sm rounded-lg transition-colors border border-red-200"
-                                  title="Delete announcement"
+                                  title={t('common.delete')}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                   </svg>
-                                  Delete
+                                  {t('common.delete')}
                                 </button>
                               </div>
                               <HtmlEditor
                                 value={announcement.content}
                                 onChange={(value) => updateAnnouncement(announcement.id, 'content', value || '')}
-                                placeholder="Enter announcement content..."
+                                placeholder={t('form.announcementContentPlaceholder')}
                               />
                   
                   {/* Announcement Image Section */}
                   <div className="mt-4 p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Announcement Images (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('form.announcementImages')}</label>
                     
                     {/* Display current images */}
                     {(announcement.images && announcement.images.length > 0) || (announcement.imageId && announcement.imageId !== 'none') ? (
@@ -1785,7 +1790,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                     onChange={(e) => updateAnnouncement(announcement.id, 'hideImageOnPrint', e.target.checked)}
                                     className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                   />
-                                  <span className="ml-1">Hide from print</span>
+                                  <span className="ml-1">{t('form.hideFromPrint')}</span>
                                 </label>
                                 <button
                                   type="button"
@@ -1856,7 +1861,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                         }}
                                         className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                       />
-                                      <span className="ml-1">Hide from print</span>
+                                      <span className="ml-1">{t('form.hideFromPrint')}</span>
                                     </label>
                                     
                                     <label className="flex items-center text-xs">
@@ -1973,7 +1978,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-base"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add Announcement
+                  {t('form.addAnnouncement')}
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1982,7 +1987,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                     <div className="py-2">
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b">
-                        Grouped by Type
+                        {t('form.groupedByType')}
                       </div>
                       {audienceOptions.filter(opt => opt.value !== 'standalone').map(opt => (
                         <button
@@ -1998,7 +2003,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       ))}
                       <div className="border-t my-1"></div>
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        No Grouping
+                        {t('form.noGrouping')}
                       </div>
                       <button
                         onClick={() => {
@@ -2007,7 +2012,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium"
                       >
-                        Standalone Announcement
+                        {t('form.standaloneAnnouncement')}
                       </button>
                     </div>
                   </div>
@@ -2018,10 +2023,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 onClick={() => setShowRecurringAnnouncements(true)}
                 disabled={!profileSlug}
                 className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                title={!profileSlug ? 'Please set up your profile first' : 'Manage recurring announcements'}
+                title={!profileSlug ? t('qrCode.createYourProfile') : t('form.recurringAnnouncements')}
               >
                 <Repeat className="w-4 h-4 mr-1" />
-                Recurring Announcements
+                {t('form.recurringAnnouncements')}
               </button>
             </div>
           </section>
@@ -2031,17 +2036,17 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
         <>
           {/* Ward Leadership Section */}
           <section className="space-y-4">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{getUnitLeadershipLabel()}
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t) })}
               <div className="flex flex-col items-end ml-2">
                 <button
                   type="button"
                   onClick={() => saveDefault('wardLeadership', data.wardLeadership)}
                   className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
-                  title="Save as default"
+                  title={t('form.saveAsDefault')}
                 >
-                  Save as default
+                  {t('form.saveAsDefault')}
                 </button>
-                <span className="text-sm text-gray-500 mt-1">Saves title, name, and phone for each row as your template.</span>
+                <span className="text-sm text-gray-500 mt-1">{t('form.savesAsYourTemplate')}</span>
               </div>
             </h3>
             
@@ -2050,9 +2055,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               <table className="min-w-full border text-sm rounded-lg overflow-hidden bg-white shadow-sm">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="px-3 py-2 border-b text-sm">Title</th>
-                    <th className="px-3 py-2 border-b text-sm">Name</th>
-                    <th className="px-3 py-2 border-b text-sm">Contact</th>
+                    <th className="px-3 py-2 border-b text-sm">{t('form.title')}</th>
+                    <th className="px-3 py-2 border-b text-sm">{t('form.name')}</th>
+                    <th className="px-3 py-2 border-b text-sm">{t('form.contact')}</th>
                     <th className="px-3 py-2 border-b text-sm"></th>
                   </tr>
                 </thead>
@@ -2103,9 +2108,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('wardLeadership', updated);
                           }}
                           className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                          title="Remove"
+                          title={t('common.remove')}
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </td>
                     </tr>
@@ -2120,7 +2125,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Title</label>
+                      <label className="block text-base font-medium text-gray-700 mb-2">{t('form.title')}</label>
                       <input
                         type="text"
                         value={entry.title}
@@ -2133,7 +2138,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       />
                     </div>
                     <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Name</label>
+                      <label className="block text-base font-medium text-gray-700 mb-2">{t('form.name')}</label>
                       <input
                         type="text"
                         value={entry.name}
@@ -2146,7 +2151,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       />
                     </div>
                     <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Contact</label>
+                      <label className="block text-base font-medium text-gray-700 mb-2">{t('form.contact')}</label>
                       <input
                         type="text"
                         value={entry.phone || ''}
@@ -2181,23 +2186,23 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               onClick={() => updateField('wardLeadership', [...data.wardLeadership, { title: '', name: '', phone: '' }])}
               className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-base"
             >
-              Add Leadership Position
+              {t('form.addLeadershipPosition')}
             </button>
           </section>
 
           {/* Missionaries Section */}
           <section className="space-y-4 mt-8">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">Missionaries
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{t('form.missionaries')}
               <div className="flex flex-col items-end ml-2">
                 <button
                   type="button"
                   onClick={() => saveDefault('missionaries', data.missionaries)}
                   className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
-                  title="Save as default"
+                  title={t('form.saveAsDefault')}
                 >
-                  Save as default
+                  {t('form.saveAsDefault')}
                 </button>
-                <span className="text-sm text-gray-500 mt-1">Saves all missionary information as your template.</span>
+                <span className="text-sm text-gray-500 mt-1">{t('form.savesAllInfoAsTemplate')}</span>
               </div>
             </h3>
             
@@ -2206,8 +2211,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               <table className="min-w-full border text-sm rounded-lg overflow-hidden bg-white shadow-sm">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="px-3 py-2 border-b text-sm">Name</th>
-                    <th className="px-3 py-2 border-b text-sm">Contact</th>
+                    <th className="px-3 py-2 border-b text-sm">{t('form.name')}</th>
+                    <th className="px-3 py-2 border-b text-sm">{t('form.contact')}</th>
                     <th className="px-3 py-2 border-b text-sm"></th>
                   </tr>
                 </thead>
@@ -2224,7 +2229,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('missionaries', updated);
                           }}
                           className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Missionary name"
+                          placeholder={t('form.missionaryNamePlaceholder')}
                         />
                       </td>
                       <td className="border-b px-3 py-2">
@@ -2237,7 +2242,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('missionaries', updated);
                           }}
                           className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Contact info (phone, email, etc.)"
+                          placeholder={t('form.contactInfoPlaceholder')}
                         />
                       </td>
                       <td className="border-b px-3 py-2 text-center">
@@ -2248,9 +2253,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('missionaries', updated);
                           }}
                           className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                          title="Remove"
+                          title={t('common.remove')}
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </td>
                     </tr>
@@ -2265,7 +2270,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Name</label>
+                      <label className="block text-base font-medium text-gray-700 mb-2">{t('form.name')}</label>
                       <input
                         type="text"
                         value={entry.name}
@@ -2275,11 +2280,11 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Missionary name"
+                        placeholder={t('form.missionaryNamePlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="block text-base font-medium text-gray-700 mb-2">Contact</label>
+                      <label className="block text-base font-medium text-gray-700 mb-2">{t('form.contact')}</label>
                       <input
                         type="text"
                         value={entry.phone || ''}
@@ -2289,7 +2294,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-3 py-3 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Phone number"
+                        placeholder={t('form.phoneNumberPlaceholder')}
                       />
                     </div>
                     <div className="pt-2">
@@ -2315,14 +2320,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               onClick={() => updateField('missionaries', [...data.missionaries, { name: '', phone: '' }])}
               className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-base"
             >
-              Add Missionary
+              {t('form.addMissionary')}
             </button>
           </section>
 
           {/* Missionaries from our ward Section */}
           <section className="space-y-4 mt-8">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="text-xl font-medium text-gray-900">{getUnitMissionariesLabel()}</h3>
+              <h3 className="text-xl font-medium text-gray-900">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t) })}</h3>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -2339,20 +2344,20 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     updateField('wardMissionaries', updated);
                   }}
                   className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 border border-blue-300 font-medium"
-                  title="Sort by return date (earliest first)"
+                  title={t('form.sortByReturnDate')}
                 >
-                  Sort by Return Date
+                  {t('form.sortByReturnDate')}
                 </button>
                 <div className="flex flex-col items-end">
                   <button
                     type="button"
                     onClick={() => saveDefault('wardMissionaries', data.wardMissionaries)}
                     className="px-3 py-1.5 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300"
-                    title="Save as default"
+                    title={t('form.saveAsDefault')}
                   >
-                    Save as default
+                    {t('form.saveAsDefault')}
                   </button>
-                  <span className="text-xs text-gray-500 mt-1">Saves as template</span>
+                  <span className="text-xs text-gray-500 mt-1">{t('form.savesAsYourTemplate')}</span>
                 </div>
               </div>
             </div>
@@ -2361,13 +2366,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             <div className="hidden md:block space-y-4">
               {data.wardMissionaries.length === 0 ? (
                 <div className="bg-white border rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-3">No missionaries added yet.</p>
+                  <p className="text-gray-500 mb-3">{t('form.noMissionariesAdded')}</p>
                   <button
                     type="button"
                     onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
                     className="text-blue-600 hover:text-blue-800 underline font-medium"
                   >
-                    Add your first missionary
+                    {t('form.addFirstMissionary')}
                   </button>
                 </div>
               ) : (
@@ -2412,7 +2417,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                              placeholder="Missionary name"
+                              placeholder={t('form.missionaryNamePlaceholder')}
                             />
                           </div>
                           <div>
@@ -2426,7 +2431,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Mission name"
+                              placeholder={t('form.missionNamePlaceholder')}
                             />
                           </div>
                           <div>
@@ -2440,7 +2445,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Email address"
+                              placeholder={t('form.emailPlaceholder')}
                             />
                           </div>
                         </div>
@@ -2458,7 +2463,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Set apart date"
+                              placeholder={t('form.setApartDatePlaceholder')}
                             />
                           </div>
                           <div>
@@ -2473,7 +2478,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   updateField('wardMissionaries', updated);
                                 }}
                                 className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Expected return date"
+                                placeholder={t('form.expectedReturnPlaceholder')}
                               />
                               {getReturnStatusBadge()}
                             </div>
@@ -2503,13 +2508,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             <div className="md:hidden space-y-4">
               {data.wardMissionaries.length === 0 ? (
                 <div className="bg-white border rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-3">No missionaries added yet.</p>
+                  <p className="text-gray-500 mb-3">{t('form.noMissionariesAdded')}</p>
                   <button
                     type="button"
                     onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
                     className="text-blue-600 hover:text-blue-800 underline font-medium"
                   >
-                    Add your first missionary
+                    {t('form.addFirstMissionary')}
                   </button>
                 </div>
               ) : (
@@ -2552,7 +2557,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                            placeholder="Missionary name"
+                            placeholder={t('form.missionaryNamePlaceholder')}
                           />
                         </div>
                         <div>
@@ -2566,7 +2571,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Mission name"
+                            placeholder={t('form.missionNamePlaceholder')}
                           />
                         </div>
                         <div>
@@ -2580,7 +2585,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Set apart date"
+                            placeholder={t('form.setApartDatePlaceholder')}
                           />
                         </div>
                         <div>
@@ -2594,7 +2599,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Expected return date"
+                            placeholder={t('form.expectedReturnPlaceholder')}
                           />
                           {getReturnStatusBadge()}
                         </div>
@@ -2609,7 +2614,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Email address"
+                            placeholder={t('form.emailPlaceholder')}
                           />
                         </div>
                         <div className="pt-2">
@@ -2638,25 +2643,25 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               className="mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4 inline mr-2" />
-              Add {getUnitLabel()} Missionary
+              {t('form.addUnitMissionary', { unit: getTranslatedUnitLabel(t) })}
             </button>
           </section>
 
           {/* Service Missionaries Section */}
           <section className="space-y-4 mt-8">
-            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">Service Missionaries</h3>
+            <h3 className="text-xl font-medium text-gray-900 border-b pb-2">{t('form.serviceMissionaries')}</h3>
             
             {/* Desktop view - Card layout matching Ward Missionaries */}
             <div className="hidden md:block space-y-4">
               {(!data.serviceMissionaries || data.serviceMissionaries.length === 0) ? (
                 <div className="bg-white border rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-3">No service missionaries added yet.</p>
+                  <p className="text-gray-500 mb-3">{t('form.noServiceMissionariesAdded')}</p>
                   <button
                     type="button"
                     onClick={() => updateField('serviceMissionaries', [...(data.serviceMissionaries || []), { name: '', serviceName: '' }])}
                     className="text-blue-600 hover:text-blue-800 underline font-medium"
                   >
-                    Add your first service missionary
+                    {t('form.addFirstServiceMissionary')}
                   </button>
                 </div>
               ) : (
@@ -2666,7 +2671,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       {/* Left Column */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Name(s)</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.names')}</label>
                           <input
                             type="text"
                             value={entry.name || ''}
@@ -2676,7 +2681,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('serviceMissionaries', updated);
                             }}
                             className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                            placeholder="Elder and Sister Jones"
+                            placeholder={t('form.seniorMissionaryPlaceholder')}
                           />
                         </div>
                       </div>
@@ -2684,7 +2689,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       {/* Right Column */}
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Calling</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.calling')}</label>
                           <input
                             type="text"
                             value={entry.serviceName || ''}
@@ -2694,7 +2699,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('serviceMissionaries', updated);
                             }}
                             className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="e.g., Senior Missionary Mentors"
+                            placeholder={t('form.seniorMissionaryRolePlaceholder')}
                           />
                         </div>
                         <div className="pt-2">
@@ -2707,7 +2712,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
                             title="Remove"
                           >
-                            Remove Missionary
+                            {t('form.removeMissionary')}
                           </button>
                         </div>
                       </div>
@@ -2721,13 +2726,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             <div className="md:hidden space-y-4">
               {(!data.serviceMissionaries || data.serviceMissionaries.length === 0) ? (
                 <div className="bg-white border rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-3">No service missionaries added yet.</p>
+                  <p className="text-gray-500 mb-3">{t('form.noServiceMissionariesAdded')}</p>
                   <button
                     type="button"
                     onClick={() => updateField('serviceMissionaries', [...(data.serviceMissionaries || []), { name: '', serviceName: '' }])}
                     className="text-blue-600 hover:text-blue-800 underline font-medium"
                   >
-                    Add your first service missionary
+                    {t('form.addFirstServiceMissionary')}
                   </button>
                 </div>
               ) : (
@@ -2745,7 +2750,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('serviceMissionaries', updated);
                           }}
                           className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                          placeholder="Elder and Sister Jones"
+                          placeholder={t('form.seniorMissionaryPlaceholder')}
                         />
                       </div>
                       <div>
@@ -2759,7 +2764,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('serviceMissionaries', updated);
                           }}
                           className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="e.g., Senior Missionary Mentors"
+                          placeholder={t('form.seniorMissionaryRolePlaceholder')}
                         />
                       </div>
                       <div className="pt-2">
@@ -2770,9 +2775,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             updateField('serviceMissionaries', updated);
                           }}
                           className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                          title="Remove"
+                          title={t('common.remove')}
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </div>
                     </div>
@@ -2787,7 +2792,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               className="mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
             >
               <Plus className="w-4 h-4 inline mr-2" />
-              Add Service Missionary
+              {t('form.addServiceMissionary')}
             </button>
           </section>
         </>
@@ -2817,9 +2822,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   </svg>
                 </div>
                 <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">Delete Custom Image</h3>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">{t('form.deleteImage')}</h3>
                   <div className="mt-2">
-                    <p className="text-sm text-gray-500">Are you sure you want to delete this custom image? This action cannot be undone.</p>
+                    <p className="text-sm text-gray-500">{t('modals.thisActionCannotBeUndone')}</p>
                   </div>
                 </div>
               </div>
@@ -2829,14 +2834,14 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   onClick={confirmDeleteImage}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
                 >
-                  Delete
+                  {t('common.delete')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDeleteImageConfirm({ show: false, imageId: null })}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

@@ -7,6 +7,8 @@ interface UserProfile {
   profile_slug: string | null;
   role: string;
   active_bulletin_id: string | null;
+  unit_type: 'ward' | 'branch';
+  language: string;
 }
 
 interface SessionContextValue {
@@ -59,7 +61,16 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         const data = await userService.getUserProfile(session.user.id);
         if (data && data.length > 0) {
-          setProfile(data[0] as UserProfile);
+          const userProfile = data[0] as UserProfile;
+          setProfile(userProfile);
+
+          // Sync localStorage with database value for unit_type
+          if (userProfile.unit_type && typeof window !== 'undefined') {
+            const currentLocalStorage = localStorage.getItem('selectedUnitType');
+            if (currentLocalStorage !== userProfile.unit_type) {
+              localStorage.setItem('selectedUnitType', userProfile.unit_type);
+            }
+          }
         } else {
           setProfile(null);
         }
