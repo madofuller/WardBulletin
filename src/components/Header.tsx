@@ -73,7 +73,7 @@ export default function Header({
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-600">{t('header.bulletinCreator', { unit: getTranslatedUnitLabel(t) })}</p>
                 {currentProfileSlug && (
-                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium" title={t('header.currentlyViewingProfile', { slug: currentProfileSlug })}>
+                  <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium truncate max-w-[150px]" title={t('header.currentlyViewingProfile', { slug: currentProfileSlug })}>
                     {t('header.profile')}: {currentProfileSlug}
                   </span>
                 )}
@@ -86,18 +86,18 @@ export default function Header({
             <LanguageSelector />
             <button
               onClick={handleNewBulletin}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-colors whitespace-nowrap"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {t('common.newBulletin')}
+              <Plus className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span className="truncate">{t('common.newBulletin')}</span>
             </button>
             {!onlyNewBulletin && !hideExportPDF && (
               <button
                 onClick={handleExportPDF}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-full hover:bg-green-700 transition-colors whitespace-nowrap"
               >
-                <Download className="w-4 h-4 mr-2" />
-                {t('common.exportPdf')}
+                <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.exportPdf')}</span>
               </button>
             )}
             {!onlyNewBulletin && bulletinData && onMakeActive && onScheduleBulletin && onSaveAsTemplate && (
@@ -114,11 +114,11 @@ export default function Header({
             {!onlyNewBulletin && !hideQRCode && (
               <button
                 onClick={() => setShowQRCode(!showQRCode)}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 bg-purple-600 text-white text-sm rounded-full hover:bg-purple-700 transition-colors whitespace-nowrap"
                 title={t('qrCode.printQrCode')}
               >
-                <QrCode className="w-4 h-4 mr-2" />
-                {t('common.myQrCode')}
+                <QrCode className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.myQrCode')}</span>
               </button>
             )}
             {!onlyNewBulletin && (user ? (
@@ -133,11 +133,11 @@ export default function Header({
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-full hover:bg-gray-700 transition-colors whitespace-nowrap"
                 title={t('common.signIn')}
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                {t('common.signIn')}
+                <LogIn className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                <span className="truncate">{t('common.signIn')}</span>
               </button>
             ))}
           </div>

@@ -34,7 +34,7 @@ export default function BulletinActions({
       <button
         onClick={onMakeActive}
         disabled={loading || isActive}
-        className={`inline-flex items-center px-4 py-2 rounded-full font-medium transition-colors ${
+        className={`inline-flex items-center px-3 py-2 rounded-full font-medium text-sm transition-colors whitespace-nowrap ${
           isActive
             ? 'bg-green-100 text-green-800 cursor-default'
             : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -43,13 +43,13 @@ export default function BulletinActions({
       >
         {isActive ? (
           <>
-            <CheckCircle className="w-4 h-4 mr-2" />
-            {t('bulletin.qrActive')}
+            <CheckCircle className="w-4 h-4 mr-1.5 flex-shrink-0" />
+            <span className="truncate">{t('bulletin.qrActive')}</span>
           </>
         ) : (
           <>
-            <Play className="w-4 h-4 mr-2" />
-            {t('bulletin.makeQrActive')}
+            <Play className="w-4 h-4 mr-1.5 flex-shrink-0" />
+            <span className="truncate">{t('bulletin.makeQrActive')}</span>
           </>
         )}
       </button>
@@ -59,11 +59,11 @@ export default function BulletinActions({
       <button
         onClick={onSaveAsTemplate}
         disabled={loading}
-        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm whitespace-nowrap"
         title={t('bulletin.saveAsTemplate')}
       >
-        <Archive className="w-4 h-4 mr-2" />
-        {t('bulletin.saveAsTemplate')}
+        <Archive className="w-4 h-4 mr-1.5 flex-shrink-0" />
+        <span className="truncate">{t('bulletin.saveAsTemplate')}</span>
       </button>
     </div>
   );

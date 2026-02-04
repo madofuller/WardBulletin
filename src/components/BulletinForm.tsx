@@ -938,9 +938,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-base font-medium text-gray-700 mb-2">{t('form.chorister')}</label>
-                <div className="flex items-center gap-1.5 mb-2 h-[34px]">
+                <div className="flex items-center gap-1.5 mb-2 min-h-[34px] flex-wrap">
                   <span
-                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Chorister' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                    className={`text-[11px] sm:text-xs font-medium cursor-pointer px-2 py-1 rounded-full border transition-colors ${choristerLabel === 'Chorister' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setChoristerLabel('Chorister');
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Chorister' });
@@ -949,7 +949,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     {t('form.chorister')}
                   </span>
                   <span
-                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${choristerLabel === 'Music Leader' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                    className={`text-[11px] sm:text-xs font-medium cursor-pointer px-2 py-1 rounded-full border transition-colors ${choristerLabel === 'Music Leader' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setChoristerLabel('Music Leader');
                       updateField('leadership', { ...data.leadership, choristerLabel: 'Music Leader' });
@@ -978,9 +978,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </div>
               <div>
                 <label className="block text-base font-medium text-gray-700 mb-2">{t('form.organist')}</label>
-                <div className="flex items-center gap-1.5 mb-2 h-[34px]">
+                <div className="flex items-center gap-1.5 mb-2 min-h-[34px] flex-wrap">
                   <span
-                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Organist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                    className={`text-[11px] sm:text-xs font-medium cursor-pointer px-2 py-1 rounded-full border transition-colors ${organistLabel === 'Organist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setOrganistLabel('Organist');
                       updateField('leadership', { ...data.leadership, organistLabel: 'Organist' });
@@ -989,7 +989,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     {t('form.organist')}
                   </span>
                   <span
-                    className={`text-xs font-medium cursor-pointer px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${organistLabel === 'Pianist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
+                    className={`text-[11px] sm:text-xs font-medium cursor-pointer px-2 py-1 rounded-full border transition-colors ${organistLabel === 'Pianist' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'}`}
                     onClick={() => {
                       setOrganistLabel('Pianist');
                       updateField('leadership', { ...data.leadership, organistLabel: 'Pianist' });
