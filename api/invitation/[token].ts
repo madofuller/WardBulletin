@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { defaultRateLimiter } from '../rate-limit';
-import { securityMonitor, validateInput } from '../../src/lib/security';
+import { defaultRateLimiter } from '../rate-limit.js';
+import { securityMonitor, validateInput } from '../../src/lib/security.js';
 
 // Get Supabase configuration from environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -16,9 +16,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const withTimeout = <T>(promise: Promise<T>, timeoutMs = 10000): Promise<T> => {
+const withTimeout = <T>(promiseLike: PromiseLike<T>, timeoutMs = 10000): Promise<T> => {
   return Promise.race([
-    promise,
+    Promise.resolve(promiseLike),
     new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Operation timed out')), timeoutMs)
     )
