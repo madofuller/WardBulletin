@@ -71,7 +71,7 @@ export default function Header({
             <div>
               <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600">{t('header.bulletinCreator', { unit: getTranslatedUnitLabel(t) })}</p>
+                <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
                 {currentProfileSlug && (
                   <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full font-medium truncate max-w-[150px]" title={t('header.currentlyViewingProfile', { slug: currentProfileSlug })}>
                     {t('header.profile')}: {currentProfileSlug}
