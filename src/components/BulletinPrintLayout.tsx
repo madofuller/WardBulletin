@@ -519,8 +519,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 return imageUrl ? (
                   <img
                     src={imageUrl}
-                    alt={t('bulletin.headerImage')}
+                    alt=""
                     className="max-w-full max-h-80 object-contain print:!max-h-96"
+                    onError={(e) => {
+                      // Hide broken images
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                 ) : null;
               })()}

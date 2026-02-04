@@ -128,13 +128,17 @@ function BulletinHeader({
       {image?.url && (
         <img
           src={image.url}
-          alt={image.name ?? ""}
+          alt=""
           className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
           style={{
             objectPosition: `${imagePosition.x}% ${imagePosition.y}%`,
             opacity: imageOpacity / 100
           }}
           crossOrigin="anonymous"
+          onError={(e) => {
+            // Hide broken images (may be deleted from storage)
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
         />
       )}
       <div className="relative z-10 p-12">
