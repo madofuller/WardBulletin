@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { decodeHtml } from '../lib/decodeHtml';
@@ -309,6 +309,57 @@ function shortenMissionName(missionName: string): string {
 const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
   const { user, profile } = useSession();
   const { t, i18n } = useTranslation();
+  const backCoverRef = useRef<HTMLDivElement>(null);
+  const announcementsRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
+
+  // Detect when content is cut off (overflow hidden) so we can warn in preview
+  useEffect(() => {
+    const check = () => {
+      let backCover = false;
+      let announcements = false;
+      if (backCoverRef.current) {
+        const el = backCoverRef.current;
+        backCover = el.scrollHeight > el.clientHeight;
+      }
+      if (announcementsRef.current) {
+        const el = announcementsRef.current;
+        announcements = el.scrollHeight > el.clientHeight;
+      }
+      setOverflow(prev => (prev.backCover === backCover && prev.announcements === announcements) ? prev : { backCover, announcements });
+    };
+    const t1 = setTimeout(check, 150);
+    const t2 = setTimeout(check, 500);
+    const ro = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => setTimeout(check, 80))
+      : null;
+    const raf = requestAnimationFrame(() => {
+      if (backCoverRef.current) ro?.observe(backCoverRef.current);
+      if (announcementsRef.current) ro?.observe(announcementsRef.current);
+    });
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+    };
+  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint]);
+
+  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large (scales text without shifting layout)
+  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
+    ? data.printFontScale
+    : 1;
+  const scalePx = (px: number) => `${Math.round(px * fontScale)}px`;
+
+  // Tighter margins to fit more announcements on the page
+  const tight = !!data.printTightMargins;
+  const pad = {
+    page: tight ? 'pl-8 pr-4 py-4' : 'pl-16 pr-8 py-8',
+    pageLeft: tight ? 'px-4 py-4 pr-8' : 'px-8 py-6 pr-16',
+    announcementsGap: tight ? 'gap-2' : 'gap-4',
+    announcementsList: tight ? 'space-y-1' : 'space-y-1.5',
+    sectionMb: tight ? 'mb-1' : 'mb-2'
+  };
 
   // Dynamic audience labels based on terminology
   const getAudienceLabel = (audience: string): string => {
@@ -342,8 +393,26 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   const selectedTheme = themes.find(t => t.name === data.userTheme);
 
+  const hasOverflow = overflow.backCover || overflow.announcements;
+
   return (
-    <div ref={ref} className="print-layout font-sans" style={{ fontFamily: selectedTheme ? selectedTheme.fontFamily : 'sans-serif' }}>
+    <div
+      ref={ref}
+      className="print-layout font-sans"
+      style={{
+        fontFamily: selectedTheme ? selectedTheme.fontFamily : 'sans-serif',
+        fontSize: `${fontScale * 100}%`
+      }}
+    >
+      {hasOverflow && (
+        <div className="print-overflow-warning mb-3 p-3 bg-amber-100 border border-amber-300 rounded-lg text-amber-900 text-sm print:!hidden" role="status">
+          {overflow.backCover && overflow.announcements
+            ? t('printPreview.contentCutOffBoth')
+            : overflow.backCover
+              ? t('printPreview.contentCutOffBackCover')
+              : t('printPreview.contentCutOffAnnouncements')}
+        </div>
+      )}
       {/* Page 1: Outside (landscape) */}
       <div
         ref={refs?.page1}
@@ -351,13 +420,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         style={{ pageBreakAfter: 'always' }}
       >
                  {/* Back Cover (left) - Unit Information */}
-          <div className="w-1/2 px-8 py-6 flex flex-col justify-between text-left print:!text-sm print:!text-black pr-16">
+          <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.pageLeft}`}>
            {/* Scrollable content area - reserves space for QR code if enabled */}
-           <div className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
+           <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
               {/* Unit Leadership Table */}
               {filteredWardLeadership.length > 0 && (
-                <div className="w-full mb-2">
-                  <h2 className="text-lg font-bold mb-2 print:!text-lg print:!text-black w-full text-center">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
+                <div className={`w-full ${pad.sectionMb}`}>
+                  <h2 className={`text-lg font-bold print:!text-lg print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`}>{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
                    <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                      <tbody>
                        {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
@@ -379,8 +448,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries Table */}
               {filteredMissionaries.length > 0 && (
-                <div className="w-full mb-2">
-                  <h3 className="text-sm font-semibold mb-1 print:!text-sm print:!text-black">{t('bulletin.missionaries').toUpperCase()}</h3>
+                <div className={`w-full ${pad.sectionMb}`}>
+                  <h3 className={`text-sm font-semibold print:!text-sm print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.missionaries').toUpperCase()}</h3>
                   <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
                     <tbody>
                       {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
@@ -401,20 +470,20 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries from our ward */}
               {filteredWardMissionaries.length > 0 && (
-                <div className="w-full mb-1">
-                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
+                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
+                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
                   {(() => {
                     const missionaryCount = filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = '9px';
+                    let fontSize = scalePx(9);
                     if (missionaryCount <= 3) {
-                      fontSize = '11px';
+                      fontSize = scalePx(11);
                     } else if (missionaryCount <= 6) {
-                      fontSize = '10px';
+                      fontSize = scalePx(10);
                     } else if (missionaryCount <= 10) {
-                      fontSize = '9px';
+                      fontSize = scalePx(9);
                     } else {
-                      fontSize = '8px';
+                      fontSize = scalePx(8);
                     }
                     
                     return (
@@ -449,20 +518,20 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Service Missionaries */}
               {filteredServiceMissionaries.length > 0 && (
-                <div className="w-full mb-1">
-                  <h3 className="text-xs font-semibold mb-1 print:!text-xs print:!text-black">{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
+                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
+                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
                   {(() => {
                     const serviceMissionaryCount = filteredServiceMissionaries.length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = '9px';
+                    let fontSize = scalePx(9);
                     if (serviceMissionaryCount <= 3) {
-                      fontSize = '11px';
+                      fontSize = scalePx(11);
                     } else if (serviceMissionaryCount <= 6) {
-                      fontSize = '10px';
+                      fontSize = scalePx(10);
                     } else if (serviceMissionaryCount <= 10) {
-                      fontSize = '9px';
+                      fontSize = scalePx(9);
                     } else {
-                      fontSize = '8px';
+                      fontSize = scalePx(8);
                     }
 
                     return (
@@ -503,7 +572,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
          </div>
 
         {/* Front Cover (right) */}
-        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
+        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.page}`}>
           <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
           <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
           <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
@@ -537,12 +606,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
       {/* Page 2: Inside (landscape) */}
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
-        {/* Announcements (left) - Unit Information */}
-        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-between text-left print:!text-xl print:!text-black">
-          <div className="flex-1 overflow-y-hidden">
+        {/* Announcements (left) */}
+        <div className={`w-1/2 flex flex-col justify-between text-left print:!text-xl print:!text-black ${pad.page}`}>
+          <div ref={announcementsRef} className="flex-1 overflow-y-hidden">
             {/* Announcements Section - Optimized for Print */}
-            <div className="w-full mb-2">
-              <h2 className="text-lg font-bold mb-2 print:!text-xl print:!text-black w-full text-center">{t('printPreview.announcementsAndEvents')}</h2>
+            <div className={`w-full ${pad.sectionMb}`}>
+              <h2 className={`text-lg font-bold print:!text-xl print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`}>{t('printPreview.announcementsAndEvents')}</h2>
               {(() => {
                 // Group announcements by audience (like BulletinPreview does)
                 const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
@@ -569,21 +638,21 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   });
                 });
 
-                // Calculate dynamic font size based on announcement count
+                // Calculate dynamic font size based on announcement count (scaled by printFontScale)
                 const totalAnnouncements = (data.announcements || []).length;
-                const contentFontSize = totalAnnouncements <= 4 ? '11px' :
-                                        totalAnnouncements <= 8 ? '10px' :
-                                        totalAnnouncements <= 12 ? '9px' : '8px';
-                const titleFontSize = totalAnnouncements <= 4 ? '12px' :
-                                      totalAnnouncements <= 8 ? '11px' :
-                                      totalAnnouncements <= 12 ? '10px' : '9px';
-                const headerFontSize = totalAnnouncements <= 4 ? '13px' :
-                                       totalAnnouncements <= 8 ? '12px' : '11px';
+                const contentFontSize = totalAnnouncements <= 4 ? scalePx(11) :
+                                        totalAnnouncements <= 8 ? scalePx(10) :
+                                        totalAnnouncements <= 12 ? scalePx(9) : scalePx(8);
+                const titleFontSize = totalAnnouncements <= 4 ? scalePx(12) :
+                                      totalAnnouncements <= 8 ? scalePx(11) :
+                                      totalAnnouncements <= 12 ? scalePx(10) : scalePx(9);
+                const headerFontSize = totalAnnouncements <= 4 ? scalePx(13) :
+                                       totalAnnouncements <= 8 ? scalePx(12) : scalePx(11);
 
                 return (
-                  <div className="columns-2 gap-4" style={{ columnFill: 'balance' }}>
+                  <div className={`columns-2 ${pad.announcementsGap}`} style={{ columnFill: 'balance' }}>
                     {Object.entries(grouped).map(([audienceLabel, announcements]) => (
-                      <div key={audienceLabel} className="break-inside-avoid-column mb-2">
+                      <div key={audienceLabel} className={`break-inside-avoid-column ${pad.sectionMb}`}>
                         {/* Group header - only show once per group if there's a label */}
                         {audienceLabel && (
                           <div
@@ -593,7 +662,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                             {audienceLabel}
                           </div>
                         )}
-                        <ul className="space-y-1.5">
+                        <ul className={pad.announcementsList}>
                           {(announcements as any[]).map((a: any, idx: number) => {
                             const decodedContent = sanitizeHtml(decodeHtml(a.content));
                             return (
@@ -607,7 +676,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                 {a.category && a.category !== 'general' && (
                                   <span
                                     className="text-gray-600 bg-gray-100 px-1 py-0.5 rounded inline-block mb-0.5"
-                                    style={{ fontSize: '8px' }}
+                                    style={{ fontSize: scalePx(8) }}
                                   >
                                     {a.category}
                                   </span>
@@ -691,7 +760,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                       ) : null;
                                     })}
                                     {a.images.filter((img: any) => !img.hideImageOnPrint).length > 2 && (
-                                      <span style={{ fontSize: '8px' }} className="text-gray-500 self-end">
+                                      <span style={{ fontSize: scalePx(8) }} className="text-gray-500 self-end">
                                         +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 2} more
                                       </span>
                                     )}
@@ -710,8 +779,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           </div>
         </div>
 
-        {/* Program (right) - Front Cover */}
-        <div className="w-1/2 pl-16 pr-8 py-8 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black">
+        {/* Program (right) */}
+        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.page}`}>
           <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
           <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
           <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
