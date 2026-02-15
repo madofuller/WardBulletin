@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import QRCode from 'qrcode';
+import { useTranslation } from 'react-i18next';
 import { userService, bulletinService } from '../lib/supabase';
 import BulletinSelector from './BulletinSelector';
 import { toast } from 'react-toastify';
@@ -57,6 +58,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   currentProfileSlug,
   bulletinData
 }) => {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [profileSlug, setProfileSlug] = React.useState('');
   const [inputValue, setInputValue] = React.useState(''); // For typing without immediate formatting
@@ -208,14 +210,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   const handleSaveProfileSlug = async () => {
     if (!user?.id) {
-      setError('User not authenticated');
+      setError(t('qrCode.userNotAuthenticated'));
       return;
     }
 
     // Check if user has permission to edit (must be owner, not viewer/editor of shared profile)
     if (!permissions.canEdit || (currentProfileSlug && currentProfileSlug !== profile?.profile_slug)) {
-      setError('Only the profile owner can change the profile slug');
-      toast.error('Only the profile owner can change the profile slug');
+      setError(t('qrCode.onlyOwnerCanChangeSlug'));
+      toast.error(t('qrCode.onlyOwnerCanChangeSlug'));
       setIsEditing(false);
       // Revert to actual profile slug
       const actualSlug = profile?.profile_slug || currentProfileSlug || profileSlug;
@@ -226,7 +228,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
     const sanitized = formatProfileSlug(inputValue);
     if (!sanitized) {
-      setError('Profile slug cannot be empty');
+      setError(t('validation.profileSlugCannotBeEmpty'));
       return;
     }
     setProfileSlug(sanitized);
@@ -251,14 +253,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       }
 
       setIsEditing(false);
-      toast.success('Profile slug updated successfully!');
+      toast.success(t('success.profileSlugUpdatedSuccessfully'));
 
       // Notify parent component that profile was updated
       if (onProfileUpdate) {
         onProfileUpdate();
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to update profile slug');
+      setError(error.message || t('qrCode.failedToUpdateProfileSlug'));
       // Revert input to current profile slug
       const currentSlug = profile?.profile_slug || profileSlug;
       setInputValue(currentSlug);
@@ -297,9 +299,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success('URL copied to clipboard!');
+      toast.success(t('success.urlCopiedToClipboard'));
     } catch (err) {
-      toast.error('Failed to copy URL to clipboard');
+      toast.error(t('qrCode.failedToCopyUrl'));
     }
   };
 
@@ -313,7 +315,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     
     const sanitized = formatProfileSlug(newProfileSlugInput.trim());
     if (!sanitized) {
-      setError('Profile slug cannot be empty');
+      setError(t('validation.profileSlugCannotBeEmpty'));
       return;
     }
 
@@ -322,7 +324,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
     try {
       await userService.updateProfileSlug(user.id, sanitized);
-      toast.success('Profile slug created successfully!');
+      toast.success(t('success.profileSlugCreatedSuccessfully'));
       setNewProfileSlugInput('');
       
       // Refresh profile data
@@ -333,7 +335,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
       // Reload to get updated profile
       window.location.reload();
     } catch (error: any) {
-      setError(error.message || 'Failed to create profile slug');
+      setError(error.message || t('qrCode.failedToCreateProfileSlug'));
     } finally {
       setCreatingProfileSlug(false);
     }
@@ -344,20 +346,20 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           {/* Profile & QR Code Section */}
           {user && (
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-4 sm:mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile & QR Code</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('qrCode.profileQrCode')}</h3>
 
           {/* Show create profile slug form if user doesn't have one */}
           {needsProfileSlug ? (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Create your profile to get started!</strong> Your profile slug will be used in your QR code URL and for sharing your bulletins.
+                  <strong>{t('qrCode.createYourProfile')}</strong> {t('qrCode.profileSlugWillBeUsed')}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Profile Slug *
+                  {t('qrCode.profileSlug')}
                 </label>
                 <input
                   type="text"
@@ -371,11 +373,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                     const formatted = formatProfileSlug(e.target.value);
                     setNewProfileSlugInput(formatted);
                   }}
-                  placeholder="e.g., sunset-hills-ward"
+                  placeholder={t('qrCode.profileSlugExample')}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Allowed: letters, numbers, hyphens and underscores. Spaces will be replaced with hyphens.
+                  {t('validation.allowedCharacters')}
                 </p>
                 {error && (
                   <p className="text-sm text-red-600 mt-2">{error}</p>
@@ -387,7 +389,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 disabled={creatingProfileSlug || !newProfileSlugInput.trim()}
                 className="w-full px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {creatingProfileSlug ? 'Creating...' : 'Create Profile'}
+                {creatingProfileSlug ? t('qrCode.creating') : t('qrCode.createProfile')}
               </button>
             </div>
           ) : (
@@ -396,9 +398,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           {/* Profile Selector */}
           {(profile?.profile_slug || sharedProfiles.length > 0) && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Active Profile</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('qrCode.activeProfile')}</label>
               {sharedProfilesLoading ? (
-                <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">Loading profiles...</div>
+                <div className="px-3 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">{t('qrCode.loadingProfiles')}</div>
               ) : (
                 <>
                   <select
@@ -417,28 +419,28 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                   >
                     {profile?.profile_slug && (
                       <option value={profile.profile_slug}>
-                        {profile.profile_slug} (My Profile - Owner)
+                        {profile.profile_slug} ({t('qrCode.myProfileOwner')})
                       </option>
                     )}
                     {sharedProfiles.map((sharedProfile) => (
                       <option key={sharedProfile.profile_slug} value={sharedProfile.profile_slug}>
-                        {sharedProfile.profile_slug} (Shared - {sharedProfile.role})
+                        {sharedProfile.profile_slug} ({t('qrCode.sharedProfile', { role: sharedProfile.role })})
                       </option>
                     ))}
                     {!profile?.profile_slug && sharedProfiles.length === 0 && (
                       <option value="" disabled>
-                        No profiles available
+                        {t('qrCode.noProfilesAvailable')}
                       </option>
                     )}
                     {!profile?.profile_slug && (
                       <option value="create-profile-slug">
-                        + Create My Profile
+                        {t('qrCode.createMyProfile')}
                       </option>
                     )}
                   </select>
 
                   <p className="text-xs text-gray-500 mt-2">
-                    Switch between your profile and shared profiles you have access to
+                    {t('qrCode.switchBetweenProfiles')}
                   </p>
                 </>
               )}
@@ -448,7 +450,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           {/* QR Code Display - Always show if user has profile or shared profiles */}
           {(activeProfileSlug || profile?.profile_slug || sharedProfilesLength > 0) && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">QR Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('qrCode.qrCode')}</label>
               <div className="text-center">
                 <canvas
                   ref={canvasRef}
@@ -471,7 +473,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
           {/* Custom Link Management */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Custom Link</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('qrCode.customLink')}</label>
 
             {isEditing ? (
               <div className="space-y-4">
@@ -490,11 +492,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                       setInputValue(formatted);
                       setProfileSlug(formatted);
                     }}
-                    placeholder="e.g., sunset-hills-ward"
+                    placeholder={t('qrCode.profileSlugExample')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Allowed: letters, numbers, hyphens and underscores. Spaces will be replaced with hyphens.
+                    {t('validation.allowedCharacters')}
                   </p>
                 </div>
                 <div className="flex gap-3">
@@ -503,13 +505,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                     disabled={loading}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    {loading ? 'Saving...' : 'Save Changes'}
+                    {loading ? t('qrCode.saving') : t('qrCode.saveChanges')}
                   </button>
                   <button
                     onClick={handleCancelEdit}
                     className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -526,13 +528,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                       onClick={() => setIsEditing(true)}
                       className="px-4 py-3 bg-gray-600 text-white rounded-full text-sm font-medium hover:bg-gray-700 transition-colors"
                     >
-                      Edit
+                      {t('qrCode.edit')}
                     </button>
                   )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <label className="text-sm font-medium text-gray-700">Domain:</label>
+                  <label className="text-sm font-medium text-gray-700">{t('qrCode.domain')}</label>
                   <select
                     value={useShortDomain ? 'short' : 'full'}
                     onChange={(e) => setUseShortDomain(e.target.value === 'short')}
@@ -563,7 +565,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                         onClick={downloadQRCode}
                         className="w-full px-4 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
                       >
-                        Download QR Code
+                        {t('qrCode.downloadQrCode')}
                       </button>
 
                       <button
@@ -578,12 +580,12 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                             });
                           } else {
                             navigator.clipboard.writeText(shareUrl);
-                            toast.success('Share link copied to clipboard!');
+                            toast.success(t('success.shareLinkCopiedToClipboard'));
                           }
                         }}
                         className="w-full px-4 py-3 bg-purple-600 text-white rounded-full font-medium hover:bg-purple-700 transition-colors"
                       >
-                        Share
+                        {t('qrCode.share')}
                       </button>
 
                       <button
@@ -591,11 +593,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                           const activeProfileSlug = selectedProfileSlug || profileSlug;
                           const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${activeProfileSlug}`;
                           navigator.clipboard.writeText(shareUrl);
-                          toast.success('Share link copied to clipboard!');
+                          toast.success(t('success.shareLinkCopiedToClipboard'));
                         }}
                         className="w-full px-4 py-3 bg-orange-600 text-white rounded-full font-medium hover:bg-orange-700 transition-colors"
                       >
-                        Copy Link
+                        {t('qrCode.copyLink')}
                       </button>
 
                       <button
@@ -603,11 +605,11 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                           const activeProfileSlug = selectedProfileSlug || profileSlug;
                           const submissionsUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/submit/${activeProfileSlug}`;
                           navigator.clipboard.writeText(submissionsUrl);
-                          toast.success('Submissions link copied to clipboard!');
+                          toast.success(t('success.submissionsLinkCopiedToClipboard'));
                         }}
                         className="w-full px-4 py-3 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition-colors"
                       >
-                        Copy Submissions Link
+                        {t('qrCode.copySubmissionsLink')}
                       </button>
                     </div>
                   </div>
@@ -626,14 +628,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
       {/* Tips Section */}
       <div className="bg-blue-50 rounded-xl p-4 sm:p-6 border border-blue-100 mb-4 sm:mb-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3">How to Use</h3>
+        <h3 className="text-lg font-semibold text-blue-900 mb-3">{t('qrCode.howToUse')}</h3>
         <div className="space-y-2 text-sm text-blue-800">
-          <p>• Print this QR code and place it on physical bulletins</p>
-          <p>• Members can scan to access your latest digital bulletin</p>
-          <p>• QR code stays the same - just update your bulletins</p>
+          <p>• {t('qrCode.printQrCode')}</p>
+          <p>• {t('qrCode.membersCanScan')}</p>
+          <p>• {t('qrCode.qrCodeStaysTheSame')}</p>
           <p className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-200">
             <span className="text-yellow-600">💡</span>
-            <span><strong>Mobile tip:</strong> Ensure good lighting and hold phone steady when scanning</span>
+            <span>{t('qrCode.mobileTip')}</span>
           </p>
         </div>
       </div>
@@ -663,9 +665,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                 // Clear the active bulletin ID to force a fresh selection
                 await userService.updateActiveBulletinId(user.id, null);
                 onActiveBulletinSelect(null);
-                toast.success('Data inconsistency fixed. Please select a bulletin.');
+                toast.success(t('qrCode.dataInconsistencyFixed'));
               } catch (error) {
-                toast.error('Failed to fix inconsistency: ' + (error as Error).message);
+                toast.error(t('qrCode.failedToFixInconsistency') + ': ' + (error as Error).message);
               }
             }}
           />

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import NetworkErrorHandler from './components/NetworkErrorHandler';
@@ -11,14 +11,22 @@ import AnnouncementSubmissionPage from './pages/AnnouncementSubmissionPage';
 import InvitePage from './pages/InvitePage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
+// Loading fallback for i18n
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
+
 export default function App() {
   // Note: Scheduled bulletin activation is handled by SessionContext
   // which properly filters bulletins by the logged-in user
 
   return (
-    <ErrorBoundary>
-      <NetworkErrorHandler>
-        <Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <ErrorBoundary>
+        <NetworkErrorHandler>
+          <Routes>
           <Route path="/" element={<EditorApp />} />
           <Route path="/profile/:slug" element={<EditorApp />} />
           <Route path="/about" element={<AboutPage />} />
@@ -28,8 +36,9 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
           <Route path="/:slug" element={<PublicBulletinPage />} />
-        </Routes>
-      </NetworkErrorHandler>
-    </ErrorBoundary>
+          </Routes>
+        </NetworkErrorHandler>
+      </ErrorBoundary>
+    </Suspense>
   );
 }

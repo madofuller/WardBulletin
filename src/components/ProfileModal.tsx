@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, User, Save, Lock, Eye, EyeOff, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 // import ProfileSharingModal from './ProfileSharingModal'; // WIP - commented out
 import { useSession } from '../lib/SessionContext';
@@ -12,6 +13,7 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }: ProfileModalProps) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -32,7 +34,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
     newEmail: ''
   });
   // const [showSharingModal, setShowSharingModal] = useState(false); // WIP - commented out
-  const { profile: _profile } = useSession();
+  const { profile } = useSession();
 
   // Reset form when modal closes
   useEffect(() => {
@@ -75,13 +77,13 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailData.newEmail)) {
-      setError('Please enter a valid email address');
+      setError(t('modals.pleaseEnterValidEmail'));
       setLoading(false);
       return;
     }
 
     if (emailData.newEmail.toLowerCase() === user.email.toLowerCase()) {
-      setError('New email must be different from current email');
+      setError(t('modals.newEmailMustBeDifferent'));
       setLoading(false);
       return;
     }
@@ -94,7 +96,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       });
 
       if (signInError) {
-        setError('Current password is incorrect');
+        setError(t('modals.currentPasswordIncorrect'));
         setLoading(false);
         return;
       }
@@ -106,7 +108,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
       if (updateError) throw updateError;
 
-      setSuccess('A confirmation email has been sent to your new address. Click the link to complete the change.');
+      setSuccess(t('modals.emailConfirmationSent'));
       setEmailData({ currentPassword: '', newEmail: '' });
       setShowEmailSection(false);
 
@@ -115,7 +117,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
         onProfileUpdate();
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to update email. Please try again.');
+      setError(err.message || t('modals.failedToUpdateEmail'));
     } finally {
       setLoading(false);
     }
@@ -129,13 +131,13 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
     // Validation
     if (passwordData.newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
+      setError(t('validation.newPasswordMustBeAtLeast6Characters'));
       setLoading(false);
       return;
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match');
+      setError(t('validation.newPasswordsDoNotMatch'));
       setLoading(false);
       return;
     }
@@ -150,7 +152,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       });
 
       if (signInError) {
-        setError('Current password is incorrect');
+        setError(t('modals.currentPasswordIncorrect'));
         setLoading(false);
         return;
       }
@@ -164,7 +166,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
         throw updateError;
       }
 
-      setSuccess('Password updated successfully!');
+      setSuccess(t('modals.passwordUpdatedSignInAgain'));
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -172,17 +174,21 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       });
       setShowPasswordSection(false);
 
+      // Sign out so user must sign in with the new password (confirms the change worked)
+      await supabase.auth.signOut();
+
       // Call onProfileUpdate callback if provided
       if (onProfileUpdate) {
         onProfileUpdate();
       }
 
-      // Clear success message after 3 seconds
+      // Keep success message visible briefly, then close modal so they see sign-in
       setTimeout(() => {
         setSuccess('');
+        onClose();
       }, 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update password. Please try again.');
+      setError(err.message || t('modals.failedToUpdatePassword'));
     } finally {
       setLoading(false);
     }
@@ -235,7 +241,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">Profile Settings</h3>
+          <h3 className="text-2xl font-bold text-gray-900">{t('modals.profileSettings')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -249,7 +255,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
             <User className="w-5 h-5 text-gray-400" />
             <div>
               <p className="text-sm font-medium text-gray-900">{user?.email}</p>
-              <p className="text-xs text-gray-500">Account Email</p>
+              <p className="text-xs text-gray-500">{t('modals.accountEmail')}</p>
             </div>
           </div>
         </div>
@@ -259,14 +265,14 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-lg font-medium text-gray-900 flex items-center">
               <Mail className="w-5 h-5 mr-2 text-gray-400" />
-              Email
+              {t('modals.email')}
             </h4>
             {!showEmailSection && (
               <button
                 onClick={() => setShowEmailSection(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                Change Email
+                {t('modals.changeEmail')}
               </button>
             )}
           </div>
@@ -275,7 +281,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
             <form onSubmit={handleChangeEmail} className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div>
                 <label htmlFor="emailCurrentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
+                  {t('modals.currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -285,7 +291,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                     value={emailData.currentPassword}
                     onChange={handleEmailInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
-                    placeholder="Enter current password"
+                    placeholder={t('modals.enterCurrentPassword')}
                     required
                     disabled={loading}
                   />
@@ -301,7 +307,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
               <div>
                 <label htmlFor="newEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Email Address
+                  {t('modals.newEmail')}
                 </label>
                 <input
                   type="email"
@@ -310,7 +316,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                   value={emailData.newEmail}
                   onChange={handleEmailInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter new email address"
+                  placeholder={t('modals.enterNewEmailAddress')}
                   required
                   disabled={loading}
                 />
@@ -328,12 +334,12 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Sending...
+                      {t('modals.sending')}
                     </>
                   ) : (
                     <>
                       <Mail className="w-4 h-4 mr-2" />
-                      Update Email
+                      {t('modals.updateEmail')}
                     </>
                   )}
                 </button>
@@ -347,7 +353,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                   disabled={loading}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -359,14 +365,14 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-lg font-medium text-gray-900 flex items-center">
               <Lock className="w-5 h-5 mr-2 text-gray-400" />
-              Password
+              {t('modals.password')}
             </h4>
             {!showPasswordSection && (
               <button
                 onClick={() => setShowPasswordSection(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                Change Password
+                {t('modals.changePassword')}
               </button>
             )}
           </div>
@@ -375,7 +381,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
             <form onSubmit={handleChangePassword} className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div>
                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
+                  {t('modals.currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -385,7 +391,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
-                    placeholder="Enter current password"
+                    placeholder={t('modals.enterCurrentPassword')}
                     required
                     disabled={loading}
                   />
@@ -401,7 +407,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  {t('modals.newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -411,7 +417,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
-                    placeholder="Enter new password (min. 6 characters)"
+                    placeholder={t('modals.enterNewPassword')}
                     required
                     minLength={6}
                     disabled={loading}
@@ -428,7 +434,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
+                  {t('modals.confirmNewPasswordLabel')}
                 </label>
                 <div className="relative">
                   <input
@@ -438,7 +444,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
-                    placeholder="Confirm new password"
+                    placeholder={t('modals.confirmNewPassword')}
                     required
                     disabled={loading}
                   />
@@ -464,12 +470,12 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Updating...
+                      {t('modals.updating')}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Update Password
+                      {t('modals.updatePassword')}
                     </>
                   )}
                 </button>
@@ -487,7 +493,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
                   disabled={loading}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -505,9 +511,6 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
             <p className="text-green-600 text-sm">{success}</p>
           </div>
         )}
-
-        {/* Remove: wardSettings state, useEffect fetching, handleChange, handleSave logic for wardSettings, and the form fields for ward settings. */}
-        {/* Restore the modal to its previous state with only the account email and info text. */}
 
         {/* Profile Sharing Section */}
         {/* WIP - commented out
@@ -530,18 +533,13 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
         )}
         */}
 
-        <div className="text-center py-4">
-          <p className="text-gray-600 mb-2">Additional profile settings will be available here soon.</p>
-          <p className="text-sm text-gray-500">For now, you can manage your custom link in the QR Code section.</p>
-        </div>
-
         <div className="flex justify-center pt-4">
           <button
             onClick={onClose}
             className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             disabled={loading}
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
 
@@ -549,11 +547,11 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
           <div className="flex items-start space-x-2">
             <User className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-blue-700">
-              <p className="font-medium">About Your Account</p>
+              <p className="font-medium">{t('modals.aboutYourAccount')}</p>
               <ul className="mt-1 space-y-1">
-                <li>• Your bulletins are saved to your account</li>
-                <li>• Create a custom link for your permanent QR code</li>
-                <li>• Access your bulletins from any device</li>
+                <li>• {t('modals.bulletinsAreSavedToYourAccount')}</li>
+                <li>• {t('modals.createCustomLinkForQrCode')}</li>
+                <li>• {t('modals.accessBulletinsFromAnyDevice')}</li>
               </ul>
             </div>
           </div>

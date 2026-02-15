@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import { SkeletonList } from './SkeletonLoader';
@@ -44,6 +45,7 @@ export default function SubmissionReviewModal({
   onSubmissionRejected,
   onSubmissionsChanged
 }: SubmissionReviewModalProps) {
+  const { t } = useTranslation();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -69,12 +71,12 @@ export default function SubmissionReviewModal({
         .order('created_at', { ascending: false });
 
       if (error) {
-        toast.error('Failed to load submissions');
+        toast.error(t('errors.failedToLoadSubmissions'));
       } else {
         setSubmissions(data || []);
       }
     } catch (error) {
-      toast.error('Failed to load submissions');
+      toast.error(t('errors.failedToLoadSubmissions'));
     } finally {
       setLoading(false);
     }
@@ -108,7 +110,7 @@ export default function SubmissionReviewModal({
       onSubmissionsChanged?.();
       
     } catch (error) {
-      toast.error('Failed to approve submission');
+      toast.error(t('errors.failedToApproveSubmission'));
     } finally {
       setProcessing(null);
     }
@@ -142,7 +144,7 @@ export default function SubmissionReviewModal({
       onSubmissionRejected?.(submission);
       
     } catch (error) {
-      toast.error('Failed to reject submission');
+      toast.error(t('errors.failedToRejectSubmission'));
     } finally {
       setProcessing(null);
     }
@@ -236,10 +238,10 @@ export default function SubmissionReviewModal({
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
       
-      toast.success(`${audience.replace('_', ' ')} announcements have been consolidated and added to the bulletin!`);
-      
+      toast.success(t('submissions.groupApprovedAndConsolidated', { audience: audience.replace('_', ' ') }));
+
     } catch (error) {
-      toast.error('Failed to approve group');
+      toast.error(t('errors.failedToApproveGroup'));
     } finally {
       setProcessing(null);
     }
@@ -251,7 +253,7 @@ export default function SubmissionReviewModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">Review Announcement Submissions</h2>
+          <h2 className="text-xl font-semibold">{t('submissions.reviewAnnouncementSubmissions')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             ✕
           </button>
@@ -268,7 +270,7 @@ export default function SubmissionReviewModal({
             }`}
           >
             <AlertCircle className="w-4 h-4" />
-            Pending
+            {t('submissions.pending')}
           </button>
           <button
             onClick={() => setActiveTab('approved')}
@@ -279,7 +281,7 @@ export default function SubmissionReviewModal({
             }`}
           >
             <CheckCircle className="w-4 h-4" />
-            Approved
+            {t('submissions.approved')}
           </button>
           <button
             onClick={() => setActiveTab('rejected')}
@@ -290,7 +292,7 @@ export default function SubmissionReviewModal({
             }`}
           >
             <XCircle className="w-4 h-4" />
-            Rejected
+            {t('submissions.rejected')}
           </button>
         </div>
 
@@ -308,12 +310,12 @@ export default function SubmissionReviewModal({
                 <div className="text-center py-16">
                   <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No {activeTab} submissions
+                    {t('submissions.noSubmissionsOfStatus', { status: t(`submissions.${activeTab}`) })}
                   </h3>
                   <p className="text-gray-500">
-                    {activeTab === 'pending' 
-                      ? 'Submissions from ward members will appear here'
-                      : `No ${activeTab} submissions found`
+                    {activeTab === 'pending'
+                      ? t('submissions.submissionsWillAppearHere')
+                      : t('submissions.noSubmissionsFound', { status: t(`submissions.${activeTab}`) })
                     }
                   </p>
                 </div>
@@ -339,9 +341,9 @@ export default function SubmissionReviewModal({
                     <div key={audience} className="border rounded-lg p-4 bg-white">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold capitalize">{audience.replace('_', ' ')} Announcements</h3>
+                          <h3 className="text-lg font-semibold capitalize">{audience.replace('_', ' ')} {t('submissions.announcements')}</h3>
                           <p className="text-sm text-gray-500">
-                            {statusCount} {activeTab}, {audienceSubmissions.length} total
+                            {statusCount} {t(`submissions.${activeTab}`)}, {audienceSubmissions.length} {t('submissions.total')}
                           </p>
                         </div>
                         {activeTab === 'pending' && hasStatusItems && (
@@ -350,7 +352,7 @@ export default function SubmissionReviewModal({
                             className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                           >
                             <CheckCircle className="w-4 h-4 mr-2" />
-                            Approve All {audience.replace('_', ' ')}
+                            {t('submissions.approveAll')} {audience.replace('_', ' ')}
                           </button>
                         )}
                       </div>
@@ -372,9 +374,9 @@ export default function SubmissionReviewModal({
                                   dangerouslySetInnerHTML={{ __html: submission.content }}
                                 />
                                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                                  <span>From: {submission.submitter_name}</span>
+                                  <span>{t('submissions.from')}: {submission.submitter_name}</span>
                                   {submission.submitter_email && (
-                                    <span>Email: {submission.submitter_email}</span>
+                                    <span>{t('submissions.email')}: {submission.submitter_email}</span>
                                   )}
                                 </div>
                               </div>
@@ -385,12 +387,12 @@ export default function SubmissionReviewModal({
                               <div className="border-t pt-3 mt-3">
                                 <div className="mb-3">
                                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Notes (optional)
+                                    {t('submissions.notesOptional')}
                                   </label>
                                   <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Add feedback for the submitter..."
+                                    placeholder={t('submissions.addFeedbackPlaceholder')}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                                     rows={2}
                                   />
@@ -399,14 +401,14 @@ export default function SubmissionReviewModal({
                                   <button
                                     onClick={() => handleApprove(submission)}
                                     disabled={processing === submission.id}
-                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
                                   >
                                     {processing === submission.id ? (
                                       <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                                     ) : (
                                       <CheckCircle className="w-3 h-3 mr-1" />
                                     )}
-                                    Approve
+                                    {t('submissions.approve')}
                                   </button>
                                   <button
                                     onClick={() => handleReject(submission)}
@@ -418,7 +420,7 @@ export default function SubmissionReviewModal({
                                     ) : (
                                       <XCircle className="w-3 h-3 mr-1" />
                                     )}
-                                    Reject
+                                    {t('submissions.reject')}
                                   </button>
                                 </div>
                               </div>
@@ -427,7 +429,7 @@ export default function SubmissionReviewModal({
                             {submission.notes && (
                               <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
                                 <p className="text-blue-800">
-                                  <strong>Notes:</strong> {submission.notes}
+                                  <strong>{t('submissions.notes')}:</strong> {submission.notes}
                                 </p>
                               </div>
                             )}

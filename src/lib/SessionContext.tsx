@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, userService, bulletinService } from './supabase';
+import i18n from '../i18n';
 
 interface UserProfile {
   email: string;
   profile_slug: string | null;
   role: string;
   active_bulletin_id: string | null;
+  unit_type: 'ward' | 'branch';
+  language: string;
 }
 
 interface SessionContextValue {
@@ -27,6 +30,16 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
+  // Preserve recovery hash as early as possible (Supabase may strip it when processing the token)
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
+      try {
+        sessionStorage.setItem('password_recovery_hash', hash);
+      } catch (_) {}
+    }
+  }, []);
+
   // Restore session on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -34,9 +47,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // If this is a password recovery event, redirect to reset password page
+      // If this is a password recovery event, redirect to reset password page with hash preserved
       if (event === 'PASSWORD_RECOVERY') {
-        window.location.href = '/reset-password' + window.location.hash;
+        const hash = window.location.hash || sessionStorage.getItem('password_recovery_hash') || '';
+        try {
+          sessionStorage.removeItem('password_recovery_hash');
+        } catch (_) {}
+        window.location.href = '/reset-password' + hash;
         return;
       }
       // If user updated their email, refresh profile to get new email
@@ -59,7 +76,25 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         const data = await userService.getUserProfile(session.user.id);
         if (data && data.length > 0) {
-          setProfile(data[0] as UserProfile);
+          const userProfile = data[0] as UserProfile;
+          setProfile(userProfile);
+
+          // Sync localStorage with database value for unit_type
+          if (userProfile.unit_type && typeof window !== 'undefined') {
+            const currentLocalStorage = localStorage.getItem('selectedUnitType');
+            if (currentLocalStorage !== userProfile.unit_type) {
+              localStorage.setItem('selectedUnitType', userProfile.unit_type);
+            }
+          }
+
+          // Sync localStorage and i18n with database value for language
+          if (userProfile.language && typeof window !== 'undefined') {
+            const currentLanguage = localStorage.getItem('selectedLanguage');
+            if (currentLanguage !== userProfile.language) {
+              localStorage.setItem('selectedLanguage', userProfile.language);
+              i18n.changeLanguage(userProfile.language);
+            }
+          }
         } else {
           setProfile(null);
         }

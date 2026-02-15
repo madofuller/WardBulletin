@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import PublicBulletinView from '../components/PublicBulletinView';
 import DynamicMetaTags from '../components/DynamicMetaTags';
 import { bulletinService } from '../lib/supabase';
@@ -22,6 +23,7 @@ function ensureSacramentItem(agenda: any[]): any[] {
 export default function PublicBulletinPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
 
   // CRITICAL: Clear any stale localStorage data that might be cached
   // This runs once when the component mounts to handle users with old cached data
@@ -99,6 +101,12 @@ export default function PublicBulletinPage() {
     refetchOnReconnect: true // Refetch when connection is restored
   });
 
+  // Set the language to the bulletin creator's preferred language
+  useEffect(() => {
+    if (publicBulletin?.profile_language) {
+      i18n.changeLanguage(publicBulletin.profile_language);
+    }
+  }, [publicBulletin?.profile_language, i18n]);
 
   if (isLoading) {
     return (
@@ -109,6 +117,9 @@ export default function PublicBulletinPage() {
       </div>
     );
   }
+
+  // Extract unit_type from the profile for terminology
+  const profileUnitType = publicBulletin?.profile_unit_type as 'ward' | 'branch' | undefined;
 
   const bulletinData = publicBulletin ? {
     wardName: publicBulletin.ward_name || '',
@@ -168,6 +179,7 @@ export default function PublicBulletinPage() {
         loading={isLoading}
         error={error ? (error as Error).message || 'Bulletin not found' : ''}
         onBackToEditor={() => navigate('/')}
+        unitTypeOverride={profileUnitType}
       />
     </>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Trash2, Eye, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { bulletinService } from '../lib/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -31,6 +32,7 @@ export default function SavedBulletinsModal({
   onActiveBulletinChange,
   currentActiveBulletinId
 }: SavedBulletinsModalProps) {
+  const { t } = useTranslation();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
@@ -308,9 +310,9 @@ export default function SavedBulletinsModal({
         {/* Sticky Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">My Saved Bulletins</h3>
+            <h3 className="text-2xl font-bold text-gray-900">{t('modals.savedBulletins')}</h3>
             <p className="text-sm text-gray-600 mt-1">
-              Manage your bulletins and set which one appears when people scan your QR code
+              {t('qrCode.membersCanScan')}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -347,8 +349,8 @@ export default function SavedBulletinsModal({
           {!loading && !error && displayBulletins.length === 0 && (
             <div className="text-center py-12">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No saved bulletins</h4>
-              <p className="text-gray-600">Create and save your first bulletin to see it here.</p>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">{t('modals.noBulletinsSaved')}</h4>
+              <p className="text-gray-600">{t('modals.createFirstBulletin')}</p>
             </div>
           )}
 

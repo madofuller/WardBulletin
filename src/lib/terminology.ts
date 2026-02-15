@@ -1,45 +1,54 @@
-import { TERMINOLOGY } from './config';
+import { TERMINOLOGY, getTerminologyForUnitType, UnitType } from './config';
+import { TFunction } from 'i18next';
 
 export const terminology = TERMINOLOGY;
 
+// Helper function to get terminology based on optional override
+function getTerminology(unitTypeOverride?: UnitType) {
+  return unitTypeOverride
+    ? getTerminologyForUnitType(unitTypeOverride)
+    : TERMINOLOGY;
+}
+
 // Helper functions to get terminology-aware labels
-export function getUnitLabel(): string {
-  return terminology.unit;
+export function getUnitLabel(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).unit;
 }
 
-export function getUnitLowercase(): string {
-  return terminology.unitLowercase;
+export function getUnitLowercase(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).unitLowercase;
 }
 
-export function getHigherUnitLabel(): string {
-  return terminology.higherUnit;
+export function getHigherUnitLabel(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).higherUnit;
 }
 
-export function getHigherUnitLowercase(): string {
-  return terminology.higherUnitLowercase;
+export function getHigherUnitLowercase(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).higherUnitLowercase;
 }
 
-export function getLeaderTitle(): string {
-  return terminology.leader;
+export function getLeaderTitle(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).leader;
 }
 
-export function getLeadershipBodyTitle(): string {
-  return terminology.leadershipBody;
+export function getLeadershipBodyTitle(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).leadershipBody;
 }
 
-export function getUnitPossessive(): string {
-  return terminology.unitPossessive;
+export function getUnitPossessive(unitTypeOverride?: UnitType): string {
+  return getTerminology(unitTypeOverride).unitPossessive;
 }
 
 // Helper function to get audience display name
-export function getAudienceDisplayName(audience: string): string {
+export function getAudienceDisplayName(audience: string, unitTypeOverride?: UnitType): string {
+  const term = getTerminology(unitTypeOverride);
   switch (audience) {
     case 'ward':
     case 'branch':
-      return terminology.unit;
+      return term.unit;
     case 'stake':
     case 'district':
-      return terminology.higherUnit;
+      return term.higherUnit;
     case 'relief_society':
       return 'Relief Society';
     case 'elders_quorum':
@@ -65,37 +74,86 @@ export function getAudienceDisplayName(audience: string): string {
 
 // Helper function to get the appropriate higher unit label based on context
 // Branches can be in either Stakes or Districts, so we need to be flexible
-export function getHigherUnitLabelForContext(isBranch: boolean = false): string {
+export function getHigherUnitLabelForContext(isBranch: boolean = false, unitTypeOverride?: UnitType): string {
   if (isBranch) {
     // For branches, we default to District but could be Stake
     return 'District/Stake';
   }
-  return terminology.higherUnit;
+  return getTerminology(unitTypeOverride).higherUnit;
 }
 
 // Helper function to get the correct audience value based on current terminology
-export function getAudienceValue(type: 'unit' | 'higher_unit'): string {
+export function getAudienceValue(type: 'unit' | 'higher_unit', unitTypeOverride?: UnitType): string {
+  const term = getTerminology(unitTypeOverride);
   if (type === 'unit') {
-    return terminology.unitLowercase;
+    return term.unitLowercase;
   } else if (type === 'higher_unit') {
-    return terminology.higherUnitLowercase;
+    return term.higherUnitLowercase;
   }
   return 'other';
 }
 
 // Template string helpers for dynamic content
-export function getUnitNameLabel(): string {
-  return `${terminology.unit} Name`;
+export function getUnitNameLabel(unitTypeOverride?: UnitType): string {
+  return `${getTerminology(unitTypeOverride).unit} Name`;
 }
 
-export function getUnitLeadershipLabel(): string {
-  return `${terminology.unit} Leadership`;
+export function getUnitLeadershipLabel(unitTypeOverride?: UnitType): string {
+  return `${getTerminology(unitTypeOverride).unit} Leadership`;
 }
 
-export function getUnitMissionariesLabel(): string {
-  return `${terminology.unit} Missionaries`;
+export function getUnitMissionariesLabel(unitTypeOverride?: UnitType): string {
+  return `${getTerminology(unitTypeOverride).unit} Missionaries`;
 }
 
-export function getLeadershipMessageLabel(): string {
-  return `${terminology.leadershipBody} Message`;
+export function getLeadershipMessageLabel(unitTypeOverride?: UnitType): string {
+  return `${getTerminology(unitTypeOverride).leadershipBody} Message`;
+}
+
+// Re-export UnitType for convenience
+export type { UnitType } from './config';
+
+// ========================================
+// TRANSLATED TERMINOLOGY HELPERS
+// ========================================
+// These functions return translated unit labels using i18next
+
+/**
+ * Get the translated unit label (Ward/Branch) based on unit type
+ */
+export function getTranslatedUnitLabel(t: TFunction, unitTypeOverride?: UnitType): string {
+  const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
+  return unitType === 'branch' ? t('terminology.branch') : t('terminology.ward');
+}
+
+/**
+ * Get the translated unit label in lowercase
+ */
+export function getTranslatedUnitLowercase(t: TFunction, unitTypeOverride?: UnitType): string {
+  const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
+  return unitType === 'branch' ? t('terminology.branchLowercase') : t('terminology.wardLowercase');
+}
+
+/**
+ * Get the translated higher unit label (Stake/District)
+ */
+export function getTranslatedHigherUnitLabel(t: TFunction, unitTypeOverride?: UnitType): string {
+  const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
+  return unitType === 'branch' ? t('terminology.districtStake') : t('terminology.stake');
+}
+
+/**
+ * Get the translated leadership body label (Bishopric/Branch Presidency)
+ */
+export function getTranslatedLeadershipBody(t: TFunction, unitTypeOverride?: UnitType): string {
+  const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
+  return unitType === 'branch' ? t('terminology.branchPresidency') : t('terminology.bishopric');
+}
+
+/**
+ * Get the translated leader title (Bishop/Branch President)
+ */
+export function getTranslatedLeaderTitle(t: TFunction, unitTypeOverride?: UnitType): string {
+  const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
+  return unitType === 'branch' ? t('terminology.branchPresident') : t('terminology.bishop');
 }

@@ -1,32 +1,45 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Church, Building } from 'lucide-react';
 import { getCurrentUnitType, setSelectedUnitType, UnitType } from '../lib/config';
+import { useSession } from '../lib/SessionContext';
+import { userService } from '../lib/supabase';
 
 interface UnitTypeSelectorProps {
   className?: string;
 }
 
-const unitTypeOptions: { value: UnitType; label: string; icon: React.ReactNode; description: string }[] = [
-  {
-    value: 'ward',
-    label: 'Ward',
-    icon: <Church className="w-4 h-4" />,
-    description: 'Ward in a Stake'
-  },
-  {
-    value: 'branch',
-    label: 'Branch',
-    icon: <Building className="w-4 h-4" />,
-    description: 'Branch in District/Stake'
-  }
-];
-
 export default function UnitTypeSelector({ className = '' }: UnitTypeSelectorProps) {
+  const { t } = useTranslation();
+
+  const unitTypeOptions: { value: UnitType; label: string; icon: React.ReactNode; description: string }[] = [
+    {
+      value: 'ward',
+      label: t('terminology.ward'),
+      icon: <Church className="w-4 h-4" />,
+      description: t('terminology.stake')
+    },
+    {
+      value: 'branch',
+      label: t('terminology.branch'),
+      icon: <Building className="w-4 h-4" />,
+      description: t('terminology.districtStake')
+    }
+  ];
   const [isOpen, setIsOpen] = useState(false);
+  const { user } = useSession();
   const currentUnitType = getCurrentUnitType();
   const currentOption = unitTypeOptions.find(option => option.value === currentUnitType) || unitTypeOptions[0];
 
-  const handleSelect = (unitType: UnitType) => {
+  const handleSelect = async (unitType: UnitType) => {
+    // If user is logged in, sync to database
+    if (user?.id) {
+      try {
+        await userService.updateUnitType(user.id, unitType);
+      } catch (error) {
+        console.error('Failed to save unit type to database:', error);
+      }
+    }
     setSelectedUnitType(unitType);
     setIsOpen(false);
   };

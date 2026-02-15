@@ -99,6 +99,8 @@ export interface Database {
           role: string
           profile_slug: string | null
           active_bulletin_id: string | null
+          unit_type: 'ward' | 'branch'
+          language: string
           created_at: string
         }
         Insert: {
@@ -107,6 +109,8 @@ export interface Database {
           role?: string
           profile_slug?: string | null
           active_bulletin_id?: string | null
+          unit_type?: 'ward' | 'branch'
+          language?: string
           created_at?: string
         }
         Update: {
@@ -115,6 +119,8 @@ export interface Database {
           role?: string
           profile_slug?: string | null
           active_bulletin_id?: string | null
+          unit_type?: 'ward' | 'branch'
+          language?: string
           created_at?: string
         }
       }
@@ -463,7 +469,7 @@ export const userService = {
   async getUserProfile(userId: string) {
     const { data, error } = await supabase
       .from('users')
-      .select('email, profile_slug, role, active_bulletin_id') // Only select existing columns
+      .select('email, profile_slug, role, active_bulletin_id, unit_type, language')
       .eq('id', userId);
     if (error) throw error;
     return data;
@@ -482,7 +488,25 @@ export const userService = {
       .from('users')
       .update({ active_bulletin_id: bulletinId })
       .eq('id', userId);
-    
+
+    if (error) throw error;
+  },
+
+  async updateUnitType(userId: string, unitType: 'ward' | 'branch') {
+    const { error } = await supabase
+      .from('users')
+      .update({ unit_type: unitType })
+      .eq('id', userId);
+
+    if (error) throw error;
+  },
+
+  async updateLanguage(userId: string, language: string) {
+    const { error } = await supabase
+      .from('users')
+      .update({ language: language })
+      .eq('id', userId);
+
     if (error) throw error;
   }
 };
@@ -531,6 +555,20 @@ export const bulletinService = {
     // Note: slug column doesn't exist in database - it's used for tokenization only
     slug = generateUniqueBulletinSlug(userId, bulletinData.date, bulletinId);
 
+    // When updating an existing bulletin, use the bulletin creator's id for tokens so we update
+    // the same row that is read on load (fixes announcements not persisting for shared editors).
+    let tokenOwnerId = userId;
+    if (bulletinId) {
+      const { data: existingRow, error: existingError } = await supabase
+        .from('bulletins')
+        .select('id, created_by')
+        .eq('id', bulletinId)
+        .maybeSingle();
+      if (existingError) throw existingError;
+      if (!existingRow) throw new Error('Bulletin not found. Cannot update non-existent bulletin.');
+      if (existingRow.created_by) tokenOwnerId = existingRow.created_by;
+    }
+
     const bulletinRecord = {
       id: bulletinId || `bulletin-${Date.now()}`,
       slug,
@@ -562,24 +600,24 @@ export const bulletinService = {
     // Save tokens (batch upsert)
     try {
       const tokens = [
-        { key: `bulletin-${slug}-ward_name`, value: bulletinData.wardName || '', created_by: userId },
-        { key: `bulletin-${slug}-theme`, value: bulletinData.theme || '', created_by: userId },
-        { key: `bulletin-${slug}-userTheme`, value: bulletinData.userTheme || '', created_by: userId },
-        { key: `bulletin-${slug}-bishopric`, value: bulletinData.bishopricMessage || '', created_by: userId },
-        { key: `bulletin-${slug}-announcements`, value: JSON.stringify(bulletinData.announcements || []), created_by: userId },
-        { key: `bulletin-${slug}-meetings`, value: JSON.stringify(bulletinData.meetings || []), created_by: userId },
-        { key: `bulletin-${slug}-events`, value: JSON.stringify(bulletinData.specialEvents || []), created_by: userId },
-        { key: `bulletin-${slug}-agenda`, value: JSON.stringify(bulletinData.agenda || []), created_by: userId },
-        { key: `bulletin-${slug}-prayers`, value: JSON.stringify(bulletinData.prayers || {}), created_by: userId },
-        { key: `bulletin-${slug}-music`, value: JSON.stringify(bulletinData.musicProgram || {}), created_by: userId },
-        { key: `bulletin-${slug}-leadership`, value: JSON.stringify(bulletinData.leadership || {}), created_by: userId },
-        { key: `bulletin-${slug}-wardLeadership`, value: JSON.stringify(bulletinData.wardLeadership || []), created_by: userId },
-        { key: `bulletin-${slug}-missionaries`, value: JSON.stringify(bulletinData.missionaries || []), created_by: userId },
-        { key: `bulletin-${slug}-wardMissionaries`, value: JSON.stringify(bulletinData.wardMissionaries || []), created_by: userId },
-        { key: `bulletin-${slug}-serviceMissionaries`, value: JSON.stringify(bulletinData.serviceMissionaries || []), created_by: userId },
-        { key: `bulletin-${slug}-image`, value: bulletinData.imageId || 'none', created_by: userId },
-        { key: `bulletin-${slug}-imagePosition`, value: JSON.stringify(bulletinData.imagePosition || { x: 50, y: 50 }), created_by: userId },
-        { key: `bulletin-${slug}-imageOpacity`, value: String(bulletinData.imageOpacity ?? 40), created_by: userId },
+        { key: `bulletin-${slug}-ward_name`, value: bulletinData.wardName || '', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-theme`, value: bulletinData.theme || '', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-userTheme`, value: bulletinData.userTheme || '', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-bishopric`, value: bulletinData.bishopricMessage || '', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-announcements`, value: JSON.stringify(bulletinData.announcements || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-meetings`, value: JSON.stringify(bulletinData.meetings || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-events`, value: JSON.stringify(bulletinData.specialEvents || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-agenda`, value: JSON.stringify(bulletinData.agenda || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-prayers`, value: JSON.stringify(bulletinData.prayers || {}), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-music`, value: JSON.stringify(bulletinData.musicProgram || {}), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-leadership`, value: JSON.stringify(bulletinData.leadership || {}), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-wardLeadership`, value: JSON.stringify(bulletinData.wardLeadership || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-missionaries`, value: JSON.stringify(bulletinData.missionaries || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-wardMissionaries`, value: JSON.stringify(bulletinData.wardMissionaries || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-serviceMissionaries`, value: JSON.stringify(bulletinData.serviceMissionaries || []), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-image`, value: bulletinData.imageId || 'none', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-imagePosition`, value: JSON.stringify(bulletinData.imagePosition || { x: 50, y: 50 }), created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-imageOpacity`, value: String(bulletinData.imageOpacity ?? 40), created_by: tokenOwnerId },
       ];
       let data, error;
       try {
@@ -595,7 +633,14 @@ export const bulletinService = {
       if (error) {
         throw error;
       }
-    } catch (tokenError) {
+    } catch (tokenError: any) {
+      // Surface token save failures so announcements and other content are not silently lost
+      console.error('Token save failed (announcements/content):', tokenError);
+      throw new Error(
+        tokenError?.message?.includes('announcement') || tokenError?.message?.includes('token')
+          ? tokenError.message
+          : `Failed to save bulletin content (e.g. announcements). ${tokenError?.message || 'Please try again.'}`
+      );
     }
 
     // Don't update status to 'active' via saveBulletin - that should be done via updateBulletinStatus
@@ -615,21 +660,6 @@ export const bulletinService = {
 
     try {
       if (bulletinId) {
-        // First, verify the bulletin exists to prevent accidental duplicates
-        const { data: existingBulletin, error: checkError } = await supabase
-          .from('bulletins')
-          .select('id')
-          .eq('id', bulletinId)
-          .maybeSingle();
-
-        if (checkError) {
-          throw checkError;
-        }
-
-        if (!existingBulletin) {
-          throw new Error('Bulletin not found. Cannot update non-existent bulletin.');
-        }
-
         let data, error;
         try {
           // Don't filter by created_by - let RLS handle permissions
@@ -1332,7 +1362,7 @@ export const bulletinService = {
     // First get the user by profile_slug and their active bulletin
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('id, active_bulletin_id')
+      .select('id, active_bulletin_id, unit_type, language')
       .eq('profile_slug', profileSlug)
       .maybeSingle(); // Use maybeSingle to handle not found case properly
 
@@ -1451,6 +1481,8 @@ export const bulletinService = {
       id: data.id,
       user_id: data.created_by,
       profile_slug: data.profile_slug,
+      profile_unit_type: userData.unit_type || 'ward',
+      profile_language: userData.language || 'en',
       ward_name: wardName || '',
       date: data.meeting_date,
       meeting_type: data.meeting_type,
@@ -1785,7 +1817,8 @@ export const bulletinService = {
           .update({
             status,
             // Disable auto-activation when manually making bulletin active
-            ...(status === 'active' ? { auto_activate: false } : {})
+            // Ensure public can read when QR-active so scan → public page loads content
+            ...(status === 'active' ? { auto_activate: false, view_permission: 'public' } : {})
           })
           .eq('id', bulletinId)
           .select('id, status'),

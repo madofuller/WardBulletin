@@ -5,9 +5,11 @@ import { useSession } from '../lib/SessionContext';
 import { supabase, profileSharingService } from '../lib/supabase';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
 
 export default function InvitePage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user } = useSession();
@@ -182,11 +184,11 @@ export default function InvitePage() {
   const getRoleDescription = (role: string) => {
     switch (role) {
       case 'editor':
-        return 'You can create, edit, and schedule bulletins for this profile.';
+        return t('sharing.editorDescription');
       case 'viewer':
-        return 'You can view bulletins and public content for this profile.';
+        return t('sharing.viewerDescription');
       default:
-        return 'You will have access to this profile.';
+        return t('sharing.ownerDescription');
     }
   };
 
@@ -195,7 +197,7 @@ export default function InvitePage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading invitation...</p>
+          <p className="text-gray-600">{t('invite.loadingInvitation')}</p>
         </div>
       </div>
     );
@@ -207,13 +209,13 @@ export default function InvitePage() {
         <div className="max-w-md w-full mx-4">
           <div className="bg-white rounded-lg shadow-xl p-6 text-center">
             <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Invalid Invitation</h1>
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">{t('invite.invalidInvitation')}</h1>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
               onClick={() => navigate('/')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
             >
-              Go to Home
+              {t('invite.goToHome')}
             </button>
           </div>
         </div>
@@ -230,16 +232,16 @@ export default function InvitePage() {
             <div className="mb-4">
               <Logo size={48} />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900">You're Invited!</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t('invite.youreInvited')}</h1>
           </div>
 
           {/* Invitation Details */}
           <div className="text-center mb-6">
             <h2 className="text-lg font-medium text-gray-900 mb-2">
-              Profile: {invitation?.profile_slug}
+              {t('invite.profileLabel')}: {invitation?.profile_slug}
             </h2>
             <p className="text-sm text-gray-600 mb-4">
-              You've been invited as a <span className="font-medium">{invitation?.role}</span>
+              {t('invite.invitedAs')} <span className="font-medium">{invitation?.role}</span>
             </p>
             <p className="text-sm text-gray-500">
               {getRoleDescription(invitation?.role)}
@@ -256,13 +258,13 @@ export default function InvitePage() {
                       <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-yellow-800 mb-1">
-                          Wrong Account Signed In
+                          {t('invite.wrongAccountSignedIn')}
                         </p>
                         <p className="text-xs text-yellow-700 mb-3">
-                          This invitation was sent to <strong>{invitation?.invited_email}</strong>, but you're signed in as <strong>{user.email}</strong>.
+                          {t('invite.invitationSentTo')} <strong>{invitation?.invited_email}</strong>, {t('invite.butSignedInAs')} <strong>{user.email}</strong>.
                         </p>
                         <p className="text-xs text-yellow-700">
-                          Please sign out and sign in with the email address the invitation was sent to.
+                          {t('invite.pleaseSignOutAndUseCorrectEmail')}
                         </p>
                       </div>
                     </div>
@@ -275,17 +277,17 @@ export default function InvitePage() {
                     {signingOut ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Signing out...
+                        {t('invite.signingOut')}
                       </>
                     ) : (
                       <>
                         <LogIn className="w-4 h-4 mr-2" />
-                        Sign Out & Use Correct Email
+                        {t('invite.signOutAndUseCorrectEmail')}
                       </>
                     )}
                   </button>
                   <div className="text-center text-xs text-gray-500">
-                    Currently signed in as {user.email}
+                    {t('invite.signedInAs')} {user.email}
                   </div>
                 </>
               ) : (
@@ -300,10 +302,10 @@ export default function InvitePage() {
                     ) : (
                       <CheckCircle className="w-4 h-4 mr-2" />
                     )}
-                    {accepting ? 'Accepting...' : 'Accept Invitation'}
+                    {accepting ? t('invite.accepting') : t('invite.acceptInvitation')}
                   </button>
                   <div className="text-center text-xs text-gray-500">
-                    Signed in as {user.email}
+                    {t('invite.signedInAs')} {user.email}
                   </div>
                 </>
               )
@@ -312,39 +314,39 @@ export default function InvitePage() {
                 {checkingEmail ? (
                   <div className="flex items-center justify-center mb-4">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                    <p className="text-sm text-gray-600">Checking account...</p>
+                    <p className="text-sm text-gray-600">{t('invite.checkingAccount')}</p>
                   </div>
                 ) : emailExists ? (
                   <>
                     <p className="text-sm text-gray-600 mb-4">
-                      You have an existing account. Please sign in to accept this invitation.
+                      {t('invite.existingAccountSignIn')}
                     </p>
                     <button
                       onClick={() => navigate('/', { state: { showAuth: true, returnTo: `/invite/${token}` } })}
                       className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
                     >
                       <LogIn className="w-4 h-4 mr-2" />
-                      Sign In to Accept
+                      {t('invite.signInToAccept')}
                     </button>
                   </>
                 ) : (
                   <>
                     <p className="text-sm text-gray-600 mb-4">
-                      Create an account with your invited email to accept this invitation.
+                      {t('invite.createAccountToAccept')}
                     </p>
                     <button
-                      onClick={() => navigate('/', { 
-                        state: { 
-                          showAuth: true, 
+                      onClick={() => navigate('/', {
+                        state: {
+                          showAuth: true,
                           mode: 'signup',
                           prefillEmail: invitation?.invited_email,
-                          returnTo: `/invite/${token}` 
-                        } 
+                          returnTo: `/invite/${token}`
+                        }
                       })}
                       className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors"
                     >
                       <User className="w-4 h-4 mr-2" />
-                      Create Account & Accept
+                      {t('invite.createAccountAndAccept')}
                     </button>
                   </>
                 )}
@@ -355,7 +357,7 @@ export default function InvitePage() {
           {/* Expiration Info */}
           {invitation?.expires_at && (
             <div className="mt-4 text-center text-xs text-gray-500">
-              Expires on {new Date(invitation.expires_at).toLocaleDateString()}
+              {t('invite.expiresOn')} {new Date(invitation.expires_at).toLocaleDateString()}
             </div>
           )}
         </div>

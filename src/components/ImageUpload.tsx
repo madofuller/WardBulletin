@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CustomImage, saveCustomImage } from '../data/images';
 
 interface ImageUploadProps {
@@ -8,6 +9,7 @@ interface ImageUploadProps {
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, userId }) => {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -17,14 +19,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, use
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      onError?.('Please select a valid image file.');
+      onError?.(t('form.invalidImageFile'));
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      onError?.('Image file is too large. Please choose a file smaller than 5MB.');
+      onError?.(t('form.imageTooLarge'));
       return;
     }
 
@@ -55,7 +57,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, use
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      onError?.('Failed to upload image. Please try again.');
+      onError?.(t('form.failedToUploadImage'));
     } finally {
       setIsUploading(false);
     }
@@ -102,15 +104,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, use
         {isUploading ? (
           <div className="flex items-center justify-center gap-2">
             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <span>Uploading...</span>
+            <span>{t('form.uploading')}</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span className="font-medium">Upload Custom Image</span>
-            <span className="text-sm text-gray-500">JPG, PNG, GIF up to 5MB</span>
+            <span className="font-medium">{t('form.uploadCustomImage')}</span>
+            <span className="text-sm text-gray-500">{t('form.imageFileTypes')}</span>
           </div>
         )}
       </button>
