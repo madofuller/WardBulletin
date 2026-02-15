@@ -166,7 +166,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
         throw updateError;
       }
 
-      setSuccess(t('modals.passwordUpdatedSuccessfully'));
+      setSuccess(t('modals.passwordUpdatedSignInAgain'));
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -174,14 +174,18 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       });
       setShowPasswordSection(false);
 
+      // Sign out so user must sign in with the new password (confirms the change worked)
+      await supabase.auth.signOut();
+
       // Call onProfileUpdate callback if provided
       if (onProfileUpdate) {
         onProfileUpdate();
       }
 
-      // Clear success message after 3 seconds
+      // Keep success message visible briefly, then close modal so they see sign-in
       setTimeout(() => {
         setSuccess('');
+        onClose();
       }, 3000);
     } catch (err: any) {
       setError(err.message || t('modals.failedToUpdatePassword'));

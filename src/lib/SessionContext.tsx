@@ -30,6 +30,16 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
+  // Preserve recovery hash as early as possible (Supabase may strip it when processing the token)
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash && (hash.includes('type=recovery') || hash.includes('access_token='))) {
+      try {
+        sessionStorage.setItem('password_recovery_hash', hash);
+      } catch (_) {}
+    }
+  }, []);
+
   // Restore session on mount
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -37,9 +47,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // If this is a password recovery event, redirect to reset password page
+      // If this is a password recovery event, redirect to reset password page with hash preserved
       if (event === 'PASSWORD_RECOVERY') {
-        window.location.href = '/reset-password' + window.location.hash;
+        const hash = window.location.hash || sessionStorage.getItem('password_recovery_hash') || '';
+        try {
+          sessionStorage.removeItem('password_recovery_hash');
+        } catch (_) {}
+        window.location.href = '/reset-password' + hash;
         return;
       }
       // If user updated their email, refresh profile to get new email

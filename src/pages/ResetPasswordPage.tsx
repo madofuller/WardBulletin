@@ -16,27 +16,30 @@ export default function ResetPasswordPage() {
   const location = useLocation();
 
   useEffect(() => {
-    // Validate that we have a valid recovery session or are in password recovery mode
+    // Allow password reset if we have a recovery hash (URL or stored) or an existing session
     const checkSession = async () => {
       const hash = window.location.hash;
-      const isRecoveryMode = hash.includes('type=recovery') || hash.includes('access_token=');
+      const storedHash = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('password_recovery_hash') : null;
+      const hasRecoveryHash = hash.includes('type=recovery') || hash.includes('access_token=') ||
+        (storedHash && (storedHash.includes('type=recovery') || storedHash.includes('access_token=')));
 
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (isRecoveryMode) {
-        // We have a recovery token, allow password reset
+      if (hasRecoveryHash) {
         setIsRecoveryMode(true);
+        try {
+          sessionStorage.removeItem('password_recovery_hash');
+        } catch (_) {}
       } else if (session) {
-        // User is already logged in - redirect them away from reset page
-        // They should use account settings to change password if needed
-        setError(t('resetPassword.alreadyLoggedIn'));
+        // Logged in (e.g. recovery link already processed, or user opened this page while signed in)
+        // Still show the form so they can set a new password
+        setIsRecoveryMode(true);
       } else {
-        // No recovery token and no session
         setError(t('resetPassword.invalidResetLink'));
       }
     };
     checkSession();
-  }, []);
+  }, [t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,10 +70,13 @@ export default function ResetPasswordPage() {
 
       setSuccess(true);
 
-      // Redirect to home page after 2 seconds
+      // Sign out so user must sign in with the new password (confirms the change worked)
+      await supabase.auth.signOut();
+
+      // Redirect to home so they can sign in with their new password
       setTimeout(() => {
-        navigate('/');
-      }, 2000);
+        navigate('/', { replace: true });
+      }, 2500);
     } catch (error: any) {
       setError(error.message || 'Failed to update password. Please try again.');
     } finally {
@@ -105,8 +111,11 @@ export default function ResetPasswordPage() {
             <p className="text-green-600 text-center font-medium">
               {t('resetPassword.passwordUpdatedRedirecting')}
             </p>
+            <p className="text-green-600 text-center text-sm mt-2">
+              {t('resetPassword.signInWithNewPassword')}
+            </p>
           </div>
-        ) : (
+        ) : isRecoveryMode ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -157,7 +166,7 @@ export default function ResetPasswordPage() {
               {loading ? t('resetPassword.updating') : t('resetPassword.updatePassword')}
             </button>
           </form>
-        )}
+        ) : null}
       </div>
     </div>
   );
