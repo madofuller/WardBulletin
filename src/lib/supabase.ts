@@ -1373,11 +1373,12 @@ export const bulletinService = {
     let bulletinId = userData.active_bulletin_id;
 
     // If no active bulletin is set, get their latest bulletin
+    // Include bulletins created by profile owner OR bulletins for this profile (e.g. by editors)
     if (!bulletinId) {
       const { data: latestBulletin, error: latestError } = await supabase
         .from('bulletins')
         .select('id')
-        .eq('created_by', userData.id)
+        .or(`created_by.eq.${userData.id},profile_slug.eq."${profileSlug}"`)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -1403,8 +1404,9 @@ export const bulletinService = {
       throw error;
     }
 
-    // Get user ID to fetch tokens
-    const userId = userData.id;
+    // Get user ID to fetch tokens - MUST use bulletin creator, not profile owner!
+    // When an editor creates/edits a bulletin for a shared profile, tokens have created_by = editor
+    const userId = data.created_by;
 
     // Fetch bulletin data from tokens - Use batch fetch to avoid caching issues
     // Build the list of token keys we need
