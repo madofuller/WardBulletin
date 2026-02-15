@@ -711,7 +711,18 @@
     "qrCodeOff": "QR Code: OFF",
     "qrOnShort": "QR ON",
     "qrOffShort": "QR OFF",
-    "toggleQrCodeTooltip": "{{action}} QR code on printed bulletin"
+    "toggleQrCodeTooltip": "{{action}} QR code on printed bulletin",
+    "fontSize": "Print font size",
+    "fontSizeNormal": "Normal",
+    "fontSizeLarge": "Large",
+    "fontSizeExtraLarge": "Extra large",
+    "tightMargins": "Tight margins",
+    "tightMarginsTooltip": "Use smaller margins to fit more announcements on the page",
+    "contentCutOffBackCover": "Some content on the back cover (leadership/missionaries) may be cut off when printed. Try tight margins or reducing the list.",
+    "contentCutOffAnnouncements": "Some announcements may be cut off when printed. Try tight margins or fewer announcements.",
+    "contentCutOffBoth": "Some content on the back cover and some announcements may be cut off when printed. Try tight margins or reducing content.",
+    "print": "Print",
+    "printNow": "Print now"
   },
   "languages": {
     "en": "English",

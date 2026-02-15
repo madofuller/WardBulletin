@@ -377,15 +377,18 @@ function EditorApp() {
         const parsed = JSON.parse(saved) as BulletinData;
         // Ensure all required fields exist for backward compatibility
         const defaultBulletin = createBlankBulletin();
-        return {
+        const merged = {
           ...defaultBulletin,
           ...parsed,
           imageId: parsed.imageId || 'none',
           imagePosition: parsed.imagePosition || { x: 50, y: 50 },
           wardMissionaries: parsed.wardMissionaries || [],
           missionaries: parsed.missionaries || [],
-          wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership
+          wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership,
+          // Preserve date on refresh: never leave date empty when restoring from draft
+          date: parsed.date && String(parsed.date).trim() ? parsed.date : defaultBulletin.date
         };
+        return merged;
       } catch (e) {
         localStorage.removeItem(DRAFT_KEY);
       }
@@ -515,9 +518,15 @@ function EditorApp() {
   //   };
   // }, [user, activeBulletinId, hasUnsavedChanges, currentBulletinId]);
 
-  const convertDbBulletinToData = (bulletin: any): BulletinData => ({
+  const convertDbBulletinToData = (bulletin: any): BulletinData => {
+    const meetingDate = bulletin.date || bulletin.meeting_date || '';
+    const today = (() => {
+      const t = new Date();
+      return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    })();
+    return {
     wardName: bulletin.ward_name || '',
-    date: bulletin.date || '',
+    date: meetingDate && String(meetingDate).trim() ? meetingDate : today,
     // Include status and scheduling fields
     status: bulletin.status || 'draft',
     scheduledDate: bulletin.scheduled_date || null,
@@ -578,7 +587,8 @@ function EditorApp() {
     imageUrl: bulletin.imageUrl, // Include the direct URL for custom images
     imagePosition: bulletin.imagePosition || { x: 50, y: 50 },
     imageOpacity: bulletin.imageOpacity ?? 40
-  });
+  };
+  };
 
   const handleBulletinDataChange = useCallback((newData: BulletinData) => {
     // Prevent infinite loops by checking if data actually changed
@@ -796,8 +806,15 @@ function EditorApp() {
             const hasDraft = !!localStorage.getItem(DRAFT_KEY);
             if (hasDraft) {
               try {
-                const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!);
-                setBulletinData(draftData);
+                const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!) as BulletinData;
+                const defaultBulletin = createBlankBulletin();
+                // Merge with defaults so date and other fields are never missing after refresh
+                const merged = {
+                  ...defaultBulletin,
+                  ...draftData,
+                  date: draftData.date && String(draftData.date).trim() ? draftData.date : defaultBulletin.date
+                };
+                setBulletinData(merged);
                 setHasUnsavedChanges(true);
               } catch (err) {
                 localStorage.removeItem(DRAFT_KEY);

@@ -140,6 +140,10 @@ export interface BulletinData {
   imageOpacity?: number; // Image opacity (0-100, default 40)
   showQRCodeOnPrint?: boolean; // Whether to show QR code on printed bulletin
   showImagesOnPrint?: boolean; // Whether to show images on printed bulletin
+  /** Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large. Scales all print text without shifting layout. */
+  printFontScale?: number;
+  /** Use tighter margins on print to fit more announcements. */
+  printTightMargins?: boolean;
   // Scheduling fields
   id?: string;
   status?: BulletinStatus;
