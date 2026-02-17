@@ -607,11 +607,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       {/* Page 2: Inside (landscape) */}
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
         {/* Announcements (left) */}
-        <div className={`w-1/2 flex flex-col justify-between text-left print:!text-xl print:!text-black ${pad.page}`}>
-          <div ref={announcementsRef} className="flex-1 overflow-y-hidden">
+        <div className={`w-1/2 flex flex-col text-left print:!text-xl print:!text-black ${pad.page}`}>
+          <div ref={announcementsRef} className="flex-1 overflow-y-hidden flex flex-col min-h-0">
             {/* Announcements Section - Optimized for Print */}
-            <div className={`w-full ${pad.sectionMb}`}>
-              <h2 className={`text-lg font-bold print:!text-xl print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`}>{t('printPreview.announcementsAndEvents')}</h2>
+            <div className={`w-full flex-1 flex flex-col ${pad.sectionMb} min-h-full`}>
+              <h2 className={`text-lg font-bold print:!text-xl print:!text-black w-full text-center flex-shrink-0 ${tight ? 'mb-1' : 'mb-2'}`}>{t('printPreview.announcementsAndEvents')}</h2>
+              <div className="flex-1 flex flex-col min-h-0">
               {(() => {
                 // Group announcements by audience (like BulletinPreview does)
                 const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
@@ -638,31 +639,149 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   });
                 });
 
-                // Calculate dynamic font size based on announcement count (scaled by printFontScale)
+                // Calculate dynamic font size based on announcement count AND content volume
+                // This ensures that when there's little content, text isn't too small
                 const totalAnnouncements = (data.announcements || []).length;
-                const contentFontSize = totalAnnouncements <= 4 ? scalePx(11) :
-                                        totalAnnouncements <= 8 ? scalePx(10) :
-                                        totalAnnouncements <= 12 ? scalePx(9) : scalePx(8);
-                const titleFontSize = totalAnnouncements <= 4 ? scalePx(12) :
-                                      totalAnnouncements <= 8 ? scalePx(11) :
-                                      totalAnnouncements <= 12 ? scalePx(10) : scalePx(9);
-                const headerFontSize = totalAnnouncements <= 4 ? scalePx(13) :
-                                       totalAnnouncements <= 8 ? scalePx(12) : scalePx(11);
+                
+                // Calculate total content length (character count) - strip HTML for accurate count
+                const totalContentLength = (data.announcements || []).reduce((sum, a) => {
+                  const content = a.content || '';
+                  const title = a.title || '';
+                  // Strip HTML tags and decode entities for accurate character count
+                  const textContent = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+                  const textTitle = title.replace(/<[^>]*>/g, '').trim();
+                  return sum + textContent.length + textTitle.length;
+                }, 0);
+                
+                // Estimate average content per announcement
+                const avgContentPerAnnouncement = totalAnnouncements > 0 ? totalContentLength / totalAnnouncements : 0;
+                
+                // Estimate vertical space needed based on character count
+                // Assumptions:
+                // - Single column width: ~5.5in = ~65-70 chars per line (at 12px font)
+                // - Two column width: ~2.5in per column = ~30-35 chars per line per column (at 10px font)
+                // - Line height: ~1.5x font size
+                // - Available height: ~7in usable (8.5in page - margins) ≈ 500-550px
+                
+                const charsPerLineSingle = 70; // Approximate chars per line in single column
+                const charsPerLineDoublePerCol = 32; // Approximate chars per line per column in two-column
+                const lineHeightMultiplier = 1.5;
+                
+                // Estimate lines needed (content + titles + spacing)
+                // Add ~2 lines per announcement for title and spacing
+                const contentLinesSingle = Math.ceil(totalContentLength / charsPerLineSingle);
+                const contentLinesDouble = Math.ceil(totalContentLength / (charsPerLineDoublePerCol * 2));
+                const spacingLines = totalAnnouncements * 2; // Title + spacing per announcement
+                
+                const totalLinesSingle = contentLinesSingle + spacingLines;
+                const totalLinesDouble = contentLinesDouble + (spacingLines * 0.7); // Less spacing in columns
+                
+                // Estimate height in pixels
+                // Use average font sizes: 12px for single column, 10px for double column
+                const estimatedHeightSingle = totalLinesSingle * 12 * lineHeightMultiplier;
+                const estimatedHeightDouble = totalLinesDouble * 10 * lineHeightMultiplier;
+                
+                // Available vertical space: ~500-550px usable height
+                const minHeightForSingle = 200; // Minimum to avoid looking too sparse
+                const maxHeightForSingle = 500; // Max before needing two columns
+                
+                // Determine column count based on estimated height
+                let columnCount = 2; // Default to 2 columns
+                let useSingleColumn = false;
+                
+                if (totalAnnouncements <= 1) {
+                  // Always single column for 1 announcement
+                  useSingleColumn = true;
+                  columnCount = 1;
+                } else if (estimatedHeightSingle <= maxHeightForSingle && estimatedHeightSingle >= minHeightForSingle) {
+                  // Content fits well in single column (200-500px) - use it to fill space
+                  useSingleColumn = true;
+                  columnCount = 1;
+                } else if (estimatedHeightSingle < minHeightForSingle && totalAnnouncements <= 3) {
+                  // Very sparse content (1-3 announcements, < 200px) - use single column with larger fonts
+                  useSingleColumn = true;
+                  columnCount = 1;
+                } else if (estimatedHeightDouble > 550 || totalAnnouncements > 12) {
+                  // Very dense content - use 3 columns if needed
+                  columnCount = 3;
+                }
+                
+                // Determine content density for font sizing
+                const isLowContent = totalAnnouncements <= 3 || (totalAnnouncements <= 6 && avgContentPerAnnouncement < 200);
+                const isMediumContent = totalAnnouncements <= 8 && avgContentPerAnnouncement >= 200;
+                const isHighContent = totalAnnouncements > 8 || (totalAnnouncements > 6 && avgContentPerAnnouncement >= 300);
+                
+                const columnClass = useSingleColumn ? 'columns-1' : `columns-${columnCount} ${pad.announcementsGap}`;
+                
+                // Scale fonts based on content density - more content = smaller font, less content = larger font
+                let contentFontSize, titleFontSize, headerFontSize;
+                
+                // Calculate spacing to fill vertical space when content is sparse
+                // Base spacing on estimated height - if content is sparse, add more spacing
+                let announcementSpacing = pad.announcementsList; // Default spacing
+                let sectionSpacing = pad.sectionMb; // Default section spacing
+                
+                // Determine if content is sparse based on estimated height
+                const isSparse = estimatedHeightSingle < minHeightForSingle;
+                const fitsWellSingle = estimatedHeightSingle >= minHeightForSingle && estimatedHeightSingle <= maxHeightForSingle;
+                
+                if (totalAnnouncements <= 1 || (useSingleColumn && isSparse)) {
+                  // Single announcement or sparse content in single column - use much larger fonts and spacing
+                  contentFontSize = scalePx(14);
+                  titleFontSize = scalePx(16);
+                  headerFontSize = scalePx(18);
+                  announcementSpacing = 'space-y-4'; // More spacing between items
+                  sectionSpacing = 'mb-4'; // More spacing between sections
+                } else if (totalAnnouncements === 2 && useSingleColumn) {
+                  // Two announcements in single column - still use larger fonts and spacing
+                  contentFontSize = scalePx(13);
+                  titleFontSize = scalePx(15);
+                  headerFontSize = scalePx(17);
+                  announcementSpacing = 'space-y-3';
+                  sectionSpacing = 'mb-3';
+                } else if (useSingleColumn && fitsWellSingle) {
+                  // Content fits well in single column - use moderate larger fonts
+                  contentFontSize = scalePx(12);
+                  titleFontSize = scalePx(14);
+                  headerFontSize = scalePx(15);
+                  announcementSpacing = 'space-y-3';
+                  sectionSpacing = 'mb-3';
+                } else if (isLowContent) {
+                  // Very little content - use larger fonts so it doesn't look too small
+                  contentFontSize = scalePx(12);
+                  titleFontSize = scalePx(13);
+                  headerFontSize = scalePx(14);
+                } else if (isMediumContent) {
+                  // Medium content - balanced sizing
+                  contentFontSize = scalePx(10);
+                  titleFontSize = scalePx(11);
+                  headerFontSize = scalePx(12);
+                } else if (isHighContent) {
+                  // Lots of content - smaller fonts to fit everything
+                  contentFontSize = scalePx(9);
+                  titleFontSize = scalePx(10);
+                  headerFontSize = scalePx(11);
+                } else {
+                  // Default for very high content
+                  contentFontSize = scalePx(8);
+                  titleFontSize = scalePx(9);
+                  headerFontSize = scalePx(10);
+                }
 
                 return (
-                  <div className={`columns-2 ${pad.announcementsGap}`} style={{ columnFill: 'balance' }}>
-                    {Object.entries(grouped).map(([audienceLabel, announcements]) => (
-                      <div key={audienceLabel} className={`break-inside-avoid-column ${pad.sectionMb}`}>
+                  <div className={`${columnClass} flex-1`} style={{ columnFill: 'balance', minHeight: '100%' }}>
+                    {Object.entries(grouped).map(([audienceLabel, announcements], groupIdx) => (
+                      <div key={audienceLabel} className={`break-inside-avoid-column ${groupIdx < Object.keys(grouped).length - 1 ? sectionSpacing : ''} ${totalAnnouncements <= 2 ? 'flex-1 flex flex-col justify-start' : ''}`}>
                         {/* Group header - only show once per group if there's a label */}
                         {audienceLabel && (
                           <div
-                            className="font-bold print:!text-black mb-1 border-b border-gray-300 pb-0.5"
+                            className={`font-bold print:!text-black border-b border-gray-300 pb-0.5 ${totalAnnouncements <= 1 ? 'mb-3' : totalAnnouncements === 2 ? 'mb-2' : 'mb-1'}`}
                             style={{ fontSize: headerFontSize }}
                           >
                             {audienceLabel}
                           </div>
                         )}
-                        <ul className={pad.announcementsList}>
+                        <ul className={announcementSpacing}>
                           {(announcements as any[]).map((a: any, idx: number) => {
                             const decodedContent = sanitizeHtml(decodeHtml(a.content));
                             return (
@@ -682,7 +801,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                   </span>
                                 )}
                                 <div
-                                  className="print:!text-black mb-1 leading-tight"
+                                  className={`print:!text-black leading-tight ${totalAnnouncements <= 1 ? 'mb-3' : totalAnnouncements === 2 ? 'mb-2' : 'mb-1'}`}
                                   style={{
                                     fontSize: contentFontSize,
                                     '--tw-prose-bullets': 'disc',
@@ -775,6 +894,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   </div>
                 );
               })()}
+              </div>
             </div>
           </div>
         </div>
