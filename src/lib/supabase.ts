@@ -550,23 +550,23 @@ export const bulletinService = {
     }
 
     let slug: string;
-    
-    // Generate slug from bulletin ID and date
-    // Note: slug column doesn't exist in database - it's used for tokenization only
-    slug = generateUniqueBulletinSlug(userId, bulletinData.date, bulletinId);
 
-    // When updating an existing bulletin, use the bulletin creator's id for tokens so we update
-    // the same row that is read on load (fixes announcements not persisting for shared editors).
+    // When updating an existing bulletin, reuse its slug so the token upsert keys match
+    // and RLS policies can verify the bulletin exists with that slug.
+    // Only generate a new slug for brand-new bulletins.
     let tokenOwnerId = userId;
     if (bulletinId) {
       const { data: existingRow, error: existingError } = await supabase
         .from('bulletins')
-        .select('id, created_by')
+        .select('id, created_by, slug')
         .eq('id', bulletinId)
         .maybeSingle();
       if (existingError) throw existingError;
       if (!existingRow) throw new Error('Bulletin not found. Cannot update non-existent bulletin.');
       if (existingRow.created_by) tokenOwnerId = existingRow.created_by;
+      slug = existingRow.slug;
+    } else {
+      slug = generateUniqueBulletinSlug(userId, bulletinData.date);
     }
 
     const bulletinRecord = {
@@ -647,16 +647,18 @@ export const bulletinService = {
     // Only allow saving draft, scheduled, or archived status
     const statusToSave = bulletinData.status === 'active' ? 'draft' : (bulletinData.status || 'draft');
     
-    const dbBulletinRecord = {
+    const dbBulletinRecord: Record<string, any> = {
       slug,
       meeting_date: bulletinData.date || null,
       meeting_type: bulletinData.meetingType,
-      created_by: userId,
       status: statusToSave,
       scheduled_date: bulletinData.scheduledDate || null,
       auto_activate: bulletinData.autoActivate || false,
       profile_slug: effectiveProfileSlug || null
     };
+    if (!bulletinId) {
+      dbBulletinRecord.created_by = userId;
+    }
 
     try {
       if (bulletinId) {
