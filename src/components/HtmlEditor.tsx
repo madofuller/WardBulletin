@@ -13,6 +13,7 @@ const modules = {
     ['bold', 'italic', 'underline'],
     [{ 'header': 3 }],
     [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    ['link'],
     ['clean']
   ],
 };
@@ -20,7 +21,8 @@ const modules = {
 const formats = [
   'bold', 'italic', 'underline',
   'header',
-  'list', 'bullet'
+  'list', 'bullet',
+  'link'
 ];
 
 export default function HtmlEditor({ value, onChange, placeholder = 'Enter content...' }: HtmlEditorProps) {
