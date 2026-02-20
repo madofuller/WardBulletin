@@ -616,6 +616,7 @@ export const bulletinService = {
         { key: `bulletin-${slug}-wardMissionaries`, value: JSON.stringify(bulletinData.wardMissionaries || []), created_by: tokenOwnerId },
         { key: `bulletin-${slug}-serviceMissionaries`, value: JSON.stringify(bulletinData.serviceMissionaries || []), created_by: tokenOwnerId },
         { key: `bulletin-${slug}-image`, value: bulletinData.imageId || 'none', created_by: tokenOwnerId },
+        { key: `bulletin-${slug}-imageUrl`, value: bulletinData.imageUrl || '', created_by: tokenOwnerId },
         { key: `bulletin-${slug}-imagePosition`, value: JSON.stringify(bulletinData.imagePosition || { x: 50, y: 50 }), created_by: tokenOwnerId },
         { key: `bulletin-${slug}-imageOpacity`, value: String(bulletinData.imageOpacity ?? 40), created_by: tokenOwnerId },
       ];
@@ -1042,6 +1043,7 @@ export const bulletinService = {
             `bulletin-${bulletin.slug}-wardMissionaries`,
             `bulletin-${bulletin.slug}-serviceMissionaries`,
             `bulletin-${bulletin.slug}-image`,
+            `bulletin-${bulletin.slug}-imageUrl`,
             `bulletin-${bulletin.slug}-imagePosition`,
             `bulletin-${bulletin.slug}-imageOpacity`
           ];
@@ -1140,6 +1142,7 @@ export const bulletinService = {
             wardMissionaries: safeJsonParse(getToken('wardMissionaries'), []),
             serviceMissionaries: safeJsonParse(getToken('serviceMissionaries'), []),
             imageId: getToken('image') || 'none',
+            imageUrl: getToken('imageUrl') || undefined,
             imagePosition: safeJsonParse(getToken('imagePosition'), { x: 50, y: 50 }),
             imageOpacity: parseInt(getToken('imageOpacity') || '40', 10),
             created_at: bulletin.created_at,
@@ -1258,12 +1261,14 @@ export const bulletinService = {
         ];
         
         tokenPromises.push(tokenService.getToken(userId, `bulletin-${minimalData.slug}-image`));
+        tokenPromises.push(tokenService.getToken(userId, `bulletin-${minimalData.slug}-imageUrl`));
         tokenPromises.push(tokenService.getToken(userId, `bulletin-${minimalData.slug}-imagePosition`));
         
         const tokenResults = await Promise.all(tokenPromises);
         const [wardName, theme, userTheme, bishopric, announcements, meetings, events, agenda, prayers, music, leadership, wardLeadership, missionaries, wardMissionaries, serviceMissionaries] = tokenResults.slice(0, 15);
         const image = tokenResults[15];
-        const imagePosition = tokenResults[16];
+        const minimalStoredImageUrl = tokenResults[16];
+        const imagePosition = tokenResults[17];
 
         return {
           id: minimalData.id,
@@ -1286,6 +1291,7 @@ export const bulletinService = {
           missionaries: missionaries ? JSON.parse(missionaries) : [],
           wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
           imageId: image || 'none',
+          imageUrl: minimalStoredImageUrl || undefined,
           imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
           created_at: minimalData.created_at,
           updated_at: minimalData.created_at
@@ -1318,6 +1324,7 @@ export const bulletinService = {
     
     // Always fetch image tokens since they're not in database record
     tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-image`));
+    tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imageUrl`));
     tokenPromises.push(tokenService.getToken(userId, `bulletin-${data.slug}-imagePosition`));
     
     const tokenResults = await Promise.all(tokenPromises);
@@ -1325,7 +1332,8 @@ export const bulletinService = {
     
     // Handle image tokens (always fetched)
     const image = tokenResults[15];
-    const imagePosition = tokenResults[16];
+    const storedImageUrl = tokenResults[16];
+    const imagePosition = tokenResults[17];
 
     return {
       id: data.id,
@@ -1349,6 +1357,7 @@ export const bulletinService = {
       wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
       serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
       imageId: image || 'none',
+      imageUrl: storedImageUrl || undefined,
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       created_at: data.created_at,
       updated_at: data.created_at
@@ -1427,6 +1436,7 @@ export const bulletinService = {
       `bulletin-${data.slug}-wardMissionaries`,
       `bulletin-${data.slug}-serviceMissionaries`,
       `bulletin-${data.slug}-image`,
+      `bulletin-${data.slug}-imageUrl`,
       `bulletin-${data.slug}-imagePosition`,
       `bulletin-${data.slug}-imageOpacity`
     ];
@@ -1466,9 +1476,10 @@ export const bulletinService = {
 
     const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
 
-    // If the imageId is a custom image, fetch its URL from storage
-    let imageUrl = null;
-    if (image && image.startsWith('custom-')) {
+    // Use the stored imageUrl token if available; fall back to constructing from userId
+    const storedImageUrl = tokenMap.get(`bulletin-${data.slug}-imageUrl`) || null;
+    let imageUrl: string | null = storedImageUrl || null;
+    if (!imageUrl && image && image.startsWith('custom-')) {
       try {
         const filePath = `${userId}/${image}.jpg`;
         const { data: urlData } = supabase.storage
