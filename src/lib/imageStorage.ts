@@ -30,12 +30,21 @@ export const uploadImage = async (
   userId?: string
 ): Promise<string> => {
   try {
+    // Refresh session so the storage request uses the user's JWT, not the anon key
+    await supabase.auth.refreshSession();
+
     // Convert base64 to blob
     const blob = base64ToBlob(base64Data);
 
-    // Create file path: userId/imageId.jpg or anonymous/imageId.jpg for non-authenticated users
-    const folder = userId || 'anonymous';
-    const filePath = `${folder}/${imageId}.jpg`;
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+    if (!userId) {
+      throw new Error('User must be authenticated to upload images');
+    }
+
+    const filePath = `${userId}/${imageId}.jpg`;
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
@@ -64,8 +73,14 @@ export const uploadImage = async (
 // Delete image from Supabase Storage
 export const deleteImage = async (imageId: string, userId?: string): Promise<void> => {
   try {
-    const folder = userId || 'anonymous';
-    const filePath = `${folder}/${imageId}.jpg`;
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+    if (!userId) {
+      throw new Error('User must be authenticated to delete images');
+    }
+    const filePath = `${userId}/${imageId}.jpg`;
 
     const { error } = await supabase.storage
       .from(BUCKET_NAME)

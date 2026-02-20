@@ -47,7 +47,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, onError, use
       };
 
       // Save to Supabase Storage and get back the image with public URL
-      const savedImage = await saveCustomImage(customImage);
+      const savedImage = await saveCustomImage(customImage, userId);
 
       // Notify parent component with both ID and URL
       onImageUploaded(savedImage.id, savedImage.url);
