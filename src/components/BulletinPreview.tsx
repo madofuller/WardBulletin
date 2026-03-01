@@ -676,12 +676,9 @@ export default function BulletinPreview({
                   )}
                   {item.type === 'baby_blessing' && (
                     <div className="text-center py-2">
-                      <p className="font-bold text-lg text-gray-900">{t('bulletin.babyBlessing')}</p>
-                      {item.childName && (
-                        <p className="text-sm text-gray-800 mt-1">{item.childName}</p>
-                      )}
-                      {item.blesserName && (
-                        <p className="text-sm text-gray-700 italic mt-1">{t('bulletin.blessedBy')}: {item.blesserName}</p>
+                      <p className="font-bold text-lg text-gray-900">{t('bulletin.babyBlessing')} {item.childName || ''}</p>
+                      {item.parentNames && (
+                        <p className="text-sm text-gray-700 italic mt-1">{t('form.childOf')} {item.parentNames}</p>
                       )}
                     </div>
                   )}
@@ -1269,12 +1266,9 @@ export default function BulletinPreview({
                 {item.type === 'baby_blessing' && (
                   <div className="text-center py-3 my-2">
                     <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-lg px-4 py-3 shadow-sm">
-                      <p className="font-bold text-lg text-gray-800 tracking-wide">{t('bulletin.babyBlessing')}</p>
-                      {item.childName && (
-                        <p className="text-sm text-gray-700 mt-1">{item.childName}</p>
-                      )}
-                      {item.blesserName && (
-                        <p className="text-sm text-gray-600 mt-1 italic">{t('bulletin.blessedBy')}: {item.blesserName}</p>
+                      <p className="font-bold text-lg text-gray-800 tracking-wide">{t('bulletin.babyBlessing')} {item.childName || ''}</p>
+                      {item.parentNames && (
+                        <p className="text-sm text-gray-600 italic mt-1">{t('form.childOf')} {item.parentNames}</p>
                       )}
                     </div>
                   </div>

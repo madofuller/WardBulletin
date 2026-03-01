@@ -346,7 +346,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     } else if (type === 'sacrament') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'sacrament' }]);
     } else if (type === 'baby_blessing') {
-      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baby_blessing', childName: '', blesserName: '' }]);
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baby_blessing', childName: '' }]);
     }
     setShowAddSection(false);
   };
@@ -1350,7 +1350,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   </div>
                 ) : item.type === 'baby_blessing' ? (
                   <div className="w-full space-y-2">
-                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.babyBlessing')}</span>
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.babyBlessing')} {item.childName || '...'}</span>
                     <input
                       type="text"
                       value={item.childName || ''}
@@ -1360,9 +1360,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     />
                     <input
                       type="text"
-                      value={item.blesserName || ''}
-                      onChange={e => updateAgendaItem(item.id, { blesserName: e.target.value })}
-                      placeholder={t('form.blesserNamePlaceholder')}
+                      value={item.parentNames || ''}
+                      onChange={e => updateAgendaItem(item.id, { parentNames: e.target.value })}
+                      placeholder={t('form.parentNamesPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>

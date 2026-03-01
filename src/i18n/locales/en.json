@@ -116,9 +116,7 @@
     "reviewSubmissions": "Review Submissions",
     "unitBusiness": "{{unit}} Business",
     "administrationOfSacrament": "Administration of the Sacrament",
-    "babyBlessing": "Naming and Blessing of a Child",
-    "childName": "Child's Name",
-    "blessedBy": "Blessed by",
+    "babyBlessing": "Naming and Blessing of",
     "bearingOfTestimonies": "Bearing of Testimonies",
     "invocation": "Invocation",
     "benediction": "Benediction",
@@ -435,7 +433,8 @@
     "expectedReturnPlaceholder": "Expected return date",
     "seniorMissionaryRolePlaceholder": "e.g., Senior Missionary Mentors",
     "childNamePlaceholder": "Child's name",
-    "blesserNamePlaceholder": "e.g., Father's name"
+    "parentNamesPlaceholder": "e.g., John and Jane Smith",
+    "childOf": "Child of"
   },
   "modals": {
     "confirmationModal": "Confirmation",

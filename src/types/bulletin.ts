@@ -81,7 +81,7 @@ export type AgendaItem =
   | { type: 'musical'; id: string; label?: string; hymnNumber?: string; hymnTitle?: string; hymnType?: SongType; songName?: string; performers?: string }
   | { type: 'testimony'; id: string; note?: string }
   | { type: 'sacrament'; id: string }
-  | { type: 'baby_blessing'; id: string; childName?: string; blesserName?: string };
+  | { type: 'baby_blessing'; id: string; childName?: string; parentNames?: string };
 
 export interface UnitLeadershipEntry {
   title: string;
