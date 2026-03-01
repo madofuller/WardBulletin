@@ -943,6 +943,24 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       </td>
                     </tr>
                   </React.Fragment>
+                ) : item.type === 'baby_blessing' ? (
+                  <React.Fragment key={idx}>
+                    <tr>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">
+                        {t('bulletin.babyBlessing')}
+                        {item.childName && (
+                          <div className="text-sm font-normal text-gray-800 mt-1 print:!text-base print:!text-black">
+                            {item.childName}
+                          </div>
+                        )}
+                        {item.blesserName && (
+                          <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black">
+                            {t('bulletin.blessedBy')}: {item.blesserName}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  </React.Fragment>
                 ) : item.type === 'sacrament' && data.meetingType === 'sacrament' ? (
                   <React.Fragment key={idx}>
                     <ProgramTableRow

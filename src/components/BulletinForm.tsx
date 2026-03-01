@@ -330,7 +330,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   const [showAddSection, setShowAddSection] = useState(false);
   const addSectionRef = useRef<HTMLDivElement>(null);
 
-  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament') => {
+  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing') => {
     if (type === 'speaker') {
       updateField('agenda', [
         ...data.agenda,
@@ -345,6 +345,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'testimony' }]);
     } else if (type === 'sacrament') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'sacrament' }]);
+    } else if (type === 'baby_blessing') {
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baby_blessing', childName: '', blesserName: '' }]);
     }
     setShowAddSection(false);
   };
@@ -1346,6 +1348,24 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   <div className="w-full flex items-center justify-center">
                     <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.administrationOfSacrament')}</span>
                   </div>
+                ) : item.type === 'baby_blessing' ? (
+                  <div className="w-full space-y-2">
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.babyBlessing')}</span>
+                    <input
+                      type="text"
+                      value={item.childName || ''}
+                      onChange={e => updateAgendaItem(item.id, { childName: e.target.value })}
+                      placeholder={t('form.childNamePlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={item.blesserName || ''}
+                      onChange={e => updateAgendaItem(item.id, { blesserName: e.target.value })}
+                      placeholder={t('form.blesserNamePlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 ) : item.type === 'speaker' ? (
                   <>
                     <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder={t('form.speakerName')} className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
@@ -1513,6 +1533,13 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 className="px-4 py-3 bg-orange-600 text-white rounded-lg text-base font-medium hover:bg-orange-700 transition-colors flex-1"
               >
                 {t('form.addSacrament')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddSection('baby_blessing')}
+                className="px-4 py-3 bg-pink-600 text-white rounded-lg text-base font-medium hover:bg-pink-700 transition-colors flex-1"
+              >
+                {t('form.addBabyBlessing')}
               </button>
             </div>
           </section>

@@ -116,6 +116,9 @@
     "reviewSubmissions": "Review Submissions",
     "unitBusiness": "{{unit}} Business",
     "administrationOfSacrament": "Administration of the Sacrament",
+    "babyBlessing": "Naming and Blessing of a Child",
+    "childName": "Child's Name",
+    "blessedBy": "Blessed by",
     "bearingOfTestimonies": "Bearing of Testimonies",
     "invocation": "Invocation",
     "benediction": "Benediction",
@@ -326,6 +329,7 @@
     "addMusicalNumber": "Add Musical Number",
     "addTestimonies": "Add Testimonies",
     "addSacrament": "Add Sacrament",
+    "addBabyBlessing": "Add Baby Blessing",
     "noImageSelected": "No image selected",
     "noValidImageSelected": "No valid image selected",
     "hymn": "Hymn",
@@ -429,7 +433,9 @@
     "emailPlaceholder": "Email address",
     "setApartDatePlaceholder": "Set apart date",
     "expectedReturnPlaceholder": "Expected return date",
-    "seniorMissionaryRolePlaceholder": "e.g., Senior Missionary Mentors"
+    "seniorMissionaryRolePlaceholder": "e.g., Senior Missionary Mentors",
+    "childNamePlaceholder": "Child's name",
+    "blesserNamePlaceholder": "e.g., Father's name"
   },
   "modals": {
     "confirmationModal": "Confirmation",
