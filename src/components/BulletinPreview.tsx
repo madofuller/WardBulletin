@@ -674,6 +674,14 @@ export default function BulletinPreview({
                       )}
                     </div>
                   )}
+                  {item.type === 'baby_blessing' && (
+                    <div className="text-center py-2">
+                      <p className="font-bold text-lg text-gray-900">{t('bulletin.babyBlessing')} {item.childName || ''}</p>
+                      {item.parentNames && (
+                        <p className="text-sm text-gray-700 italic mt-1">{t('form.childOf')} {item.parentNames}</p>
+                      )}
+                    </div>
+                  )}
                   {item.type === 'sacrament' && data.meetingType === 'sacrament' && (
                     <>
                       {(data?.musicProgram?.sacramentHymnNumber || data?.musicProgram?.sacramentHymnTitle) && (
@@ -1251,6 +1259,16 @@ export default function BulletinPreview({
                       <p className="font-bold text-lg text-gray-800 tracking-wide">{t('bulletin.bearingOfTestimonies')}</p>
                       {item.note && (
                         <p className="text-sm text-gray-600 mt-1 italic">{item.note}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {item.type === 'baby_blessing' && (
+                  <div className="text-center py-3 my-2">
+                    <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-200 rounded-lg px-4 py-3 shadow-sm">
+                      <p className="font-bold text-lg text-gray-800 tracking-wide">{t('bulletin.babyBlessing')} {item.childName || ''}</p>
+                      {item.parentNames && (
+                        <p className="text-sm text-gray-600 italic mt-1">{t('form.childOf')} {item.parentNames}</p>
                       )}
                     </div>
                   </div>
