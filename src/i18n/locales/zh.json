@@ -116,6 +116,7 @@
     "reviewSubmissions": "審核提交",
     "unitBusiness": "{{unit}}事務",
     "administrationOfSacrament": "聖餐的施行",
+    "babyBlessing": "命名與祝福：",
     "bearingOfTestimonies": "見證分享",
     "invocation": "開會祈禱",
     "benediction": "閉會祈禱",
@@ -325,6 +326,7 @@
     "addMusicalNumber": "新增音樂表演",
     "addTestimonies": "新增見證分享",
     "addSacrament": "新增聖餐",
+    "addBabyBlessing": "新增嬰兒祝福",
     "noImageSelected": "未選擇圖片",
     "noValidImageSelected": "未選擇有效圖片",
     "hymn": "詩歌",
@@ -429,7 +431,10 @@
     "emailPlaceholder": "電子郵件地址",
     "setApartDatePlaceholder": "按立日期",
     "expectedReturnPlaceholder": "預計返鄉日期",
-    "seniorMissionaryRolePlaceholder": "例如：年長傳教士導師"
+    "seniorMissionaryRolePlaceholder": "例如：年長傳教士導師",
+    "childNamePlaceholder": "嬰兒姓名",
+    "parentNamesPlaceholder": "例如：張大明與李小華",
+    "childOf": "父母："
   },
   "modals": {
     "confirmationModal": "確認",

@@ -272,6 +272,15 @@ export const GERMAN_HYMNS: Record<number, GermanHymn> = {
   1029: { title: "Unzählige Gaben", englishSlug: "count-your-blessings" },
   1030: { title: "Nur ein Gebet entfernt", englishSlug: "only-a-prayer-away" },
   1031: { title: "O kommt und hört das Wort des Heilands", englishSlug: "come-listen-to-a-prophets-voice" },
+  1032: { title: "Blick auf zum Herrn", englishSlug: "look-to-the-lord" },
+  1033: { title: "Freudig gehn wir hinaus in die Welt", englishSlug: "joyfully-we-go-out-into-the-world" },
+  1034: { title: "Ein Pionier kann jeder sein", englishSlug: "anyone-can-be-a-pioneer" },
+  1035: { title: "Ich halt heilig seinen Tag", englishSlug: "as-i-keep-the-sabbath-day" },
+  1036: { title: "Im Buch Mormon lesen macht mich stark", englishSlug: "read-the-book-of-mormon-and-pray" },
+  1037: { title: "Ich lebe so, dass ich Gott diene", englishSlug: "im-gonna-live-so-god-can-use-me" },
+  1039: { title: "Dank ihm", englishSlug: "because" },
+  1040: { title: "Wie liebevoll klingt doch die Stimme des Herrn", englishSlug: "his-voice-as-the-sound" },
+  1041: { title: "Du gabst dein Leben, Herr, für mich", englishSlug: "o-lord-who-gave-thy-life-for-me" },
 
   // Ostern und Weihnachten (New Hymns - Easter and Christmas)
   1201: { title: "Preist den Herrn, der auferstand", englishSlug: "christ-the-lord-is-risen-today" },
@@ -279,7 +288,8 @@ export const GERMAN_HYMNS: Record<number, GermanHymn> = {
   1203: { title: "Wen wiegt Maria sanft im Arm?", englishSlug: "away-in-a-manger" },
   1204: { title: "Weihnachten im verheißenen Land", englishSlug: "far-far-away-on-judeas-plains" },
   1205: { title: "Das Osterlied erschall!", englishSlug: "he-is-risen" },
-  1206: { title: "Warst du da, als sie kreuzigten den Herrn?", englishSlug: "were-you-there" }
+  1206: { title: "Warst du da, als sie kreuzigten den Herrn?", englishSlug: "were-you-there" },
+  1207: { title: "Still, Still, Still", englishSlug: "still-still-still" }
 };
 
 // Get the German hymn title by number

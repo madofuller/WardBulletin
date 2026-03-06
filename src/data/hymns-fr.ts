@@ -284,8 +284,19 @@ export const FRENCH_HYMNS: Record<number, FrenchHymn> = {
   1049: { title: "Tout comme Joseph, je peux prier", englishSlug: "like-joseph-i-can-pray" },
   1050: { title: "Soutiens-moi", englishSlug: "sustain-me" },
   1051: { title: "Ce jour est si bon, Seigneur", englishSlug: "this-day-is-so-good-lord" },
+  1052: { title: "Tous unis dans la joie", englishSlug: "joyfully-bound" },
+  1053: { title: "Mes alliances", englishSlug: "my-covenants" },
+  1054: { title: "Le jour de mon baptême", englishSlug: "when-i-am-baptized" },
+  1055: { title: "Le pouvoir du Saint-Esprit", englishSlug: "the-power-of-the-holy-ghost" },
+  1056: { title: "Élie et la douce voix", englishSlug: "elijah-and-the-still-small-voice" },
+  1057: { title: "Jésus, le bon Berger, m'aime", englishSlug: "jesus-is-my-shepherd" },
+  1058: { title: "Mon chant dans la nuit", englishSlug: "my-song-in-the-night" },
+  1059: { title: "Mon Dieu a tout créé", englishSlug: "this-is-my-fathers-world" },
+  1060: { title: "Je ferai une arche", englishSlug: "build-an-ark" },
+  1061: { title: "Le foyer est béni", englishSlug: "love-will-bless-our-home" },
+  1062: { title: "Père, accepte notre jeûne", englishSlug: "lord-accept-our-humble-fast" },
 
-  // Pâques et Noël (Easter and Christmas) - Hymns 1201-1209
+  // Pâques et Noël (Easter and Christmas) - Hymns 1201-1210
   1201: { title: "Saluez ce jour béni !", englishSlug: "hail-this-blessed-day" },
   1202: { title: "Il est né le divin Enfant", englishSlug: "he-is-born-the-divine-child" },
   1203: { title: "Quel est l'Enfant ?", englishSlug: "what-child-is-this" },
@@ -295,6 +306,7 @@ export const FRENCH_HYMNS: Record<number, FrenchHymn> = {
   1207: { title: "Tout est calme enfin", englishSlug: "all-is-calm-at-last" },
   1208: { title: "Viens, crie sur les montagnes !", englishSlug: "go-tell-it-on-the-mountain" },
   1209: { title: "Doux bébé dans la mangeoire", englishSlug: "sweet-baby-in-a-manger" },
+  1210: { title: "Autrefois, dans un jardin", englishSlug: "long-ago-within-a-garden" },
 };
 
 // Get the French hymn title by number

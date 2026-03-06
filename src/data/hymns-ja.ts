@@ -228,7 +228,24 @@ export const JAPANESE_HYMNS: Record<number, JapaneseHymn> = {
   197: { title: "み言葉により", englishSlug: "let-us-all-press-on" },
   198: { title: "心を抑えよ", englishSlug: "school-thy-feelings" },
   199: { title: "神権持つ子らよ", englishSlug: "rise-up-o-men-of-god" },
-  200: { title: "天父は灯台のごとく", englishSlug: "brightly-beams-our-fathers-mercy" }
+  200: { title: "天父は灯台のごとく", englishSlug: "brightly-beams-our-fathers-mercy" },
+
+  // 安息日と週日 (Sabbath and Weekday) - New Hymns 1001-1009
+  1001: { title: "恵みの泉", englishSlug: "come-thou-fount-of-every-blessing" },
+  1002: { title: "救い主が来る時", englishSlug: "when-the-savior-comes-again" },
+  1003: { title: "わが胸に平安あり", englishSlug: "it-is-well-with-my-soul" },
+  1004: { title: "主と歩もう", englishSlug: "with-jesus-by-my-side" },
+  1005: { title: "一羽のすずめに主は養いを", englishSlug: "his-eye-is-on-the-sparrow" },
+  1006: { title: "思い出そう聖なる歌", englishSlug: "i-sing-with-my-heart" },
+  1007: { title: "祭壇でさかれるパン", englishSlug: "as-we-break-bread-we-think-of-thee" },
+  1008: { title: "命のパン、生ける水", englishSlug: "o-jesus-bread-of-life" },
+  1009: { title: "ゲツセマネ", englishSlug: "gethsemane" },
+
+  // 復活祭とクリスマス (Easter and Christmas) - New Hymns 1201-1204
+  1201: { title: "よみがえりし主", englishSlug: "hail-the-day-that-sees-him-rise" },
+  1202: { title: "降誕されし神の御子", englishSlug: "he-is-born-the-divine-christ-child" },
+  1203: { title: "牧人見守り", englishSlug: "what-child-is-this" },
+  1204: { title: "輝く星よ", englishSlug: "star-bright" }
 };
 
 // Get the Japanese hymn title by number

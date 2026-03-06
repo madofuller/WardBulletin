@@ -394,9 +394,20 @@ export const LDS_HYMNS: Record<number, string> = {
   1049: "Joseph Prayed in Faith",
   1050: "Stand by Me",
   1051: "This Day Is a Good Day, Lord",
-  
-  
-  // Easter and Christmas (1201–1207)
+  1052: "Joyfully Bound",
+  1053: "My Covenants",
+  1054: "When I Am Baptized",
+  1055: "The Power of the Holy Ghost",
+  1056: "Elijah and the Still, Small Voice",
+  1057: "Jesus Is My Shepherd",
+  1058: "My Song in the Night",
+  1059: "This Is My Father's World",
+  1060: "Build an Ark",
+  1061: "Love Will Bless Our Home",
+  1062: "Lord, Accept Our Humble Fast",
+
+
+  // Easter and Christmas (1201–1210)
   1201: "Hail the Day That Sees Him Rise",
   1202: "He Is Born, the Divine Christ Child",
   1203: "What Child Is This?",
@@ -405,7 +416,8 @@ export const LDS_HYMNS: Record<number, string> = {
   1206: "Were You There?",
   1207: "Still, Still, Still",
   1208: "Go Tell It on the Mountain",
-  1209: "Little Baby in a Manger"
+  1209: "Little Baby in a Manger",
+  1210: "Long Ago, Within a Garden"
 };
 
 export const getHymnTitle = (number: number): string => {
@@ -424,6 +436,8 @@ const getHymnRelease = (number: number): number | null => {
   if ((number >= 1032 && number <= 1041) || number === 1207) return 4;
   // Release 5 (18 September 2025): 1042-1051, 1208-1209
   if ((number >= 1042 && number <= 1051) || (number >= 1208 && number <= 1209)) return 5;
+  // Release 6: 1052-1062, 1210
+  if ((number >= 1052 && number <= 1062) || number === 1210) return 6;
   return null;
 };
 

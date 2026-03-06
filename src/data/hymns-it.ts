@@ -232,7 +232,24 @@ export const ITALIAN_HYMNS: Record<number, ItalianHymn> = {
   201: { title: "Anziani d'Israele", englishSlug: "ye-elders-of-israel" },
 
   // Patria (Homeland) - Hymn 202
-  202: { title: "Va, pensiero sull'ali dorate", englishSlug: "god-save-the-king" }
+  202: { title: "Va, pensiero sull'ali dorate", englishSlug: "god-save-the-king" },
+
+  // Giorno del Signore e altri giorni della settimana (Sabbath and Weekday) - Hymns 1001-1062
+  1001: { title: "O Sorgente d'ogni bene", englishSlug: "come-thou-fount-of-every-blessing" },
+  1002: { title: "Quando il Salvatore tornerà", englishSlug: "when-the-savior-comes-again" },
+  1003: { title: "Tutto è ben, mio Signor", englishSlug: "it-is-well-with-my-soul" },
+  1004: { title: "Con Gesù al mio fianco", englishSlug: "with-jesus-by-my-side" },
+  1005: { title: "So ch'Ei veglia su di me", englishSlug: "his-eye-is-on-the-sparrow" },
+  1006: { title: "Canto col mio cuor", englishSlug: "i-sing-with-my-heart" },
+  1007: { title: "Spezzando il pane pensiamo a Te", englishSlug: "as-we-break-bread-we-think-of-thee" },
+  1008: { title: "O Gesù, Pane di vita", englishSlug: "o-jesus-bread-of-life" },
+  1009: { title: "Getsemani", englishSlug: "gethsemane" },
+
+  // Pasqua e Natale (Easter and Christmas) - Hymns 1201-1204
+  1201: { title: "Oggi Cristo s'ergerà", englishSlug: "hail-the-day-that-sees-him-rise" },
+  1202: { title: "Oggi è nato Gesù bambin", englishSlug: "he-is-born-the-divine-christ-child" },
+  1203: { title: "Chi è quel bimbo?", englishSlug: "what-child-is-this" },
+  1204: { title: "O Stella!", englishSlug: "star-bright" }
 };
 
 // Get the Italian hymn title by number
