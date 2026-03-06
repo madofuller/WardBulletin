@@ -263,14 +263,24 @@ export const KOREAN_HYMNS: Record<number, KoreanHymn> = {
   1029: { title: "셀 수 없는 주님의 축복", englishSlug: "count-your-blessings" },
   1030: { title: "곁에 가까이 계신 주", englishSlug: "nearer-still-nearer" },
   1031: { title: "들어 보라 주님의 말씀", englishSlug: "hear-the-words-of-the-lord" },
+  1032: { title: "그리스도 보라", englishSlug: "look-to-the-lord" },
+  1033: { title: "주님 사업을 행할 때에", englishSlug: "joyfully-we-go-out-into-the-world" },
+  1034: { title: "나 개척자 되어", englishSlug: "anyone-can-be-a-pioneer" },
+  1035: { title: "안식일 지킬 때", englishSlug: "as-i-keep-the-sabbath-day" },
+  1036: { title: "몰몬경을 읽고 기도할 때", englishSlug: "read-the-book-of-mormon-and-pray" },
+  1037: { title: "주 뜻 안에서", englishSlug: "im-gonna-live-so-god-can-use-me" },
+  1039: { title: "주 걸어가셔서", englishSlug: "because" },
+  1040: { title: "주 온화한 목소리", englishSlug: "his-voice-as-the-sound" },
+  1041: { title: "오 내게 생명 주신 주", englishSlug: "o-lord-who-gave-thy-life-for-me" },
 
-  // 부활절과 성탄절 (Easter and Christmas) - New Hymns 1201-1206
+  // 부활절과 성탄절 (Easter and Christmas) - New Hymns 1201-1207
   1201: { title: "부활하신 어린양", englishSlug: "the-risen-lamb" },
   1202: { title: "기쁘게 노래 부르세", englishSlug: "sing-with-joy" },
   1203: { title: "왕 되신 아기 예수", englishSlug: "the-infant-king" },
   1204: { title: "영롱한 새 별", englishSlug: "a-new-star" },
   1205: { title: "부활 찬송하세", englishSlug: "he-is-risen" },
   1206: { title: "그곳에 있었느냐", englishSlug: "were-you-there" },
+  1207: { title: "아기 예수 잠자네", englishSlug: "still-still-still" },
 };
 
 // Get the Korean hymn title by number

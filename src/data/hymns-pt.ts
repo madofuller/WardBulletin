@@ -280,6 +280,17 @@ export const PORTUGUESE_HYMNS: Record<number, PortugueseHymn> = {
   1049: { title: "Posso orar como Joseph orou", englishSlug: "i-can-pray-like-joseph-prayed" },
   1050: { title: "Oh, que estejas junto a mim", englishSlug: "oh-be-near-me" },
   1051: { title: "Senhor, oh, que dia bom!", englishSlug: "lord-oh-what-a-good-day" },
+  1052: { title: "Com eterna alegria e paz", englishSlug: "joyfully-bound" },
+  1053: { title: "Meus convênios", englishSlug: "my-covenants" },
+  1054: { title: "Quando eu for batizado", englishSlug: "when-i-am-baptized" },
+  1055: { title: "O Espírito vem testificar", englishSlug: "the-power-of-the-holy-ghost" },
+  1056: { title: "Elias e a mansa voz", englishSlug: "elijah-and-the-still-small-voice" },
+  1057: { title: "Meu pastor é Jesus Cristo", englishSlug: "jesus-is-my-shepherd" },
+  1058: { title: "Na noite, és minha canção", englishSlug: "my-song-in-the-night" },
+  1059: { title: "O mundo Deus criou", englishSlug: "this-is-my-fathers-world" },
+  1060: { title: "Uma arca hoje eu construirei", englishSlug: "build-an-ark" },
+  1061: { title: "Nosso lar tem amor", englishSlug: "love-will-bless-our-home" },
+  1062: { title: "Que meu jejum venhas aceitar", englishSlug: "lord-accept-our-humble-fast" },
 
   // Páscoa e Natal (Easter and Christmas New Hymns 1201-1209)
   1201: { title: "Eis a Páscoa do Senhor", englishSlug: "behold-the-easter-of-the-lord" },
@@ -291,6 +302,7 @@ export const PORTUGUESE_HYMNS: Record<number, PortugueseHymn> = {
   1207: { title: "Noite de paz", englishSlug: "silent-night" },
   1208: { title: "Ao mundo proclamai", englishSlug: "proclaim-to-the-world" },
   1209: { title: "Bebezinho no presépio", englishSlug: "baby-in-the-manger" },
+  1210: { title: "Os jardins", englishSlug: "long-ago-within-a-garden" },
 };
 
 // Get the Portuguese hymn title by number

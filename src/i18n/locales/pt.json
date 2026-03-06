@@ -116,6 +116,7 @@
     "reviewSubmissions": "Revisar Envios",
     "unitBusiness": "Assuntos da {{unit}}",
     "administrationOfSacrament": "Administração do Sacramento",
+    "babyBlessing": "Nomeação e Bênção de",
     "bearingOfTestimonies": "Testemunhos",
     "invocation": "Oração de Abertura",
     "benediction": "Oração de Encerramento",
@@ -326,6 +327,7 @@
     "addMusicalNumber": "Adicionar Número Musical",
     "addTestimonies": "Adicionar Testemunhos",
     "addSacrament": "Adicionar Sacramento",
+    "addBabyBlessing": "Adicionar Bênção de Bebê",
     "noImageSelected": "Nenhuma imagem selecionada",
     "noValidImageSelected": "Nenhuma imagem válida selecionada",
     "hymn": "Hino",
@@ -429,7 +431,10 @@
     "emailPlaceholder": "Endereço de email",
     "setApartDatePlaceholder": "Data de designação",
     "expectedReturnPlaceholder": "Data prevista de retorno",
-    "seniorMissionaryRolePlaceholder": "ex., Mentores Missionários Sêniores"
+    "seniorMissionaryRolePlaceholder": "ex., Mentores Missionários Sêniores",
+    "childNamePlaceholder": "Nome do bebê",
+    "parentNamesPlaceholder": "ex., João e Maria Silva",
+    "childOf": "Filho(a) de"
   },
   "modals": {
     "confirmationModal": "Confirmação",

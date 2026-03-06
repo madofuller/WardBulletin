@@ -291,8 +291,19 @@ export const SPANISH_HYMNS: Record<number, SpanishHymn> = {
   1049: { title: "José oró con fe", englishSlug: "joseph-prayed-with-faith" },
   1050: { title: "Ven a mí", englishSlug: "come-unto-me" },
   1051: { title: "Señor, un buen día es hoy", englishSlug: "lord-today-is-a-good-day" },
+  1052: { title: "¡Oh, qué gozo nos da!", englishSlug: "joyfully-bound" },
+  1053: { title: "Mis convenios", englishSlug: "my-covenants" },
+  1054: { title: "Al bautizarme a Cristo seguiré", englishSlug: "when-i-am-baptized" },
+  1055: { title: "El poder del Santo Espíritu", englishSlug: "the-power-of-the-holy-ghost" },
+  1056: { title: "Elías y la suave voz", englishSlug: "elijah-and-the-still-small-voice" },
+  1057: { title: "Mi pastor es Cristo", englishSlug: "jesus-is-my-shepherd" },
+  1058: { title: "Mi canto en la noche", englishSlug: "my-song-in-the-night" },
+  1059: { title: "El mundo es de Dios", englishSlug: "this-is-my-fathers-world" },
+  1060: { title: "Un arca construiré", englishSlug: "build-an-ark" },
+  1061: { title: "Cuán dulce hogar de amor", englishSlug: "love-will-bless-our-home" },
+  1062: { title: "Nuestro ayuno, oh, Señor", englishSlug: "lord-accept-our-humble-fast" },
 
-  // Pascua de Resurrección y Navidad (Easter and Christmas) - New Hymns 1201-1209
+  // Pascua de Resurrección y Navidad (Easter and Christmas) - New Hymns 1201-1210
   1201: { title: "Gloria al día de redención", englishSlug: "glory-to-the-day-of-redemption" },
   1202: { title: "El divino Jesús nació", englishSlug: "the-divine-jesus-was-born" },
   1203: { title: "¿Qué niño es este?", englishSlug: "what-child-is-this" },
@@ -302,6 +313,7 @@ export const SPANISH_HYMNS: Record<number, SpanishHymn> = {
   1207: { title: "Paz, paz, paz", englishSlug: "peace-peace-peace" },
   1208: { title: "¡Ve! Dilo en las montañas", englishSlug: "go-tell-it-on-the-mountain" },
   1209: { title: "Pequeñito en pesebre", englishSlug: "away-in-a-manger" },
+  1210: { title: "Tiempo atrás, en un jardín", englishSlug: "long-ago-within-a-garden" },
 };
 
 // Get the Spanish hymn title by number
