@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
@@ -13,6 +14,14 @@ export default function HowToUsePage() {
   const openAuthModal = () => setShowAuthModal(true);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Helmet>
+        <title>How to Use MyWardBulletin - Create Your Ward Bulletin in Minutes</title>
+        <meta name="description" content="Step-by-step guide to creating your LDS ward bulletin with MyWardBulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
+        <link rel="canonical" href="https://www.mywardbulletin.com/how-to-use" />
+        <meta property="og:title" content="How to Use MyWardBulletin - Create Your Ward Bulletin in Minutes" />
+        <meta property="og:description" content="Step-by-step guide to creating your LDS ward bulletin with MyWardBulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
+        <meta property="og:url" content="https://www.mywardbulletin.com/how-to-use" />
+      </Helmet>
       <Header
         user={null}
         loading={false}

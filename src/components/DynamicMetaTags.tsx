@@ -53,9 +53,9 @@ const DynamicMetaTags: React.FC<DynamicMetaTagsProps> = ({
       // Reset to default meta tags
       updateMetaTags({
         title: 'MyWardBulletin - Free Digital Ward Bulletin Creator',
-        description: 'Create, share, and print beautiful digital ward bulletins for your LDS ward. Modern, mobile-friendly, and free.',
-        image: 'https://mywardbulletin.com/og-image.png',
-        url: 'https://mywardbulletin.com/'
+        description: 'Create, share, and print beautiful digital ward bulletins for your LDS ward. Free sacrament meeting program maker with QR codes, announcements, hymns, and mobile-friendly design.',
+        image: 'https://www.mywardbulletin.com/og-image.png',
+        url: 'https://www.mywardbulletin.com/'
       });
       return;
     }
@@ -109,10 +109,9 @@ const DynamicMetaTags: React.FC<DynamicMetaTagsProps> = ({
     }
 
     const title = `${wardName} Bulletin - ${date}`;
-    const url = `https://mywardbulletin.com/${profileSlug}`;
+    const url = `https://www.mywardbulletin.com/${profileSlug}`;
     
-    // For now, use the default image, but you could generate a dynamic one
-    const image = 'https://mywardbulletin.com/og-image.png';
+    const image = 'https://www.mywardbulletin.com/og-image.png';
 
     updateMetaTags({
       title,
