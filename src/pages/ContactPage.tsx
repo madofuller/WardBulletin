@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
@@ -13,6 +14,14 @@ export default function ContactPage() {
   const openAuthModal = () => setShowAuthModal(true);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Helmet>
+        <title>Contact MyWardBulletin - Get Help With Your Ward Bulletin</title>
+        <meta name="description" content="Contact the MyWardBulletin team for help with your LDS ward bulletin. Questions about creating, sharing, or printing your sacrament meeting program? We're here to help." />
+        <link rel="canonical" href="https://www.mywardbulletin.com/contact" />
+        <meta property="og:title" content="Contact MyWardBulletin - Get Help With Your Ward Bulletin" />
+        <meta property="og:description" content="Contact the MyWardBulletin team for help with your LDS ward bulletin. Questions about creating, sharing, or printing your sacrament meeting program? We're here to help." />
+        <meta property="og:url" content="https://www.mywardbulletin.com/contact" />
+      </Helmet>
       <Header
         user={null}
         loading={false}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import AuthModal from '../components/AuthModal';
@@ -13,6 +14,14 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Helmet>
+        <title>About MyWardBulletin - Free LDS Ward Bulletin Creator</title>
+        <meta name="description" content="Learn about MyWardBulletin, the free digital ward bulletin creator for LDS wards. Create, share, and print beautiful sacrament meeting programs." />
+        <link rel="canonical" href="https://www.mywardbulletin.com/about" />
+        <meta property="og:title" content="About MyWardBulletin - Free LDS Ward Bulletin Creator" />
+        <meta property="og:description" content="Learn about MyWardBulletin, the free digital ward bulletin creator for LDS wards. Create, share, and print beautiful sacrament meeting programs." />
+        <meta property="og:url" content="https://www.mywardbulletin.com/about" />
+      </Helmet>
       <Header
         user={null}
         loading={false}

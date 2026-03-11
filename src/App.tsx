@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import ErrorBoundary from './components/ErrorBoundary';
 import NetworkErrorHandler from './components/NetworkErrorHandler';
 import EditorApp from './pages/EditorApp';
@@ -23,22 +24,24 @@ export default function App() {
   // which properly filters bulletins by the logged-in user
 
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <ErrorBoundary>
-        <NetworkErrorHandler>
-          <Routes>
-          <Route path="/" element={<EditorApp />} />
-          <Route path="/profile/:slug" element={<EditorApp />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/how-to-use" element={<HowToUsePage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/invite/:token" element={<InvitePage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
-          <Route path="/:slug" element={<PublicBulletinPage />} />
-          </Routes>
-        </NetworkErrorHandler>
-      </ErrorBoundary>
-    </Suspense>
+    <HelmetProvider>
+      <Suspense fallback={<LoadingFallback />}>
+        <ErrorBoundary>
+          <NetworkErrorHandler>
+            <Routes>
+            <Route path="/" element={<EditorApp />} />
+            <Route path="/profile/:slug" element={<EditorApp />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/how-to-use" element={<HowToUsePage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/invite/:token" element={<InvitePage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
+            <Route path="/:slug" element={<PublicBulletinPage />} />
+            </Routes>
+          </NetworkErrorHandler>
+        </ErrorBoundary>
+      </Suspense>
+    </HelmetProvider>
   );
 }
