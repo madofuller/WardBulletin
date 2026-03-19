@@ -52,10 +52,10 @@ const DynamicMetaTags: React.FC<DynamicMetaTagsProps> = ({
     if (!bulletinData || !isPublicPage) {
       // Reset to default meta tags
       updateMetaTags({
-        title: 'MyWardBulletin - Free Digital Ward Bulletin Creator',
+        title: 'WardBulletin | Create & Share Ward Bulletins Online',
         description: 'Create, share, and print beautiful digital ward bulletins for your LDS ward. Free sacrament meeting program maker with QR codes, announcements, hymns, and mobile-friendly design.',
-        image: 'https://www.mywardbulletin.com/og-image.png',
-        url: 'https://www.mywardbulletin.com/'
+        image: 'https://wardbulletin.com/og-image.png',
+        url: 'https://wardbulletin.com/'
       });
       return;
     }
@@ -109,9 +109,9 @@ const DynamicMetaTags: React.FC<DynamicMetaTagsProps> = ({
     }
 
     const title = `${wardName} Bulletin - ${date}`;
-    const url = `https://www.mywardbulletin.com/${profileSlug}`;
+    const url = `https://wardbulletin.com/${profileSlug}`;
     
-    const image = 'https://www.mywardbulletin.com/og-image.png';
+    const image = 'https://wardbulletin.com/og-image.png';
 
     updateMetaTags({
       title,

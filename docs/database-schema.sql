@@ -1,4 +1,4 @@
--- MyWardBulletin Database Schema
+-- WardBulletin Database Schema
 -- This file contains the complete database schema for contributors to set up their own Supabase instance
 
 -- Enable necessary extensions

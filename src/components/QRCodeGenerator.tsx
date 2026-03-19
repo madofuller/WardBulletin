@@ -283,7 +283,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
     const activeProfileSlug = selectedProfileSlug || profileSlug;
     const link = document.createElement('a');
-    link.download = `${activeProfileSlug || 'mywardbulletin'}-qr.png`;
+    link.download = `${activeProfileSlug || 'wardbulletin'}-qr.png`;
     link.href = canvas.toDataURL();
     link.click();
   };
@@ -574,7 +574,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
                           const shareUrl = `https://${useShortDomain ? SHORT_DOMAIN : FULL_DOMAIN}/${activeProfileSlug}`;
                           if (navigator.share) {
                             navigator.share({
-                              title: 'Ward Bulletin',
+                              title: 'WardBulletin',
                               text: 'Check out our ward bulletin!',
                               url: shareUrl
                             });

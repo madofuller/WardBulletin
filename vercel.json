@@ -1,9 +1,45 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "mywardbulletin.com"
+        }
+      ],
+      "destination": "https://wardbulletin.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.mywardbulletin.com"
+        }
+      ],
+      "destination": "https://wardbulletin.com/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.wardbulletin.com"
+        }
+      ],
+      "destination": "https://wardbulletin.com/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/site.webmanifest", "destination": "/site.webmanifest" },
+    { "source": "/llms.txt", "destination": "/llms.txt" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {

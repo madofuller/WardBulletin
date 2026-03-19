@@ -313,7 +313,45 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
-  // Detect when content is cut off (overflow hidden) so we can warn in preview
+  // Auto-fit: first add columns, then shrink fonts as a last resort
+  const MIN_FIT_SCALE = 0.65;
+  const [announceFitScale, setAnnounceFitScale] = useState(1);
+  const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, 3/4 = forced column count
+
+  const announcementCount = (data.announcements || []).length;
+  const announcementTotalChars = (data.announcements || []).reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
+  const announcementsContentKey = announcementCount + ':' + announcementTotalChars;
+  const isHeavyContent = announcementTotalChars > 2000;
+  const isLightContent = announcementTotalChars < 800;
+
+  useEffect(() => {
+    setAnnounceFitScale(1);
+    setAutoColumns(0);
+  }, [announcementsContentKey, data.printFontScale, data.printTightMargins]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!announcementsRef.current) return;
+      const el = announcementsRef.current;
+      const overflowV = el.scrollHeight - el.clientHeight;
+      const overflowH = el.scrollWidth - el.clientWidth;
+      if (overflowV <= 2 && overflowH <= 2) return;
+
+      // Step 1: try 4 columns before shrinking fonts
+      if (autoColumns < 4) {
+        setAutoColumns(4);
+        return;
+      }
+      // Step 2: shrink fonts as last resort
+      if (announceFitScale > MIN_FIT_SCALE) {
+        const next = Math.max(MIN_FIT_SCALE, announceFitScale - 0.03);
+        setAnnounceFitScale(next);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [announceFitScale, autoColumns, announcementsContentKey]);
+
+  // Detect when content is still cut off after auto-fit (for the warning banner)
   useEffect(() => {
     const check = () => {
       let backCover = false;
@@ -324,12 +362,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       }
       if (announcementsRef.current) {
         const el = announcementsRef.current;
-        announcements = el.scrollHeight > el.clientHeight;
+        announcements = el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2;
       }
       setOverflow(prev => (prev.backCover === backCover && prev.announcements === announcements) ? prev : { backCover, announcements });
     };
-    const t1 = setTimeout(check, 150);
-    const t2 = setTimeout(check, 500);
+    const t1 = setTimeout(check, 300);
+    const t2 = setTimeout(check, 800);
     const ro = typeof ResizeObserver !== 'undefined'
       ? new ResizeObserver(() => setTimeout(check, 80))
       : null;
@@ -343,7 +381,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       cancelAnimationFrame(raf);
       ro?.disconnect();
     };
-  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint]);
+  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale]);
 
   // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large (scales text without shifting layout)
   const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
@@ -354,11 +392,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // Tighter margins to fit more announcements on the page
   const tight = !!data.printTightMargins;
   const pad = {
-    page: tight ? 'pl-8 pr-4 py-4' : 'pl-16 pr-8 py-8',
-    pageLeft: tight ? 'px-4 py-4 pr-8' : 'px-8 py-6 pr-16',
+    leftPanel: tight ? 'pl-2 pr-8 pt-2 pb-0' : isLightContent ? 'pl-4 pr-6 pt-3 pb-0' : 'pl-3 pr-12 pt-3 pb-0',
+    rightPanel: tight ? 'pl-8 pr-2 py-4' : 'pl-12 pr-3 py-6',
     announcementsGap: tight ? 'gap-2' : 'gap-4',
-    announcementsList: tight ? 'space-y-1' : 'space-y-1.5',
-    sectionMb: tight ? 'mb-1' : 'mb-2'
+    announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
+    sectionMb: tight ? 'mb-0.5' : 'mb-1'
   };
 
   // Dynamic audience labels based on terminology
@@ -420,7 +458,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         style={{ pageBreakAfter: 'always' }}
       >
                  {/* Back Cover (left) - Unit Information */}
-          <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.pageLeft}`}>
+          <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`}>
            {/* Scrollable content area - reserves space for QR code if enabled */}
            <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
               {/* Unit Leadership Table */}
@@ -572,7 +610,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
          </div>
 
         {/* Front Cover (right) */}
-        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.page}`}>
+        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
           <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
           <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
           <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
@@ -607,185 +645,50 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       {/* Page 2: Inside (landscape) */}
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
         {/* Announcements (left) */}
-        <div className={`w-1/2 flex flex-col text-left print:!text-xl print:!text-black ${pad.page}`}>
-          <div ref={announcementsRef} className="flex-1 overflow-y-hidden flex flex-col min-h-0">
-            {/* Announcements Section - Optimized for Print */}
-            <div className={`w-full flex-1 flex flex-col ${pad.sectionMb} min-h-full`}>
-              <h2 className={`text-lg font-bold print:!text-xl print:!text-black w-full text-center flex-shrink-0 ${tight ? 'mb-1' : 'mb-2'}`}>{t('printPreview.announcementsAndEvents')}</h2>
-              <div className="flex-1 flex flex-col min-h-0">
+        <div className={`w-1/2 text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
+              <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               {(() => {
-                // Group announcements by audience (like BulletinPreview does)
                 const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
                   const isStandalone = announcement.audience?.startsWith('standalone_');
                   const audienceLabel = isStandalone
                     ? (announcement.customAudienceLabel || '')
                     : getAudienceLabel(announcement.audience || getUnitLowercase(unitTypeOverride));
-
-                  if (!groups[audienceLabel]) {
-                    groups[audienceLabel] = [];
-                  }
+                  if (!groups[audienceLabel]) groups[audienceLabel] = [];
                   groups[audienceLabel].push(announcement);
                   return groups;
                 }, {});
 
-                // Flatten all announcements into a single array for two-column layout
-                const allItems: { audienceLabel: string; announcement: any; isHeader: boolean }[] = [];
-                Object.entries(grouped).forEach(([audienceLabel, announcements]) => {
-                  if (audienceLabel) {
-                    allItems.push({ audienceLabel, announcement: null, isHeader: true });
-                  }
-                  (announcements as any[]).forEach(a => {
-                    allItems.push({ audienceLabel, announcement: a, isHeader: false });
-                  });
-                });
+                const defaultCols = announcementCount <= 2 || isLightContent ? 1 : (announcementCount >= 6 || isHeavyContent) ? 4 : announcementCount >= 4 ? 3 : 2;
+                const columnCount = autoColumns > 0 ? Math.max(autoColumns, defaultCols) : defaultCols;
+                const gap = tight ? '0.35rem' : '0.5rem';
 
-                // Calculate dynamic font size based on announcement count AND content volume
-                // This ensures that when there's little content, text isn't too small
-                const totalAnnouncements = (data.announcements || []).length;
-                
-                // Calculate total content length (character count) - strip HTML for accurate count
-                const totalContentLength = (data.announcements || []).reduce((sum, a) => {
-                  const content = a.content || '';
-                  const title = a.title || '';
-                  // Strip HTML tags and decode entities for accurate character count
-                  const textContent = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
-                  const textTitle = title.replace(/<[^>]*>/g, '').trim();
-                  return sum + textContent.length + textTitle.length;
-                }, 0);
-                
-                // Estimate average content per announcement
-                const avgContentPerAnnouncement = totalAnnouncements > 0 ? totalContentLength / totalAnnouncements : 0;
-                
-                // Estimate vertical space needed based on character count
-                // Assumptions:
-                // - Single column width: ~5.5in = ~65-70 chars per line (at 12px font)
-                // - Two column width: ~2.5in per column = ~30-35 chars per line per column (at 10px font)
-                // - Line height: ~1.5x font size
-                // - Available height: ~7in usable (8.5in page - margins) ≈ 500-550px
-                
-                const charsPerLineSingle = 70; // Approximate chars per line in single column
-                const charsPerLineDoublePerCol = 32; // Approximate chars per line per column in two-column
-                const lineHeightMultiplier = 1.5;
-                
-                // Estimate lines needed (content + titles + spacing)
-                // Add ~2 lines per announcement for title and spacing
-                const contentLinesSingle = Math.ceil(totalContentLength / charsPerLineSingle);
-                const contentLinesDouble = Math.ceil(totalContentLength / (charsPerLineDoublePerCol * 2));
-                const spacingLines = totalAnnouncements * 2; // Title + spacing per announcement
-                
-                const totalLinesSingle = contentLinesSingle + spacingLines;
-                const totalLinesDouble = contentLinesDouble + (spacingLines * 0.7); // Less spacing in columns
-                
-                // Estimate height in pixels
-                // Use average font sizes: 12px for single column, 10px for double column
-                const estimatedHeightSingle = totalLinesSingle * 12 * lineHeightMultiplier;
-                const estimatedHeightDouble = totalLinesDouble * 10 * lineHeightMultiplier;
-                
-                // Available vertical space: ~500-550px usable height
-                const minHeightForSingle = 200; // Minimum to avoid looking too sparse
-                const maxHeightForSingle = 500; // Max before needing two columns
-                
-                // Determine column count based on estimated height
-                let columnCount = 2; // Default to 2 columns
-                let useSingleColumn = false;
-                
-                if (totalAnnouncements <= 1) {
-                  // Always single column for 1 announcement
-                  useSingleColumn = true;
-                  columnCount = 1;
-                } else if (estimatedHeightSingle <= maxHeightForSingle && estimatedHeightSingle >= minHeightForSingle) {
-                  // Content fits well in single column (200-500px) - use it to fill space
-                  useSingleColumn = true;
-                  columnCount = 1;
-                } else if (estimatedHeightSingle < minHeightForSingle && totalAnnouncements <= 3) {
-                  // Very sparse content (1-3 announcements, < 200px) - use single column with larger fonts
-                  useSingleColumn = true;
-                  columnCount = 1;
-                } else if (estimatedHeightDouble > 550 || totalAnnouncements > 12) {
-                  // Very dense content - use 3 columns if needed
-                  columnCount = 3;
-                }
-                
-                // Determine content density for font sizing
-                const isLowContent = totalAnnouncements <= 3 || (totalAnnouncements <= 6 && avgContentPerAnnouncement < 200);
-                const isMediumContent = totalAnnouncements <= 8 && avgContentPerAnnouncement >= 200;
-                const isHighContent = totalAnnouncements > 8 || (totalAnnouncements > 6 && avgContentPerAnnouncement >= 300);
-                
-                const columnClass = useSingleColumn ? 'columns-1' : `columns-${columnCount} ${pad.announcementsGap}`;
-                
-                // Scale fonts based on content density - more content = smaller font, less content = larger font
-                let contentFontSize, titleFontSize, headerFontSize;
-                
-                // Calculate spacing to fill vertical space when content is sparse
-                // Base spacing on estimated height - if content is sparse, add more spacing
-                let announcementSpacing = pad.announcementsList; // Default spacing
-                let sectionSpacing = pad.sectionMb; // Default section spacing
-                
-                // Determine if content is sparse based on estimated height
-                const isSparse = estimatedHeightSingle < minHeightForSingle;
-                const fitsWellSingle = estimatedHeightSingle >= minHeightForSingle && estimatedHeightSingle <= maxHeightForSingle;
-                
-                if (totalAnnouncements <= 1 || (useSingleColumn && isSparse)) {
-                  // Single announcement or sparse content in single column - use much larger fonts and spacing
-                  contentFontSize = scalePx(14);
-                  titleFontSize = scalePx(16);
-                  headerFontSize = scalePx(18);
-                  announcementSpacing = 'space-y-4'; // More spacing between items
-                  sectionSpacing = 'mb-4'; // More spacing between sections
-                } else if (totalAnnouncements === 2 && useSingleColumn) {
-                  // Two announcements in single column - still use larger fonts and spacing
-                  contentFontSize = scalePx(13);
-                  titleFontSize = scalePx(15);
-                  headerFontSize = scalePx(17);
-                  announcementSpacing = 'space-y-3';
-                  sectionSpacing = 'mb-3';
-                } else if (useSingleColumn && fitsWellSingle) {
-                  // Content fits well in single column - use moderate larger fonts
-                  contentFontSize = scalePx(12);
-                  titleFontSize = scalePx(14);
-                  headerFontSize = scalePx(15);
-                  announcementSpacing = 'space-y-3';
-                  sectionSpacing = 'mb-3';
-                } else if (isLowContent) {
-                  // Very little content - use larger fonts so it doesn't look too small
-                  contentFontSize = scalePx(12);
-                  titleFontSize = scalePx(13);
-                  headerFontSize = scalePx(14);
-                } else if (isMediumContent) {
-                  // Medium content - balanced sizing
-                  contentFontSize = scalePx(10);
-                  titleFontSize = scalePx(11);
-                  headerFontSize = scalePx(12);
-                } else if (isHighContent) {
-                  // Lots of content - smaller fonts to fit everything
-                  contentFontSize = scalePx(9);
-                  titleFontSize = scalePx(10);
-                  headerFontSize = scalePx(11);
-                } else {
-                  // Default for very high content
-                  contentFontSize = scalePx(8);
-                  titleFontSize = scalePx(9);
-                  headerFontSize = scalePx(10);
-                }
+                const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
+                const baseHeader = Math.round((tight ? 14 : 16) * densityScale);
+                const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
+                const baseContent = Math.round((tight ? 12 : 14) * densityScale);
+                const headerFontSize = scalePx(Math.round(baseHeader * announceFitScale));
+                const titleFontSize = scalePx(Math.round(baseTitle * announceFitScale));
+                const contentFontSize = scalePx(Math.round(baseContent * announceFitScale));
 
                 return (
-                  <div className={`${columnClass} flex-1`} style={{ columnFill: 'balance', minHeight: '100%' }}>
+                  <div style={{ columnCount, columnGap: gap, columnFill: 'auto', height: '100%' }}>
                     {Object.entries(grouped).map(([audienceLabel, announcements], groupIdx) => (
-                      <div key={audienceLabel} className={`break-inside-avoid-column ${groupIdx < Object.keys(grouped).length - 1 ? sectionSpacing : ''} ${totalAnnouncements <= 2 ? 'flex-1 flex flex-col justify-start' : ''}`}>
-                        {/* Group header - only show once per group if there's a label */}
-                        {audienceLabel && (
-                          <div
-                            className={`font-bold print:!text-black border-b border-gray-300 pb-0.5 ${totalAnnouncements <= 1 ? 'mb-3' : totalAnnouncements === 2 ? 'mb-2' : 'mb-1'}`}
-                            style={{ fontSize: headerFontSize }}
-                          >
-                            {audienceLabel}
-                          </div>
-                        )}
-                        <ul className={announcementSpacing}>
+                      <div key={audienceLabel} style={{ marginBottom: groupIdx < Object.keys(grouped).length - 1 ? (isLightContent ? '1rem' : tight ? '0.125rem' : '0.25rem') : 0 }}>
+                        <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
                           {(announcements as any[]).map((a: any, idx: number) => {
                             const decodedContent = sanitizeHtml(decodeHtml(a.content));
+                            const showHeader = idx === 0 && audienceLabel;
                             return (
-                              <li key={idx} className="break-inside-avoid-column">
+                              <li key={idx} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
+                                {showHeader && (
+                                  <div
+                                    className="font-bold print:!text-black border-b border-gray-300 pb-0.5 mb-1"
+                                    style={{ fontSize: headerFontSize }}
+                                  >
+                                    {audienceLabel}
+                                  </div>
+                                )}
                                 <div
                                   className="font-semibold print:!text-black leading-tight"
                                   style={{ fontSize: titleFontSize }}
@@ -795,20 +698,17 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                 {a.category && a.category !== 'general' && (
                                   <span
                                     className="text-gray-600 bg-gray-100 px-1 py-0.5 rounded inline-block mb-0.5"
-                                    style={{ fontSize: scalePx(8) }}
+                                    style={{ fontSize: scalePx(tight ? 10 : 11) }}
                                   >
                                     {a.category}
                                   </span>
                                 )}
                                 <div
-                                  className={`print:!text-black leading-tight ${totalAnnouncements <= 1 ? 'mb-3' : totalAnnouncements === 2 ? 'mb-2' : 'mb-1'}`}
+                                  className="print:!text-black leading-tight"
                                   style={{
                                     fontSize: contentFontSize,
-                                    '--tw-prose-bullets': 'disc',
-                                    '--tw-prose-list-style': 'disc',
                                     wordWrap: 'break-word',
                                     overflowWrap: 'break-word',
-                                    whiteSpace: 'pre-wrap'
                                   } as React.CSSProperties}
                                   dangerouslySetInnerHTML={{
                                     __html: decodedContent.replace(
@@ -822,13 +722,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                       '<li style="margin-left: 0; display: list-item;">'
                                     ).replace(
                                       /<p>/g,
-                                      '<p style="margin: 0 0 0.25rem 0;">'
+                                      '<p style="margin: 0 0 0.1rem 0;">'
                                     )
                                   }}
                                 />
 
-                                {/* Announcement Images - Smaller for print */}
-                                {/* Legacy single image support */}
                                 {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
                                   <div className="mb-1">
                                     {(() => {
@@ -837,23 +735,17 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                         <img
                                           src={selectedImage.url}
                                           alt={selectedImage.name}
-                                          className="h-auto rounded shadow-sm"
-                                          style={{
-                                            objectFit: 'contain',
-                                            maxHeight: '80px',
-                                            maxWidth: '120px',
-                                            borderRadius: '0.25rem'
-                                          }}
+                                          className="h-auto rounded"
+                                          style={{ objectFit: 'contain', maxHeight: '100px', maxWidth: '150px' }}
                                         />
                                       ) : null;
                                     })()}
                                   </div>
                                 )}
 
-                                {/* Multiple images support - Compact for print */}
                                 {a.images && a.images.length > 0 && (
                                   <div className="mb-1 flex flex-wrap gap-1">
-                                    {a.images.slice(0, 2).map((img: any, index: number) => {
+                                    {a.images.slice(0, 3).map((img: any, index: number) => {
                                       if (img.hideImageOnPrint) return null;
                                       let imageUrl = img.imageUrl;
                                       if (!imageUrl && img.imageId) {
@@ -865,22 +757,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                           key={index}
                                           src={imageUrl}
                                           alt="Announcement"
-                                          className="h-auto rounded shadow-sm"
-                                          style={{
-                                            objectFit: 'contain',
-                                            maxHeight: '60px',
-                                            maxWidth: '90px',
-                                            borderRadius: '0.25rem'
-                                          }}
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                          }}
+                                          className="h-auto rounded"
+                                          style={{ objectFit: 'contain', maxHeight: '80px', maxWidth: '120px' }}
+                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                         />
                                       ) : null;
                                     })}
-                                    {a.images.filter((img: any) => !img.hideImageOnPrint).length > 2 && (
+                                    {a.images.filter((img: any) => !img.hideImageOnPrint).length > 3 && (
                                       <span style={{ fontSize: scalePx(8) }} className="text-gray-500 self-end">
-                                        +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 2} more
+                                        +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 3} more
                                       </span>
                                     )}
                                   </div>
@@ -895,12 +780,19 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 );
               })()}
               </div>
-            </div>
-          </div>
+              {/* QR code for full announcements */}
+              {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
+                <div className="flex-shrink-0 flex items-center justify-center gap-2 pt-0.5">
+                  <PrintQRCode profileSlug={`${profile.profile_slug}#announcements`} size={56} />
+                  <span className="print:!text-black italic" style={{ fontSize: scalePx(9) }}>
+                    {t('printPreview.scanForFullAnnouncements')}
+                  </span>
+                </div>
+              )}
         </div>
 
         {/* Program (right) */}
-        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.page}`}>
+        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
           <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
           <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
           <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
@@ -985,7 +877,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 });
 
 // PrintQRCode component for generating QR codes specifically for printing
-function PrintQRCode({ profileSlug }: { profileSlug: string }) {
+function PrintQRCode({ profileSlug, size = 128 }: { profileSlug: string; size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -994,44 +886,42 @@ function PrintQRCode({ profileSlug }: { profileSlug: string }) {
       if (!canvas) return;
 
       const qrUrl = `https://${SHORT_DOMAIN}/${profileSlug}`;
-      
+
       try {
         await QRCode.toCanvas(canvas, qrUrl, {
-          width: 128, // Reduced from 192
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          },
-          errorCorrectionLevel: 'H' // Highest error correction for print
+          width: size,
+          margin: size <= 80 ? 1 : 2,
+          color: { dark: '#000000', light: '#FFFFFF' },
+          errorCorrectionLevel: size <= 80 ? 'M' : 'H'
         });
       } catch (error) {
-        // Fallback to text display
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.clearRect(0, 0, 128, 128);
+          ctx.clearRect(0, 0, size, size);
           ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, 128, 128);
+          ctx.fillRect(0, 0, size, size);
           ctx.strokeStyle = 'black';
-          ctx.strokeRect(0, 0, 128, 128);
+          ctx.strokeRect(0, 0, size, size);
           ctx.fillStyle = 'black';
           ctx.font = '12px Arial';
           ctx.textAlign = 'center';
-          ctx.fillText('QR Code', 64, 60);
-          ctx.fillText('Error', 64, 75);
+          ctx.fillText('QR Code', size / 2, size / 2 - 5);
+          ctx.fillText('Error', size / 2, size / 2 + 10);
         }
       }
     };
 
     generateQRCode();
-  }, [profileSlug]);
+  }, [profileSlug, size]);
 
+  const px = `${size}px`;
   return (
     <canvas
       ref={canvasRef}
-      width={128}
-      height={128}
-      className="w-32 h-32 bg-white mx-auto"
+      width={size}
+      height={size}
+      className="bg-white mx-auto"
+      style={{ width: px, height: px }}
     />
   );
 }

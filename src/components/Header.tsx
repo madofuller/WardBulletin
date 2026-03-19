@@ -69,7 +69,7 @@ export default function Header({
           <a href="/" className="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-shadow no-underline" style={{ textDecoration: 'none' }}>
             <Logo size={40} />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
+              <h1 className="text-3xl font-bold text-gray-900">WardBulletin</h1>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
                 {currentProfileSlug && (

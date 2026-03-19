@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Trash2, Repeat, RotateCcw, GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BulletinData, Announcement, AnnouncementImage, Meeting, SpecialEvent, AgendaItem } from '../types/bulletin';
-import { getSongTitle, isValidSongNumber, searchSongsByTitle, SongType } from '../lib/songService';
+import { getSongTitle, isValidSongNumber, searchSongsByTitle, preloadSongData, SongType } from '../lib/songService';
 import { toast } from 'react-toastify';
 import HtmlEditor from './HtmlEditor';
 import { LDS_IMAGES, getImageById, getAllImages, deleteCustomImage } from '../data/images';
@@ -36,6 +36,7 @@ interface BulletinFormProps {
 export default function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
+  useEffect(() => { preloadSongData(currentLang); }, [currentLang]);
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>('program');
   const [hymnSearchResults, setHymnSearchResults] = useState<Array<{number: string, title: string, type: SongType}>>([]);
   const [activeHymnSearch, setActiveHymnSearch] = useState<string | null>(null);

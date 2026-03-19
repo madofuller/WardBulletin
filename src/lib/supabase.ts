@@ -21,7 +21,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'zionboard-web'
+      'X-Client-Info': 'wardbulletin-web'
     }
   }
 })
@@ -726,7 +726,7 @@ export const bulletinService = {
       const existingBulletins = this.getFromLocalStorage();
       const updatedBulletins = existingBulletins.filter(b => b.id !== bulletin.id);
       updatedBulletins.push(bulletin);
-      localStorage.setItem('mywardbulletin_bulletins', JSON.stringify(updatedBulletins));
+      localStorage.setItem('wardbulletin_bulletins', JSON.stringify(updatedBulletins));
     } catch (error) {
       console.warn('Failed to save to local storage:', error);
     }
@@ -734,7 +734,7 @@ export const bulletinService = {
 
   getFromLocalStorage(): any[] {
     try {
-      const stored = localStorage.getItem('mywardbulletin_bulletins');
+      const stored = localStorage.getItem('wardbulletin_bulletins');
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.warn('Failed to read from local storage:', error);
@@ -1529,7 +1529,7 @@ export const bulletinService = {
     try {
       const existingBulletins = this.getFromLocalStorage();
       const updatedBulletins = existingBulletins.filter(b => b.id !== bulletinId);
-      localStorage.setItem('mywardbulletin_bulletins', JSON.stringify(updatedBulletins));
+      localStorage.setItem('wardbulletin_bulletins', JSON.stringify(updatedBulletins));
     } catch (error) {
       console.warn('Failed to remove from local storage:', error);
     }
@@ -2505,7 +2505,7 @@ export const localStorageService = {
     try {
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
-        if (key.startsWith('mywardbulletin_') || key.startsWith('draft_') || key.startsWith('bulletin_')) {
+        if (key.startsWith('wardbulletin_') || key.startsWith('draft_') || key.startsWith('bulletin_')) {
           localStorage.removeItem(key);
         }
       });

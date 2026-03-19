@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "Nouveau bulletin",
     "exportPdf": "Exporter en PDF",
+    "exporting": "Exportation...",
     "myQrCode": "Mon code QR",
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
@@ -75,7 +76,7 @@
     "general": "Général"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "Créateur de bulletin de {{unit}}",
     "profile": "Profil",
     "currentlyViewingProfile": "Profil : {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "Aucune annonce cette semaine.",
     "haveAnnouncementToShare": "Vous avez une annonce à partager ?",
     "submitAnnouncement": "Soumettre une annonce",
-    "builtWithMyWardBulletin": "Créé avec MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Créé avec WardBulletin.com",
     "createYourOwnBulletin": "Créez votre propre bulletin",
     "bulletinNotAvailable": "Bulletin non disponible",
     "bulletinNotAvailableDescription": "Ce lien de bulletin n'existe pas ou a peut-être été supprimé.",
@@ -674,7 +675,9 @@
     "qrCodeOff": "Code QR : Désactivé",
     "qrOnShort": "QR Activé",
     "qrOffShort": "QR Désactivé",
-    "toggleQrCodeTooltip": "{{action}} le code QR sur le bulletin imprimé"
+    "toggleQrCodeTooltip": "{{action}} le code QR sur le bulletin imprimé",
+    "duplexHint": "Ce bulletin est conçu pour être imprimé recto verso (retourner sur le bord court), puis plié en deux.",
+    "scanForFullAnnouncements": "Scannez pour voir toutes les annonces"
   },
   "invite": {
     "youreInvited": "Vous êtes invité !",
@@ -760,5 +763,206 @@
     "ja": "Japonais",
     "ko": "Coréen",
     "zh": "Chinois"
+  },
+  "templates": {
+    "applied": "Modèle appliqué"
+  },
+  "guide": {
+    "toc": "Dans ce guide",
+    "readyToCreate": "Prêt à Créer Votre Bulletin ?",
+    "readyToCreateDesc": "WardBulletin facilite la création, le partage et l'impression de magnifiques bulletins de paroisse en quelques minutes. Aucun téléchargement nécessaire — visitez simplement le site et commencez à créer.",
+    "startBuilding": "Commencer à Créer Votre Bulletin",
+    "startWithTemplate": "Commencer avec un Modèle",
+    "startWithTemplateDesc": "Lancez-vous et commencez à créer votre bulletin. Choisissez un thème, remplissez les détails et vous aurez un beau programme prêt en quelques minutes.",
+    "tryTemplateNow": "Essayer un Modèle Maintenant",
+    "buildYourProgram": "Créez Votre Programme Maintenant",
+    "buildYourProgramDesc": "WardBulletin gère toute cette structure pour vous. Remplissez simplement les détails et laissez l'outil tout formater magnifiquement pour l'impression et le partage numérique.",
+    "createYourProgram": "Créer Votre Programme",
+    "bulletinGuide": {
+      "title": "Comment Créer un Excellent Bulletin de Paroisse",
+      "intro": "Un bulletin de paroisse bien conçu aide les membres à suivre la réunion de Sainte-Cène et à rester informés des activités de la paroisse. Voici des conseils pratiques pour créer des bulletins efficaces.",
+      "essentials": {
+        "heading": "Commencez par l'Essentiel",
+        "intro": "Chaque programme de réunion de Sainte-Cène devrait inclure ces éléments de base :",
+        "items": [
+          "Date et nom de la paroisse/branche — aide les membres à confirmer qu'ils ont le bon bulletin",
+          "Présidence et direction — qui dirige la réunion",
+          "Cantiques d'ouverture et de clôture — incluez le numéro et le titre",
+          "Cantique de Sainte-Cène — toujours listé avant l'administration de la Sainte-Cène",
+          "Orateurs — listez les noms et indiquez s'ils sont jeunes ou adultes",
+          "Prières d'ouverture et de clôture"
+        ]
+      },
+      "announcements": {
+        "heading": "Rendez les Annonces Claires et Utiles",
+        "intro": "Les annonces sont souvent la partie la plus lue du bulletin. Gardez-les efficaces :",
+        "items": [
+          "Commencez par les éléments les plus importants — événements de paroisse d'abord",
+          "Incluez dates, heures et lieux — ne laissez pas les membres deviner",
+          "Restez concis — une ou deux phrases par annonce suffit généralement",
+          "Regroupez par audience — séparez les annonces par organisation",
+          "Supprimez les anciennes annonces — rien ne rend un bulletin obsolète comme des activités passées encore listées"
+        ],
+        "tip": "WardBulletin permet aux membres de soumettre des annonces directement. Plus besoin de courir après les gens le samedi soir."
+      },
+      "hymns": {
+        "heading": "Choisissez les Cantiques avec Soin",
+        "intro": "Les cantiques donnent le ton de la réunion. Quelques points à garder à l'esprit :",
+        "items": [
+          "Le cantique de Sainte-Cène doit se concentrer sur le sacrifice du Sauveur et l'ordonnance",
+          "Considérez des cantiques liés au thème de la réunion",
+          "Mélangez les favoris familiers avec des cantiques moins connus",
+          "La nouvelle collection « Cantiques — Pour le foyer et l'Église » offre de nouvelles options"
+        ]
+      },
+      "readability": {
+        "heading": "Concevez pour la Lisibilité",
+        "intro": "Un bulletin difficile à lire ne sera pas lu. Gardez ces principes en tête :",
+        "items": [
+          "Ne surchargez pas — l'espace blanc facilite la lecture",
+          "Utilisez une hiérarchie claire — titres pour les sections, gras pour les détails clés",
+          "Imprimez assez grand — de nombreux membres lisent de loin ou sans lunettes",
+          "Pensez à l'impression et au numérique — certains préfèrent le papier, d'autres le téléphone"
+        ]
+      },
+      "sharing": {
+        "heading": "Partagez-le Efficacement",
+        "intro": "Le meilleur bulletin est inutile si personne ne le voit. Voici comment le distribuer :",
+        "items": [
+          "Code QR sur la porte de la chapelle — les membres scannent en entrant",
+          "Envoyez le lien par SMS ou e-mail",
+          "Imprimez quelques copies — pour le hall et les membres qui préfèrent le papier",
+          "Projetez sur un écran — montrez le code QR avant le début de la réunion"
+        ]
+      },
+      "efficiency": {
+        "heading": "Gagnez du Temps Chaque Semaine",
+        "intro": "Créer un bulletin ne doit pas prendre des heures. Voici comment optimiser le processus :",
+        "items": [
+          "Utilisez le bulletin de la semaine dernière comme modèle — dupliquez et mettez à jour",
+          "Configurez des annonces récurrentes — les activités qui ne changent pas peuvent être réutilisées",
+          "Laissez les membres soumettre des annonces — utilisez la fonctionnalité de soumission",
+          "Enregistrez les informations de direction par défaut — ne doivent être saisies qu'une seule fois"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Modèles et Idées de Bulletins de Paroisse",
+      "intro": "Vous ne savez pas par où commencer ? WardBulletin inclut des thèmes intégrés et un éditeur flexible. Voici quelques idées pour vous inspirer.",
+      "themes": {
+        "heading": "Thèmes Intégrés",
+        "intro": "WardBulletin propose plusieurs thèmes professionnels applicables en un clic :",
+        "formal": "Formel",
+        "formalDesc": "Polices à empattement classiques avec un style traditionnel et digne.",
+        "modern": "Moderne",
+        "modernDesc": "Polices sans empattement avec mise en page contemporaine.",
+        "elegant": "Élégant",
+        "elegantDesc": "Typographie raffinée avec un style subtil.",
+        "simple": "Simple",
+        "simpleDesc": "Design minimaliste qui privilégie le contenu.",
+        "friendly": "Convivial",
+        "friendlyDesc": "Style chaleureux et accessible avec des éléments arrondis.",
+        "handwritten": "Manuscrit",
+        "handwrittenDesc": "Un style personnel et manuscrit qui donne une touche chaleureuse et artisanale."
+      },
+      "layouts": {
+        "heading": "Idées de Mise en Page",
+        "standard": "Le Programme Standard de Réunion de Sainte-Cène",
+        "standardIntro": "La mise en page la plus courante comprend :",
+        "fastSunday": "Dimanche de Jeûne / Réunion de Témoignages",
+        "fastSundayDesc": "Les dimanches de jeûne, remplacez la section des orateurs par « Expression des témoignages ».",
+        "babyBlessing": "Dimanche de Bénédiction de Bébé",
+        "babyBlessingDesc": "Utilisez le bouton « Ajouter Bénédiction de Bébé » pour ajouter une section de nomination et bénédiction.",
+        "heavyAnnouncements": "Semaines Chargées en Annonces",
+        "heavyAnnouncementsDesc": "Utilisez la fonction de regroupement pour organiser par audience."
+      },
+      "images": {
+        "heading": "Idées d'Images d'En-tête",
+        "intro": "WardBulletin vous permet d'ajouter une image d'en-tête. Quelques choix populaires :",
+        "items": [
+          "Votre temple local",
+          "Une scène de nature saisonnière",
+          "La statue du Christus",
+          "Une illustration à thème scripturaire",
+          "Le bâtiment de votre paroisse ou branche"
+        ],
+        "tip": "WardBulletin inclut plus de 26 images artistiques SDJ sélectionnées utilisables instantanément."
+      },
+      "tips": {
+        "heading": "Conseils pour un Bulletin Soigné",
+        "items": [
+          "Relisez les noms — rien n'est plus gênant que de mal orthographier le nom d'un orateur",
+          "Vérifiez les numéros de cantiques — assurez-vous que le numéro correspond au titre",
+          "Mettez à jour chaque semaine — un bulletin périmé érode la confiance",
+          "Enregistrez comme modèle — gardez les informations par défaut sauvegardées",
+          "Testez le code QR — scannez-le vous-même avant d'imprimer"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Guide du Programme de Réunion de Sainte-Cène",
+      "intro": "La réunion de Sainte-Cène est la réunion la plus importante de la semaine pour les membres de l'Église de Jésus-Christ des Saints des Derniers Jours. Un programme clair et bien organisé aide la réunion à se dérouler en douceur.",
+      "order": {
+        "heading": "Ordre Standard de la Réunion de Sainte-Cène",
+        "intro": "Le déroulement typique d'une réunion de Sainte-Cène est :",
+        "items": [
+          "Musique de prélude",
+          "Bienvenue et annonces",
+          "Reconnaissance de l'autorité présidente",
+          "Cantique d'ouverture",
+          "Prière d'ouverture",
+          "Affaires de la paroisse",
+          "Bénédictions de bébés (le cas échéant)",
+          "Cantique de Sainte-Cène",
+          "Administration de la Sainte-Cène",
+          "Orateurs et numéros musicaux",
+          "Cantique de clôture",
+          "Prière de clôture",
+          "Musique de postlude"
+        ]
+      },
+      "include": {
+        "heading": "Que Mettre dans Votre Programme",
+        "leadership": "Informations de Direction",
+        "leadershipItems": [
+          "Présidence — généralement l'évêque ou le président de branche",
+          "Direction — le membre de l'épiscopat qui dirige",
+          "Choriste — qui dirige la musique",
+          "Organiste/Pianiste — qui joue la musique"
+        ],
+        "hymns": "Cantiques",
+        "hymnsIntro": "Une réunion standard comprend trois cantiques :",
+        "hymnsItems": [
+          "Cantique d'ouverture — donne le ton",
+          "Cantique de Sainte-Cène — doit se concentrer sur le Sauveur et Son Expiation",
+          "Cantique de clôture — conclut la réunion"
+        ],
+        "hymnsOptional": "Optionnel : Un cantique intermédiaire ou numéro musical peut être placé entre les orateurs.",
+        "speakers": "Orateurs",
+        "speakersDesc": "Listez le nom de chaque orateur. L'épiscopat assigne généralement 2-3 orateurs par semaine.",
+        "prayers": "Prières",
+        "prayersDesc": "Incluez les noms des membres qui font les prières d'ouverture et de clôture."
+      },
+      "special": {
+        "heading": "Types de Réunions Spéciales",
+        "fastTestimony": "Réunion de Jeûne et de Témoignages",
+        "fastTestimonyDesc": "Le premier dimanche de chaque mois. Remplacez la section des orateurs par « Expression des témoignages ».",
+        "babyBlessing": "Bénédiction de Bébé",
+        "babyBlessingDesc": "La bénédiction se fait généralement après les affaires de la paroisse et avant le cantique de Sainte-Cène.",
+        "conference": "Conférence de Pieu / Conférence de Paroisse",
+        "conferenceDesc": "Lors de la conférence de paroisse, les dirigeants de pieu peuvent présider et parler.",
+        "primaryProgram": "Programme de la Primaire / Programme de la Jeunesse",
+        "primaryProgramDesc": "Les programmes spéciaux peuvent remplacer le format normal des orateurs, mais doivent toujours inclure cantiques, prières et Sainte-Cène."
+      },
+      "branchWard": {
+        "heading": "Différences entre Branche et Paroisse",
+        "intro": "La structure du programme est la même. Les principales différences sont terminologiques :",
+        "items": [
+          "Une paroisse est dirigée par un évêque ; une branche par un président de branche",
+          "Une paroisse appartient à un pieu ; une branche peut appartenir à un district ou pieu",
+          "WardBulletin supporte les deux — basculez entre les modes pour mettre à jour la terminologie"
+        ]
+      }
+    }
   }
 }

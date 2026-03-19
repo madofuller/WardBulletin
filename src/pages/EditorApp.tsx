@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
 import { getCurrentUnitType } from '../lib/config';
 import { getUnitLabel } from '../lib/terminology';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+// Lazy-loaded at PDF export time to reduce initial bundle
+const loadPdfDeps = () => Promise.all([
+  import('jspdf'),
+  import('html2canvas'),
+] as const);
 import { supabase, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
 import { recurringAnnouncementsService } from '../lib/recurringAnnouncementsService';
 import BulletinForm from '../components/BulletinForm';
@@ -16,6 +20,7 @@ import AuthModal from '../components/AuthModal';
 import UserMenu from '../components/UserMenu';
 import SavedBulletinsModal from '../components/SavedBulletinsModal';
 import TemplatesModal from '../components/TemplatesModal';
+import { BUILT_IN_TEMPLATES, type BuiltInTemplate } from '../data/builtInTemplates';
 import ThemeModal from '../components/ThemeModal';
 import PrintPreviewModal from '../components/PrintPreviewModal';
 import ProfileModal from '../components/ProfileModal';
@@ -35,7 +40,7 @@ import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { useSession } from '../lib/SessionContext';
 import { themes } from '../data/themes';
-import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useProfileAccess } from '../hooks/useProfilePermissions';
 import { getAllImages, ImageData } from '../data/images';
@@ -60,9 +65,12 @@ function EditorApp() {
   const location = useLocation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeBulletinId, setActiveBulletinId] = useState<string | null>(null);
   const { sharedProfiles, loading: sharedProfilesLoading } = useProfileAccess();
   const [allImages, setAllImages] = useState<ImageData[]>([]);
+  const [showDeepLinkBanner, setShowDeepLinkBanner] = useState(false);
+  const [deepLinkTemplateName, setDeepLinkTemplateName] = useState('');
 
   // Load images when user changes
   useEffect(() => {
@@ -610,7 +618,7 @@ function EditorApp() {
         try {
           const keys = Object.keys(localStorage);
           keys.forEach(key => {
-            if (key.startsWith('mywardbulletin_') && key !== DRAFT_KEY) {
+            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
               localStorage.removeItem(key);
             }
           });
@@ -637,7 +645,7 @@ function EditorApp() {
         try {
           const keys = Object.keys(localStorage);
           keys.forEach(key => {
-            if (key.startsWith('mywardbulletin_') && key !== DRAFT_KEY) {
+            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
               localStorage.removeItem(key);
             }
           });
@@ -1146,8 +1154,13 @@ function EditorApp() {
     setShowQRCode(false);
   };
 
-  const handleTemplateSelect = (template: Template | null) => {
-    if (template) {
+  const handleTemplateSelect = (template: Template | null, builtIn?: BuiltInTemplate) => {
+    if (builtIn) {
+      templateService.setActiveTemplateId(null);
+      const blank = createBlankBulletin();
+      setBulletinData({ ...blank, ...builtIn.data });
+      toast.success(t(builtIn.nameKey) + ' ' + t('templates.applied', 'template applied'));
+    } else if (template) {
       templateService.setActiveTemplateId(template.id);
       setBulletinData(template.data);
     } else {
@@ -1158,6 +1171,39 @@ function EditorApp() {
     setHasUnsavedChanges(false);
     setShowTemplates(false);
   };
+
+  // Deep link: ?template=builtin-sacrament etc.
+  useEffect(() => {
+    const templateParam = searchParams.get('template');
+    if (!templateParam) return;
+    const matched = BUILT_IN_TEMPLATES.find(t => t.id === templateParam);
+    if (!matched) {
+      navigate('/', { replace: true });
+      return;
+    }
+    if (hasUnsavedChanges) {
+      setConfirmationModal({
+        isOpen: true,
+        title: t('common.unsavedChanges', 'Unsaved Changes'),
+        message: t('templates.deepLinkConfirm', 'You have unsaved changes. Apply this template and lose your current work?'),
+        variant: 'warning' as const,
+        onConfirm: () => {
+          handleTemplateSelect(null, matched);
+          navigate('/', { replace: true });
+          setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+        },
+      });
+    } else {
+      handleTemplateSelect(null, matched);
+      navigate('/', { replace: true });
+      // Show onboarding banner if user hasn't dismissed it before
+      if (!localStorage.getItem('wardbulletin_deeplink_banner_dismissed')) {
+        setDeepLinkTemplateName(t(matched.nameKey));
+        setShowDeepLinkBanner(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeleteSavedBulletin = (bulletinId: string) => {
     // If we're currently editing the deleted bulletin, clear the current ID
@@ -1413,6 +1459,8 @@ function EditorApp() {
         const marginX = 0; // extra horizontal margin handled by centering
         const marginY = 10; // mm top/bottom padding
 
+        const [{ default: jsPDF }, { default: html2canvas }] = await loadPdfDeps();
+
         // Render page 1
         const canvas1 = await html2canvas(printPage1Ref.current, {
           scale,
@@ -1421,8 +1469,8 @@ function EditorApp() {
           backgroundColor: '#ffffff',
           width: printPage1Ref.current.scrollWidth,
           height: printPage1Ref.current.scrollHeight,
-          logging: false, // Disable logging for better performance
-          removeContainer: true // Clean up after rendering
+          logging: false,
+          removeContainer: true
         });
 
         // Render page 2
@@ -1433,8 +1481,8 @@ function EditorApp() {
           backgroundColor: '#ffffff',
           width: printPage2Ref.current.scrollWidth,
           height: printPage2Ref.current.scrollHeight,
-          logging: false, // Disable logging for better performance
-          removeContainer: true // Clean up after rendering
+          logging: false,
+          removeContainer: true
         });
 
         // Convert to JPEG with compression for smaller file size
@@ -1444,8 +1492,8 @@ function EditorApp() {
         const pdf = new jsPDF({ 
           orientation: 'landscape', 
           unit: 'mm', 
-          format: 'a4',
-          compress: true // Enable PDF compression
+          format: 'letter',
+          compress: true
         });
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -1468,7 +1516,7 @@ function EditorApp() {
         );
 
         // Page 2
-        pdf.addPage('a4', 'landscape');
+        pdf.addPage('letter', 'landscape');
         const ratio2 = Math.min(
           1,
           (pdfWidth - marginX * 2) / canvas2.width,
@@ -1485,6 +1533,8 @@ function EditorApp() {
           canvas2.height * ratio2
         );
 
+        pdf.setDocumentProperties({ title: 'WardBulletin' });
+        (pdf as any).viewerPreferences?.({ Duplex: 'DuplexFlipShortEdge' });
         pdf.autoPrint();
         pdf.save('Ward-Bulletin.pdf');
       } catch (error) {
@@ -1529,7 +1579,7 @@ function EditorApp() {
             <a href="/" className="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-shadow no-underline" style={{ textDecoration: 'none' }}>
               <Logo size={40} />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">MyWardBulletin</h1>
+                <h1 className="text-3xl font-bold text-gray-900">WardBulletin</h1>
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm text-gray-600">{getUnitLabel()} Bulletin Creator</p>
                   {currentProfileSlug && (
@@ -1724,6 +1774,24 @@ function EditorApp() {
       </header>
 
       <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        {/* Deep link onboarding banner */}
+        {showDeepLinkBanner && (
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-blue-800">
+              {t('templates.deepLinkBanner', 'Starting with {{name}} template — customize it for your ward.', { name: deepLinkTemplateName })}
+            </p>
+            <button
+              onClick={() => {
+                setShowDeepLinkBanner(false);
+                localStorage.setItem('wardbulletin_deeplink_banner_dismissed', 'true');
+              }}
+              className="ml-4 text-blue-600 hover:text-blue-800 text-sm font-medium flex-shrink-0"
+            >
+              {t('common.dismiss', 'Dismiss')}
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Form Section */}
           <div className="space-y-6">
@@ -2045,18 +2113,22 @@ function EditorApp() {
           onClose={() => setShowPrintPreviewModal(false)}
           bulletinData={bulletinData}
           onUpdateData={handleBulletinDataChange}
+          onExportPDF={handleExportPDF}
         />
 
-        {/* Hidden print layout for PDF export */}
-        <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-          <BulletinPrintLayout
-            data={{
-              ...bulletinData,
-              profileSlug: currentProfileSlug || 'your-profile-slug'
-            }}
-            refs={{ page1: printPage1Ref, page2: printPage2Ref }}
-          />
-        </div>
+        {/* Print source: rendered via portal as direct child of <body> so @media print can isolate it */}
+        {createPortal(
+          <div className="print-source-portal" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+            <BulletinPrintLayout
+              data={{
+                ...bulletinData,
+                profileSlug: currentProfileSlug || 'your-profile-slug'
+              }}
+              refs={{ page1: printPage1Ref, page2: printPage2Ref }}
+            />
+          </div>,
+          document.body
+        )}
         {/* Create Profile Slug Modal */}
         {showCreateProfileSlug && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2101,13 +2173,19 @@ function EditorApp() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <p className="text-gray-600">
-              MyWardBulletin.com - Free Ward Bulletin Creator
+              &copy; WardBulletin
             </p>
 
             <nav className="mt-4 space-x-4">
               <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
               <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+            </nav>
+            <nav className="mt-3 space-x-4">
+              <span className="text-gray-400 text-sm">Guides:</span>
+              <a href="/guide/create-ward-bulletin" className="text-sm text-gray-500 hover:text-gray-900">Create a Bulletin</a>
+              <a href="/guide/bulletin-templates" className="text-sm text-gray-500 hover:text-gray-900">Templates & Ideas</a>
+              <a href="/guide/sacrament-meeting-program" className="text-sm text-gray-500 hover:text-gray-900">Program Guide</a>
             </nav>
           </div>
         </div>

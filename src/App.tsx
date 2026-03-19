@@ -1,16 +1,20 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import ErrorBoundary from './components/ErrorBoundary';
 import NetworkErrorHandler from './components/NetworkErrorHandler';
-import EditorApp from './pages/EditorApp';
-import AboutPage from './pages/AboutPage';
-import HowToUsePage from './pages/HowToUsePage';
-import ContactPage from './pages/ContactPage';
-import PublicBulletinPage from './pages/PublicBulletinPage';
-import AnnouncementSubmissionPage from './pages/AnnouncementSubmissionPage';
-import InvitePage from './pages/InvitePage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+
+const EditorApp = lazy(() => import('./pages/EditorApp'));
+const PublicBulletinPage = lazy(() => import('./pages/PublicBulletinPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const HowToUsePage = lazy(() => import('./pages/HowToUsePage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const AnnouncementSubmissionPage = lazy(() => import('./pages/AnnouncementSubmissionPage'));
+const InvitePage = lazy(() => import('./pages/InvitePage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const BulletinGuidePage = lazy(() => import('./pages/BulletinGuidePage'));
+const TemplateIdeasPage = lazy(() => import('./pages/TemplateIdeasPage'));
+const ProgramGuidePage = lazy(() => import('./pages/ProgramGuidePage'));
 
 // Loading fallback for i18n
 const LoadingFallback = () => (
@@ -34,6 +38,9 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/how-to-use" element={<HowToUsePage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/guide/create-ward-bulletin" element={<BulletinGuidePage />} />
+            <Route path="/guide/bulletin-templates" element={<TemplateIdeasPage />} />
+            <Route path="/guide/sacrament-meeting-program" element={<ProgramGuidePage />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />

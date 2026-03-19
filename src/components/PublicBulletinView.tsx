@@ -82,7 +82,7 @@ export default function PublicBulletinView({
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 {t('bulletin.needHelp')}{' '}
-                <a href="/contact" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
+                <a href="/contact" className="text-blue-600 hover:underline">WardBulletin.com</a>
               </p>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function PublicBulletinView({
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-500">
                 {t('bulletin.wantToCreateBulletins')}{' '}
-                <a href="/" className="text-blue-600 hover:underline">MyWardBulletin.com</a>
+                <a href="/" className="text-blue-600 hover:underline">WardBulletin.com</a>
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
-# Contributing to MyWardBulletin
+# Contributing to WardBulletin
 
-Thank you for your interest in contributing to MyWardBulletin! This guide will help you set up your development environment safely.
+Thank you for your interest in contributing to WardBulletin! This guide will help you set up your development environment safely.
 
 ## 🔒 Important Security Notes
 
@@ -19,8 +19,8 @@ Thank you for your interest in contributing to MyWardBulletin! This guide will h
 ### 1. Fork and Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/MyWardBulletin.git
-cd MyWardBulletin
+git clone https://github.com/yourusername/WardBulletin.git
+cd WardBulletin
 npm install
 ```
 
@@ -132,7 +132,7 @@ src/
 
 ## 🆘 Getting Help
 
-- Check existing [GitHub Issues](https://github.com/madofuller/MyWardBulletin/issues)
+- Check existing [GitHub Issues](https://github.com/madofuller/WardBulletin/issues)
 - Create a new issue for bugs or feature requests
 - Join discussions in the repository
 
@@ -147,4 +147,4 @@ Before submitting a PR, ensure:
 - [ ] Tests pass (if applicable)
 - [ ] Documentation updated (if needed)
 
-Thank you for contributing to MyWardBulletin! 🙏
+Thank you for contributing to WardBulletin! 🙏
