@@ -3,4 +3,4 @@ Allow: /
 Disallow: /profile/
 Disallow: /invite/
 Disallow: /reset-password
-Sitemap: https://www.mywardbulletin.com/sitemap.xml
+Sitemap: https://wardbulletin.com/sitemap.xml

@@ -9,7 +9,7 @@ export default function LogoAlt({ size = 48 }) {
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="MyWardBulletin alternative logo"
+      aria-label="WardBulletin alternative logo"
     >
       {/* Church window shape */}
       <path d="M24 4C14 4 8 12 8 22v14a8 8 0 0 0 8 8h16a8 8 0 0 0 8-8V22C40 12 34 4 24 4z" fill="#F7C948" stroke="#1E3A8A" strokeWidth="2" />

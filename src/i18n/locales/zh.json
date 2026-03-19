@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "新建公告",
     "exportPdf": "匯出PDF",
+    "exporting": "匯出中...",
     "myQrCode": "我的QR碼",
     "signIn": "登入",
     "signOut": "登出",
@@ -75,7 +76,7 @@
     "general": "一般"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "{{unit}}公告編輯器",
     "profile": "個人資料",
     "currentlyViewingProfile": "目前檢視的資料：{{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "本週沒有公告。",
     "haveAnnouncementToShare": "有公告要分享嗎？",
     "submitAnnouncement": "提交公告",
-    "builtWithMyWardBulletin": "由 MyWardBulletin.com 製作",
+    "builtWithMyWardBulletin": "由 WardBulletin.com 製作",
     "createYourOwnBulletin": "建立您自己的公告",
     "bulletinNotAvailable": "公告無法使用",
     "bulletinNotAvailableDescription": "此公告連結不存在或可能已被刪除。",
@@ -674,7 +675,9 @@
     "qrCodeOff": "QR碼：關閉",
     "qrOnShort": "QR開啟",
     "qrOffShort": "QR關閉",
-    "toggleQrCodeTooltip": "在列印公告上{{action}}QR碼"
+    "toggleQrCodeTooltip": "在列印公告上{{action}}QR碼",
+    "duplexHint": "此公告設計為雙面列印（短邊翻轉），然後對折。",
+    "scanForFullAnnouncements": "掃描查看完整公告"
   },
   "languages": {
     "en": "英語",
@@ -760,5 +763,205 @@
     "about": "關於",
     "howToUse": "使用方法",
     "contact": "聯繫我們"
+  },
+  "templates": {
+    "applied": "範本已套用"
+  },
+  "guide": {
+    "toc": "本指南內容",
+    "readyToCreate": "準備好建立您的公告了嗎？",
+    "readyToCreateDesc": "WardBulletin讓您在幾分鐘內輕鬆建立、分享和列印美觀的支會公告。無需下載 — 只需造訪網站即可開始建立。",
+    "startBuilding": "開始建立您的公告",
+    "startWithTemplate": "從範本開始",
+    "startWithTemplateDesc": "開始建立您的公告。選擇一個主題，填寫詳情，幾分鐘內就能完成一份精美的程序。",
+    "tryTemplateNow": "立即試用範本",
+    "buildYourProgram": "立即建立您的程序",
+    "buildYourProgramDesc": "WardBulletin為您處理所有結構。只需填寫詳情，工具就會自動為列印和數位分享進行美觀排版。",
+    "createYourProgram": "建立您的程序",
+    "bulletinGuide": {
+      "title": "如何建立出色的支會公告",
+      "intro": "精心製作的支會公告能幫助成員跟進聖餐聚會並了解支會活動。以下是建立有效公告的實用建議。",
+      "essentials": {
+        "heading": "從基本要素開始",
+        "intro": "每份聖餐聚會程序都應包含以下核心要素：",
+        "items": [
+          "日期和支會/分會名稱 — 幫助成員確認拿到正確的公告",
+          "主領和主持 — 誰在主持聚會",
+          "開會和閉會詩歌 — 包含編號和標題以便成員快速找到",
+          "聖餐詩歌 — 總是列在聖餐施行之前",
+          "講道者 — 列出姓名並標明是青年還是成人",
+          "開會和閉會祈禱"
+        ]
+      },
+      "announcements": {
+        "heading": "讓公告清晰有用",
+        "intro": "公告通常是公告中最常被閱讀的部分。保持其有效性：",
+        "items": [
+          "從最重要的項目開始 — 支會全體活動優先",
+          "包含日期、時間和地點 — 不要讓成員猜測",
+          "保持簡潔 — 每則公告一到兩句話通常就夠了",
+          "按對象分組 — 將慈助會、長老定額組、青年和初級會的公告分開",
+          "移除舊公告 — 過期活動仍然列在上面會讓公告顯得過時"
+        ],
+        "tip": "WardBulletin允許支會成員直接提交公告。不用再在週六晚上追著人跑了。"
+      },
+      "hymns": {
+        "heading": "用心選擇詩歌",
+        "intro": "詩歌決定聚會的氛圍。需要注意的幾點：",
+        "items": [
+          "聖餐詩歌應聚焦於救主的犧牲和聖餐教儀",
+          "考慮與聚會主題或講道者主題相關的詩歌",
+          "將熟悉的曲目與較少見的詩歌混合搭配",
+          "新的「詩歌——家庭與教會」合集提供了新的選擇"
+        ]
+      },
+      "readability": {
+        "heading": "為可讀性而設計",
+        "intro": "難以閱讀的公告不會被閱讀。請記住以下設計原則：",
+        "items": [
+          "不要過於擁擠 — 留白使內容更易於瀏覽",
+          "使用清晰的層級結構 — 標題用於區段，粗體用於重要細節",
+          "列印足夠大 — 許多成員從遠處閱讀或沒戴眼鏡",
+          "同時考慮列印和數位 — 有些人喜歡紙本，有些人想在手機上看"
+        ]
+      },
+      "sharing": {
+        "heading": "有效地分享",
+        "intro": "再好的公告如果沒人看也毫無用處。以下是分發方式：",
+        "items": [
+          "大廳桌上放QR碼 — 成員進入時掃描",
+          "透過簡訊或電子郵件發送連結",
+          "列印幾份 — 放在大廳桌上及給喜歡紙本的成員"
+        ]
+      },
+      "efficiency": {
+        "heading": "每週節省時間",
+        "intro": "建立公告不需要花費數小時。以下是簡化流程的方法：",
+        "items": [
+          "將上週的公告作為範本 — 複製後更新詳情",
+          "設定週期性公告 — 不變的每週活動可以儲存和重複使用",
+          "讓成員提交公告 — 使用提交功能",
+          "將領導資訊儲存為預設 — 只需輸入一次"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "支會公告範本與創意",
+      "intro": "不知道從哪裡開始？WardBulletin包含內建主題和靈活的編輯器。以下是一些激發靈感的想法。",
+      "themes": {
+        "heading": "內建主題",
+        "intro": "WardBulletin提供多種專業設計的主題，一鍵即可套用：",
+        "formal": "正式",
+        "formalDesc": "經典襯線字體，傳統莊重的風格。",
+        "modern": "現代",
+        "modernDesc": "乾淨的無襯線字體，現代化佈局。",
+        "elegant": "優雅",
+        "elegantDesc": "精緻的字體排版，風格細膩。",
+        "simple": "簡約",
+        "simpleDesc": "極簡設計，以內容為先。",
+        "friendly": "親切",
+        "friendlyDesc": "溫暖、平易近人的風格，帶有圓角元素。",
+        "handwritten": "手寫",
+        "handwrittenDesc": "個人化的手寫風格，給公告帶來溫馨手作感。"
+      },
+      "layouts": {
+        "heading": "佈局創意",
+        "standard": "標準聖餐聚會程序",
+        "standardIntro": "最常見的佈局包括：",
+        "fastSunday": "禁食主日 / 見證聚會",
+        "fastSundayDesc": "禁食主日時，將講道者部分替換為「見證分享」。",
+        "babyBlessing": "嬰兒祝福主日",
+        "babyBlessingDesc": "使用「新增嬰兒祝福」按鈕來新增命名與祝福區段。",
+        "heavyAnnouncements": "公告較多的週",
+        "heavyAnnouncementsDesc": "使用分組功能按對象進行整理。"
+      },
+      "images": {
+        "heading": "標題圖片創意",
+        "intro": "WardBulletin可讓您新增標題圖片以個人化公告。熱門選擇：",
+        "items": [
+          "您當地的聖殿",
+          "季節性自然風景",
+          "基督像",
+          "經文主題插畫",
+          "您的支會或分會建築"
+        ],
+        "tip": "WardBulletin包含26張以上精選的後期聖徒藝術圖片，可即時使用。"
+      },
+      "tips": {
+        "heading": "精緻公告的技巧",
+        "items": [
+          "校對姓名 — 拼錯講道者的姓名是最令人尷尬的事",
+          "驗證詩歌編號 — 確認編號與標題相符",
+          "每週更新 — 日期過期的公告會削弱信任",
+          "儲存為範本 — 將預設資訊保存好",
+          "測試QR碼 — 列印前自行掃描確認"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "聖餐聚會程序指南",
+      "intro": "聖餐聚會是耶穌基督後期聖徒教會成員一週中最重要的聚會。清晰、有條理的程序有助於聚會順利進行。",
+      "order": {
+        "heading": "聖餐聚會的標準順序",
+        "intro": "聖餐聚會的典型流程是：",
+        "items": [
+          "開會前音樂",
+          "歡迎與公告",
+          "確認主領權柄",
+          "開會詩歌",
+          "開會祈禱",
+          "支會事務",
+          "嬰兒祝福（適用時）",
+          "聖餐詩歌",
+          "聖餐的施行",
+          "講道者與音樂表演",
+          "閉會詩歌",
+          "閉會祈禱",
+          "閉會後音樂"
+        ]
+      },
+      "include": {
+        "heading": "程序中應包含的內容",
+        "leadership": "領導資訊",
+        "leadershipItems": [
+          "主領 — 通常是主教或分會會長",
+          "主持 — 主持聚會的主教團成員",
+          "領唱 — 帶領音樂的人",
+          "司琴 — 演奏音樂的人"
+        ],
+        "hymns": "詩歌",
+        "hymnsIntro": "標準聖餐聚會包含三首會眾詩歌：",
+        "hymnsItems": [
+          "開會詩歌 — 設定聚會氛圍",
+          "聖餐詩歌 — 應聚焦於救主和祂的贖罪",
+          "閉會詩歌 — 結束聚會"
+        ],
+        "hymnsOptional": "選擇性：可在講道者之間加入中間詩歌或音樂表演。",
+        "speakers": "講道者",
+        "speakersDesc": "列出每位講道者的姓名。主教團通常每週指派2-3位講道者。",
+        "prayers": "祈禱",
+        "prayersDesc": "包含進行開會和閉會祈禱的成員姓名。"
+      },
+      "special": {
+        "heading": "特殊聚會類型",
+        "fastTestimony": "禁食見證聚會",
+        "fastTestimonyDesc": "每月第一個主日舉行。將講道者部分替換為「見證分享」。",
+        "babyBlessing": "嬰兒祝福",
+        "babyBlessingDesc": "嬰兒祝福通常在支會事務之後、聖餐詩歌之前進行。",
+        "conference": "支聯會大會 / 支會大會",
+        "conferenceDesc": "支會大會期間，支聯會領袖可能主領並講話。",
+        "primaryProgram": "初級會節目 / 青年節目",
+        "primaryProgramDesc": "特別節目可能取代正常講道者形式，但仍應包含詩歌、祈禱和聖餐。"
+      },
+      "branchWard": {
+        "heading": "分會與支會的差異",
+        "intro": "程序結構相同。主要差異在於術語：",
+        "items": [
+          "支會由主教領導；分會由分會會長領導",
+          "支會屬於支聯會；分會可能屬於區會或支聯會",
+          "WardBulletin支援兩者 — 只需切換模式即可自動更新所有術語"
+        ]
+      }
+    }
   }
 }

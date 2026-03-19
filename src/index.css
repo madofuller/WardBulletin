@@ -2,122 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Print styles - ensure images and backgrounds print correctly */
+/* ============================================================
+   PRINT STYLES
+   When the browser prints, hide everything except the dedicated
+   print source container (.print-source-container) which holds
+   the BulletinPrintLayout used for both browser print and PDF.
+   ============================================================ */
 @media print {
-  /* When printing from print preview modal: show only the bulletin, hide modal chrome */
-  .print-preview-modal {
-    position: static !important;
-    background: none !important;
-    padding: 0 !important;
-    align-items: flex-start !important;
-  }
-  .print-preview-modal > div {
-    max-width: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-  }
-  .print-preview-modal .flex-shrink-0 {
-    display: none !important;
-  }
-  .print-preview-modal .flex-1.overflow-auto {
-    overflow: visible !important;
-    max-height: none !important;
+  @page {
+    size: 11in 8.5in landscape;
+    margin: 0;
   }
 
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 11in !important;
+    height: 8.5in !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
+  }
+
+  /* Reveal only the print source container */
+  body > .print-source-portal {
+    display: block !important;
+  }
+
+  .print-source-portal {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+  }
+
+  .print-source-portal .print-layout {
+    position: static !important;
+  }
+
+  .print-source-portal .print-page {
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  /* Preserve colors and backgrounds */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  /* Ensure images are visible when printing */
   img {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
     max-width: 100% !important;
     page-break-inside: avoid;
-    display: block !important;
-    visibility: visible !important;
   }
 
-  /* Ensure the header background and image print */
-  .bg-gray-100 {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    background-color: #f3f4f6 !important;
-  }
-
-  /* Force bulletin header images to print with full visibility */
-  .min-h-56 {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    overflow: visible !important;
-  }
-
-  .min-h-56 img {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
+  /* Hide overflow warnings in print */
+  .print-overflow-warning {
+    display: none !important;
   }
 }
 
-/* Print preview styles - show print styles in preview modal */
-.print-preview {
-  /* Force print styles to be visible in preview */
-}
-
+/* ============================================================
+   PRINT PREVIEW STYLES
+   Replicate Tailwind print: utilities inside the .print-preview
+   wrapper so the modal preview matches actual print output.
+   ============================================================ */
 .print-preview .print\:\!text-xl {
   font-size: 1.25rem !important;
 }
-
 .print-preview .print\:\!text-2xl {
   font-size: 1.5rem !important;
 }
-
 .print-preview .print\:\!text-3xl {
   font-size: 1.875rem !important;
 }
-
 .print-preview .print\:\!text-4xl {
   font-size: 2.25rem !important;
 }
-
 .print-preview .print\:\!text-black {
   color: black !important;
 }
-
 .print-preview .print\:\!text-sm {
   font-size: 0.875rem !important;
 }
-
 .print-preview .print\:\!text-base {
   font-size: 1rem !important;
 }
-
 .print-preview .print\:\!text-lg {
   font-size: 1.125rem !important;
 }
-
+.print-preview .print\:\!text-xs {
+  font-size: 0.75rem !important;
+}
 .print-preview .print\:\!max-h-96 {
   max-height: 24rem !important;
 }
-
-.print-preview .print\:\!rounded-lg {
-  border-radius: 0.5rem !important;
-}
-
-.print-preview .print\:\!shadow-sm {
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+.print-preview .print\:\!hidden {
+  display: none !important;
 }
 
 body {

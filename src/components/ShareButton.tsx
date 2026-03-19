@@ -22,7 +22,7 @@ interface ShareButtonProps {
 
 const ShareButton: React.FC<ShareButtonProps> = ({
   url,
-  title = 'My Ward Bulletin',
+  title = 'WardBulletin',
   description = 'Check out our ward bulletin!',
   className = '',
   variant = 'primary',

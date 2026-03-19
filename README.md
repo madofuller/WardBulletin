@@ -1,4 +1,4 @@
-# MyWardBulletin
+# WardBulletin
 
 A modern, customizable bulletin creation tool for LDS wards and branches. Create beautiful, professional bulletins with ease.
 

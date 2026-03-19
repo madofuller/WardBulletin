@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "Novo Boletim",
     "exportPdf": "Exportar PDF",
+    "exporting": "Exportando...",
     "myQrCode": "Meu Código QR",
     "signIn": "Entrar",
     "signOut": "Sair",
@@ -75,7 +76,7 @@
     "general": "Geral"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "Criador de Boletim da {{unit}}",
     "profile": "Perfil",
     "currentlyViewingProfile": "Perfil: {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "Nenhum anúncio para esta semana.",
     "haveAnnouncementToShare": "Tem um anúncio para compartilhar?",
     "submitAnnouncement": "Enviar Anúncio",
-    "builtWithMyWardBulletin": "Criado com MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Criado com WardBulletin.com",
     "createYourOwnBulletin": "Crie seu próprio boletim",
     "bulletinNotAvailable": "Boletim Não Disponível",
     "bulletinNotAvailableDescription": "Este link de boletim não existe ou pode ter sido removido.",
@@ -674,7 +675,9 @@
     "qrCodeOff": "Código QR: INATIVO",
     "qrOnShort": "QR ATIVO",
     "qrOffShort": "QR INATIVO",
-    "toggleQrCodeTooltip": "{{action}} código QR no boletim impresso"
+    "toggleQrCodeTooltip": "{{action}} código QR no boletim impresso",
+    "duplexHint": "Este boletim foi projetado para ser impresso em frente e verso (virar na borda curta) e dobrado ao meio.",
+    "scanForFullAnnouncements": "Escaneie para ver todos os anúncios"
   },
   "languages": {
     "en": "Inglês",
@@ -760,5 +763,205 @@
     "about": "Sobre",
     "howToUse": "Como Usar",
     "contact": "Contato"
+  },
+  "templates": {
+    "applied": "Modelo aplicado"
+  },
+  "guide": {
+    "toc": "Neste guia",
+    "readyToCreate": "Pronto para Criar seu Boletim?",
+    "readyToCreateDesc": "O WardBulletin facilita a criação, compartilhamento e impressão de belos boletins de ala em minutos. Não é necessário download — basta visitar o site e começar a criar.",
+    "startBuilding": "Começar a Criar seu Boletim",
+    "startWithTemplate": "Comece com um Modelo",
+    "startWithTemplateDesc": "Comece a criar seu boletim. Escolha um tema, preencha os detalhes e você terá um belo programa pronto em minutos.",
+    "tryTemplateNow": "Experimente um Modelo Agora",
+    "buildYourProgram": "Crie seu Programa Agora",
+    "buildYourProgramDesc": "O WardBulletin cuida de toda essa estrutura para você. Basta preencher os detalhes e deixar a ferramenta formatar tudo lindamente para impressão e compartilhamento digital.",
+    "createYourProgram": "Criar seu Programa",
+    "bulletinGuide": {
+      "title": "Como Criar um Ótimo Boletim de Ala",
+      "intro": "Um boletim de ala bem elaborado ajuda os membros a acompanhar a reunião sacramental e se manter informados sobre as atividades da ala. Aqui estão dicas práticas para criar boletins que sirvam sua ala de forma eficaz.",
+      "essentials": {
+        "heading": "Comece com o Essencial",
+        "intro": "Todo programa de reunião sacramental deve incluir estes elementos básicos:",
+        "items": [
+          "Data e nome da ala/ramo — ajuda os membros a confirmar que têm o boletim certo",
+          "Quem preside e dirige — quem está liderando a reunião",
+          "Hinos de abertura e encerramento — inclua o número e o título do hino",
+          "Hino sacramental — sempre listado antes da administração do sacramento",
+          "Oradores — liste nomes e indique se são oradores jovens ou adultos",
+          "Orações de abertura e encerramento"
+        ]
+      },
+      "announcements": {
+        "heading": "Faça os Anúncios Claros e Úteis",
+        "intro": "Os anúncios são frequentemente a parte mais lida do boletim. Mantenha-os eficazes:",
+        "items": [
+          "Comece com os itens mais importantes — eventos da ala primeiro, depois os específicos",
+          "Inclua datas, horários e locais — não faça os membros adivinharem",
+          "Seja conciso — uma ou duas frases por anúncio geralmente é suficiente",
+          "Agrupe por público — separe os anúncios por organização",
+          "Remova anúncios antigos — nada faz um boletim parecer desatualizado como atividades passadas ainda listadas"
+        ],
+        "tip": "O WardBulletin permite que os membros da ala enviem anúncios diretamente. Chega de correr atrás das pessoas no sábado à noite."
+      },
+      "hymns": {
+        "heading": "Escolha os Hinos com Cuidado",
+        "intro": "Os hinos definem o tom da reunião. Algumas coisas a considerar:",
+        "items": [
+          "O hino sacramental deve focar no sacrifício do Salvador e na ordenança do sacramento",
+          "Considere hinos que se relacionem com o tema da reunião",
+          "Misture favoritos conhecidos com hinos menos comuns",
+          "A nova coleção \"Hinos — Para o Lar e a Igreja\" oferece opções novas junto com os hinos tradicionais"
+        ]
+      },
+      "readability": {
+        "heading": "Projete para Legibilidade",
+        "intro": "Um boletim difícil de ler não será lido. Tenha em mente estes princípios de design:",
+        "items": [
+          "Não sobrecarregue — espaço em branco facilita a leitura",
+          "Use uma hierarquia clara — títulos para seções, negrito para detalhes importantes",
+          "Imprima grande o suficiente — muitos membros leem à distância ou sem óculos",
+          "Considere tanto a impressão quanto o digital — alguns preferem papel, outros querem ver no celular"
+        ]
+      },
+      "sharing": {
+        "heading": "Compartilhe de Forma Eficaz",
+        "intro": "O melhor boletim é inútil se ninguém o vê. Formas de distribuir:",
+        "items": [
+          "Código QR na mesa do saguão — os membros escaneiam ao entrar",
+          "Envie o link por mensagem ou e-mail",
+          "Imprima algumas cópias — para o saguão e para quem prefere papel"
+        ]
+      },
+      "efficiency": {
+        "heading": "Economize Tempo a Cada Semana",
+        "intro": "Criar um boletim não precisa levar horas. Veja como agilizar:",
+        "items": [
+          "Use o boletim da semana passada como modelo — duplique e atualize",
+          "Configure anúncios recorrentes — atividades semanais que não mudam podem ser salvas",
+          "Deixe os membros enviarem anúncios — use o recurso de envio",
+          "Salve as informações de liderança como padrão — só precisam ser inseridas uma vez"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Modelos e Ideias para Boletins de Ala",
+      "intro": "Não sabe por onde começar? O WardBulletin inclui temas integrados e um editor flexível. Aqui estão algumas ideias para se inspirar.",
+      "themes": {
+        "heading": "Temas Integrados",
+        "intro": "O WardBulletin vem com vários temas profissionais que você pode aplicar com um clique:",
+        "formal": "Formal",
+        "formalDesc": "Fontes serifadas clássicas com estilo tradicional e digno.",
+        "modern": "Moderno",
+        "modernDesc": "Fontes sans-serif limpas com layout contemporâneo.",
+        "elegant": "Elegante",
+        "elegantDesc": "Tipografia refinada com estilo sutil.",
+        "simple": "Simples",
+        "simpleDesc": "Design minimalista que prioriza o conteúdo.",
+        "friendly": "Amigável",
+        "friendlyDesc": "Estilo acolhedor com elementos arredondados.",
+        "handwritten": "Manuscrito",
+        "handwrittenDesc": "Estilo pessoal e escrito à mão com toque caseiro."
+      },
+      "layouts": {
+        "heading": "Ideias de Layout",
+        "standard": "O Programa Padrão de Reunião Sacramental",
+        "standardIntro": "O layout mais comum inclui:",
+        "fastSunday": "Domingo de Jejum / Reunião de Testemunhos",
+        "fastSundayDesc": "Nos domingos de jejum, substitua a seção de oradores por \"Testemunhos\".",
+        "babyBlessing": "Domingo de Bênção de Bebê",
+        "babyBlessingDesc": "Use o botão \"Adicionar Bênção de Bebê\" para adicionar uma seção de nomeação e bênção.",
+        "heavyAnnouncements": "Semanas com Muitos Anúncios",
+        "heavyAnnouncementsDesc": "Use o recurso de agrupamento para organizar por público."
+      },
+      "images": {
+        "heading": "Ideias de Imagem de Cabeçalho",
+        "intro": "O WardBulletin permite adicionar uma imagem de cabeçalho. Escolhas populares:",
+        "items": [
+          "Seu templo local",
+          "Uma cena de natureza sazonal",
+          "A estátua do Christus",
+          "Uma ilustração com tema das escrituras",
+          "O prédio da sua ala ou ramo"
+        ],
+        "tip": "O WardBulletin inclui mais de 26 imagens artísticas SUD selecionadas — sem necessidade de upload."
+      },
+      "tips": {
+        "heading": "Dicas para um Boletim Polido",
+        "items": [
+          "Revise os nomes — nada é mais constrangedor do que errar o nome de um orador",
+          "Verifique os números dos hinos — confirme que o número corresponde ao título",
+          "Atualize semanalmente — um boletim desatualizado prejudica a confiança",
+          "Salve como modelo — mantenha as informações padrão salvas",
+          "Teste o código QR — escaneie antes de imprimir"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Guia do Programa de Reunião Sacramental",
+      "intro": "A reunião sacramental é a reunião mais importante da semana para os membros de A Igreja de Jesus Cristo dos Santos dos Últimos Dias. Um programa claro e bem organizado ajuda a reunião a transcorrer sem problemas.",
+      "order": {
+        "heading": "Ordem Padrão da Reunião Sacramental",
+        "intro": "Embora cada bispado possa ajustar a ordem, o fluxo típico é:",
+        "items": [
+          "Música de prelúdio",
+          "Boas-vindas e anúncios",
+          "Reconhecimento da autoridade que preside",
+          "Hino de abertura",
+          "Oração de abertura",
+          "Assuntos da ala",
+          "Bênçãos de bebês (quando aplicável)",
+          "Hino sacramental",
+          "Administração do sacramento",
+          "Oradores e números musicais",
+          "Hino de encerramento",
+          "Oração de encerramento",
+          "Música de poslúdio"
+        ]
+      },
+      "include": {
+        "heading": "O que Incluir no seu Programa",
+        "leadership": "Informações de Liderança",
+        "leadershipItems": [
+          "Quem preside — geralmente o bispo ou presidente do ramo",
+          "Quem dirige — o membro do bispado que dirige",
+          "Regente — quem dirige a música",
+          "Organista/Pianista — quem toca a música"
+        ],
+        "hymns": "Hinos",
+        "hymnsIntro": "Uma reunião sacramental padrão inclui três hinos congregacionais:",
+        "hymnsItems": [
+          "Hino de abertura — define o tom",
+          "Hino sacramental — deve focar no Salvador e em Sua Expiação",
+          "Hino de encerramento — encerra a reunião"
+        ],
+        "hymnsOptional": "Opcional: Um hino intermediário ou número musical pode ser colocado entre os oradores.",
+        "speakers": "Oradores",
+        "speakersDesc": "Liste o nome de cada orador. O bispado geralmente designa 2-3 oradores por semana.",
+        "prayers": "Orações",
+        "prayersDesc": "Inclua os nomes dos membros que farão as orações de abertura e encerramento."
+      },
+      "special": {
+        "heading": "Tipos Especiais de Reunião",
+        "fastTestimony": "Reunião de Jejum e Testemunhos",
+        "fastTestimonyDesc": "Realizada no primeiro domingo de cada mês. Substitua a seção de oradores por \"Testemunhos\".",
+        "babyBlessing": "Bênção de Bebê",
+        "babyBlessingDesc": "Quando uma criança é abençoada, geralmente acontece após os assuntos da ala e antes do hino sacramental.",
+        "conference": "Conferência de Estaca / Conferência de Ala",
+        "conferenceDesc": "Durante a conferência de ala, líderes da estaca podem presidir e falar.",
+        "primaryProgram": "Programa da Primária / Programa da Juventude",
+        "primaryProgramDesc": "Programas especiais podem substituir o formato normal de oradores, mas ainda devem incluir hinos, orações e o sacramento."
+      },
+      "branchWard": {
+        "heading": "Diferenças entre Ramo e Ala",
+        "intro": "A estrutura do programa é a mesma. As principais diferenças são de terminologia:",
+        "items": [
+          "Uma ala é liderada por um bispo; um ramo é liderado por um presidente de ramo",
+          "Uma ala pertence a uma estaca; um ramo pode pertencer a um distrito ou estaca",
+          "O WardBulletin suporta ambos — basta alternar entre os modos"
+        ]
+      }
+    }
   }
 }

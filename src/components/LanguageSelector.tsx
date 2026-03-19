@@ -3,6 +3,7 @@ import { ChevronDown, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSession } from '../lib/SessionContext';
 import { userService } from '../lib/supabase';
+import { preloadSongData } from '../lib/songService';
 
 interface LanguageSelectorProps {
   className?: string;
@@ -32,8 +33,11 @@ export default function LanguageSelector({ className = '' }: LanguageSelectorPro
   const handleSelect = async (language: string) => {
     setSaving(true);
 
-    // Change the i18n language
-    await i18n.changeLanguage(language);
+    // Change the i18n language and preload song data in parallel
+    await Promise.all([
+      i18n.changeLanguage(language),
+      preloadSongData(language),
+    ]);
 
     // Save to localStorage
     localStorage.setItem('selectedLanguage', language);

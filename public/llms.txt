@@ -1,0 +1,93 @@
+# WardBulletin
+
+> Free digital ward bulletin creator for LDS wards and branches.
+
+## What is WardBulletin?
+
+WardBulletin (https://wardbulletin.com) is a free, modern web application for creating, sharing, and printing ward bulletins (sacrament meeting programs) for The Church of Jesus Christ of Latter-day Saints.
+
+## Key Features
+
+- Create beautiful sacrament meeting programs with hymns, speakers, prayers, and announcements
+- Quick-start templates for Sacrament Meeting, Fast & Testimony Meeting, Baptism, Ward Conference, Special Programs, and 5th Sunday — create a bulletin in under 2 minutes
+- Share bulletins instantly via custom links and auto-generated QR codes
+- Print-optimized PDF bulletins designed for folding and Sunday distribution
+- Mobile-friendly design — works on phones, tablets, and desktops
+- Multi-language support: English, Spanish, Portuguese, French, German, Italian, Japanese, Korean, Chinese (9 languages)
+- Built-in hymn database with links to official Church music in all 9 languages
+- Built-in Children's Songbook database in all 9 languages
+- Collaborative announcement submissions — ward members can submit announcements for review
+- Ward/branch sharing — invite editors and viewers to collaborate on bulletins
+- Bulletin scheduling — schedule bulletins to auto-activate on specific dates
+- Recurring announcements — save and reuse weekly announcements
+- Weekly scheduler — plan bulletins for upcoming weeks
+- Supports both ward and branch terminology
+- 9 typography themes for visual customization
+- 26 curated LDS header images plus custom image upload
+- Free to use with no ads, no trackers, and no data sales
+
+## Who is it for?
+
+- Ward bulletin specialists
+- Branch bulletin creators
+- Bishopric members who manage sacrament meeting programs
+- Ward clerks
+- Anyone responsible for creating weekly church bulletins in LDS wards or branches
+
+## How it works
+
+1. Visit wardbulletin.com and start building a bulletin immediately (no sign-in required)
+2. Choose a quick-start template (Sacrament Meeting, Fast Sunday, Baptism, Ward Conference, Special Program, or 5th Sunday) or start from blank
+3. Add ward name, date, leadership, hymns, speakers, prayers, and announcements
+4. Create a free account to save, share via link/QR code, and manage multiple bulletins
+5. Print as a foldable PDF or share digitally — ward members scan the QR code to view on their phones
+
+## Quick-Start Templates
+
+- **Sacrament Meeting** — Standard meeting with speakers and sacrament
+- **Fast & Testimony Meeting** — First Sunday with open testimony bearing
+- **Baptism Program** — Baptismal service with speakers and music
+- **Ward Conference** — Stake leadership visiting with multiple speakers
+- **Special Program** — Musical program for Christmas, Easter, etc.
+- **5th Sunday** — Combined meeting with focused speakers
+
+## Comparison with Alternatives
+
+WardBulletin offers the most features of any free LDS ward bulletin tool:
+
+| Feature | WardBulletin | WardBullet | WardBulletin.app |
+|---------|---------------|------------|------------------|
+| Languages | 9 | 5 | 1 |
+| Hymn database | Full hymnal + Children's Songbook | No | No |
+| Quick-start templates | 6 types | Multiple | Limited |
+| Collaborative editing | Yes (roles) | No | No |
+| Announcement submissions | Yes | No | No |
+| Bulletin scheduling | Yes | No | No |
+| Recurring announcements | Yes | No | No |
+| Image customization | 26 + custom upload | Backgrounds | No |
+| Typography themes | 9 | Limited | No |
+| Ward + Branch | Yes | Ward only | Ward only |
+| Price | Free | Free | Free |
+
+## Technical Details
+
+- Web application (no download or app install required)
+- Built with React, TypeScript, and Tailwind CSS
+- Optimized bundle with code splitting and lazy loading for fast page loads
+- Hosted on Vercel
+- Data stored securely in Supabase
+- No cookies, no analytics trackers, no third-party data sharing
+
+## Contact
+
+Visit https://wardbulletin.com/contact for support.
+
+## Links
+
+- Website: https://wardbulletin.com
+- About: https://wardbulletin.com/about
+- How to Use: https://wardbulletin.com/how-to-use
+- Contact: https://wardbulletin.com/contact
+- Create a Bulletin Guide: https://wardbulletin.com/guide/create-ward-bulletin
+- Template Ideas: https://wardbulletin.com/guide/bulletin-templates
+- Sacrament Meeting Program Guide: https://wardbulletin.com/guide/sacrament-meeting-program

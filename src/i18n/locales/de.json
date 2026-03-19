@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "Neues Programm",
     "exportPdf": "PDF exportieren",
+    "exporting": "Exportieren...",
     "myQrCode": "Mein QR-Code",
     "signIn": "Anmelden",
     "signOut": "Abmelden",
@@ -75,7 +76,7 @@
     "general": "Allgemein"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "{{unit}}-Programm erstellen",
     "profile": "Profil",
     "currentlyViewingProfile": "Profil: {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "Keine Ankündigungen für diese Woche.",
     "haveAnnouncementToShare": "Haben Sie eine Ankündigung zu teilen?",
     "submitAnnouncement": "Ankündigung einreichen",
-    "builtWithMyWardBulletin": "Erstellt mit MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Erstellt mit WardBulletin.com",
     "createYourOwnBulletin": "Erstellen Sie Ihr eigenes Programm",
     "bulletinNotAvailable": "Programm nicht verfügbar",
     "bulletinNotAvailableDescription": "Dieser Programm-Link existiert nicht oder wurde möglicherweise entfernt.",
@@ -674,7 +675,9 @@
     "qrCodeOff": "QR-Code: Aus",
     "qrOnShort": "QR Ein",
     "qrOffShort": "QR Aus",
-    "toggleQrCodeTooltip": "QR-Code auf gedrucktem Programm {{action}}"
+    "toggleQrCodeTooltip": "QR-Code auf gedrucktem Programm {{action}}",
+    "duplexHint": "Dieses Programm ist für beidseitigen Druck (an kurzer Kante spiegeln) und zum Falten in der Mitte konzipiert.",
+    "scanForFullAnnouncements": "Scannen für alle Ankündigungen"
   },
   "invite": {
     "youreInvited": "Sie sind eingeladen!",
@@ -760,5 +763,205 @@
     "ja": "Japanisch",
     "ko": "Koreanisch",
     "zh": "Chinesisch"
+  },
+  "templates": {
+    "applied": "Vorlage angewendet"
+  },
+  "guide": {
+    "toc": "In diesem Leitfaden",
+    "readyToCreate": "Bereit, Ihr Programm zu Erstellen?",
+    "readyToCreateDesc": "WardBulletin macht es einfach, schöne Gemeindeprogramme in wenigen Minuten zu erstellen, zu teilen und zu drucken. Kein Download erforderlich — besuchen Sie einfach die Seite und legen Sie los.",
+    "startBuilding": "Ihr Programm Erstellen",
+    "startWithTemplate": "Mit einer Vorlage Beginnen",
+    "startWithTemplateDesc": "Starten Sie mit der Erstellung Ihres Programms. Wählen Sie ein Design, füllen Sie die Details aus und Sie haben in wenigen Minuten ein schönes Programm.",
+    "tryTemplateNow": "Jetzt eine Vorlage Ausprobieren",
+    "buildYourProgram": "Erstellen Sie Jetzt Ihr Programm",
+    "buildYourProgramDesc": "WardBulletin übernimmt die gesamte Struktur für Sie. Füllen Sie einfach die Details aus und lassen Sie das Tool alles schön für Druck und digitales Teilen formatieren.",
+    "createYourProgram": "Ihr Programm Erstellen",
+    "bulletinGuide": {
+      "title": "So Erstellen Sie ein Großartiges Gemeindeprogramm",
+      "intro": "Ein gut gestaltetes Gemeindeprogramm hilft Mitgliedern, der Abendmahlsversammlung zu folgen und über Gemeindeaktivitäten informiert zu bleiben. Hier sind praktische Tipps für effektive Programme.",
+      "essentials": {
+        "heading": "Beginnen Sie mit dem Wesentlichen",
+        "intro": "Jedes Abendmahlsversammlungsprogramm sollte diese Kernelemente enthalten:",
+        "items": [
+          "Datum und Gemeinde-/Zweigname — hilft Mitgliedern zu bestätigen, dass sie das richtige Programm haben",
+          "Vorsitz und Leitung — wer führt die Versammlung",
+          "Anfangs- und Schlusslieder — Nummer und Titel angeben",
+          "Abendmahlslied — immer vor der Austeilung des Abendmahls aufgeführt",
+          "Redner — Namen auflisten und angeben, ob Jugendliche oder Erwachsene",
+          "Anfangs- und Schlussgebet"
+        ]
+      },
+      "announcements": {
+        "heading": "Ankündigungen Klar und Nützlich Gestalten",
+        "intro": "Ankündigungen sind oft der meistgelesene Teil. Halten Sie sie effektiv:",
+        "items": [
+          "Beginnen Sie mit den wichtigsten Punkten — gemeindeweite Veranstaltungen zuerst",
+          "Daten, Zeiten und Orte angeben — lassen Sie Mitglieder nicht raten",
+          "Fassen Sie sich kurz — ein bis zwei Sätze pro Ankündigung reichen",
+          "Nach Zielgruppe gruppieren — FHV, Ältestenkollegium, Jugend und PV trennen",
+          "Alte Ankündigungen entfernen — nichts wirkt veralteter als Aktivitäten vom letzten Monat"
+        ],
+        "tip": "WardBulletin ermöglicht Gemeindemitgliedern, Ankündigungen direkt einzureichen. Kein Nachjagen mehr am Samstagabend."
+      },
+      "hymns": {
+        "heading": "Lieder Sorgfältig Auswählen",
+        "intro": "Lieder setzen den Ton der Versammlung. Einige Dinge zu beachten:",
+        "items": [
+          "Das Abendmahlslied sollte sich auf das Opfer des Erretters und die Abendmahlshandlung konzentrieren",
+          "Wählen Sie Lieder, die zum Thema oder den Rednerthemen passen",
+          "Mischen Sie bekannte Favoriten mit weniger bekannten Liedern",
+          "Die neue Sammlung „Lieder — Für Zuhause und die Kirche\" bietet neue Optionen"
+        ]
+      },
+      "readability": {
+        "heading": "Für Lesbarkeit Gestalten",
+        "intro": "Ein schwer lesbares Programm wird nicht gelesen. Beachten Sie diese Gestaltungsprinzipien:",
+        "items": [
+          "Nicht überfüllen — Weißraum erleichtert das Lesen",
+          "Klare Hierarchie verwenden — Überschriften für Abschnitte, Fettdruck für wichtige Details",
+          "Groß genug drucken — viele Mitglieder lesen aus der Entfernung",
+          "An Druck und Digital denken — manche bevorzugen Papier, andere das Handy"
+        ]
+      },
+      "sharing": {
+        "heading": "Effektiv Teilen",
+        "intro": "Das beste Programm ist nutzlos, wenn niemand es sieht. Verbreitungswege:",
+        "items": [
+          "QR-Code auf dem Tisch im Foyer — Mitglieder scannen beim Eintreten",
+          "Link per SMS oder E-Mail senden",
+          "Einige Kopien drucken — für den Foyer-Tisch und Papier-Liebhaber"
+        ]
+      },
+      "efficiency": {
+        "heading": "Jede Woche Zeit Sparen",
+        "intro": "Ein Programm zu erstellen muss nicht Stunden dauern. So optimieren Sie den Prozess:",
+        "items": [
+          "Das Programm der letzten Woche als Vorlage verwenden — duplizieren und aktualisieren",
+          "Wiederkehrende Ankündigungen einrichten — wöchentliche Aktivitäten speichern und wiederverwenden",
+          "Mitglieder Ankündigungen einreichen lassen — die Einreichungsfunktion nutzen",
+          "Führungsinformationen als Standard speichern — müssen nur einmal eingegeben werden"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Gemeindeprogramm-Vorlagen & Ideen",
+      "intro": "Nicht sicher, wo Sie anfangen sollen? WardBulletin bietet integrierte Designs und einen flexiblen Editor. Hier sind einige Ideen zur Inspiration.",
+      "themes": {
+        "heading": "Integrierte Designs",
+        "intro": "WardBulletin bietet mehrere professionell gestaltete Designs mit einem Klick:",
+        "formal": "Formal",
+        "formalDesc": "Klassische Serifenschriften mit traditionellem, würdigem Stil.",
+        "modern": "Modern",
+        "modernDesc": "Klare serifenlose Schriften mit zeitgemäßem Layout.",
+        "elegant": "Elegant",
+        "elegantDesc": "Raffinierte Typografie mit dezentem Stil.",
+        "simple": "Einfach",
+        "simpleDesc": "Minimalistisches Design, das den Inhalt priorisiert.",
+        "friendly": "Freundlich",
+        "friendlyDesc": "Warmer, einladender Stil mit abgerundeten Elementen.",
+        "handwritten": "Handgeschrieben",
+        "handwrittenDesc": "Ein persönlicher, handgeschriebener Stil mit warmem, hausgemachtem Touch."
+      },
+      "layouts": {
+        "heading": "Layout-Ideen",
+        "standard": "Das Standard-Abendmahlsversammlungsprogramm",
+        "standardIntro": "Das gängigste Layout umfasst:",
+        "fastSunday": "Fastensonntag / Zeugnisversammlung",
+        "fastSundayDesc": "An Fastensonntagen ersetzen Sie den Rednerabschnitt durch „Zeugnisgeben\".",
+        "babyBlessing": "Babysegnungssonntag",
+        "babyBlessingDesc": "Verwenden Sie die Schaltfläche „Babysegen hinzufügen\", um einen Segnungsabschnitt hinzuzufügen.",
+        "heavyAnnouncements": "Wochen mit Vielen Ankündigungen",
+        "heavyAnnouncementsDesc": "Verwenden Sie die Gruppierungsfunktion, um nach Zielgruppe zu organisieren."
+      },
+      "images": {
+        "heading": "Ideen für Kopfzeilenbilder",
+        "intro": "WardBulletin ermöglicht es Ihnen, ein Kopfzeilenbild hinzuzufügen. Beliebte Optionen:",
+        "items": [
+          "Ihr lokaler Tempel",
+          "Eine saisonale Naturszene",
+          "Die Christus-Statue",
+          "Eine Schriftstellenillustration",
+          "Ihr Gemeinde- oder Zweiggebäude"
+        ],
+        "tip": "WardBulletin enthält über 26 kuratierte HLT-Kunstwerke, die sofort verwendbar sind."
+      },
+      "tips": {
+        "heading": "Tipps für ein Poliertes Programm",
+        "items": [
+          "Namen korrekturlesen — nichts ist peinlicher als einen Rednernamen falsch zu schreiben",
+          "Liednummern überprüfen — sicherstellen, dass die Nummer zum Titel passt",
+          "Wöchentlich aktualisieren — ein veraltetes Programm untergräbt das Vertrauen",
+          "Als Vorlage speichern — Standardinformationen gespeichert halten",
+          "QR-Code testen — selbst scannen, bevor Sie drucken"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Leitfaden für das Abendmahlsversammlungsprogramm",
+      "intro": "Die Abendmahlsversammlung ist die wichtigste Versammlung der Woche für Mitglieder der Kirche Jesu Christi der Heiligen der Letzten Tage. Ein klares, gut organisiertes Programm hilft der Versammlung reibungslos zu verlaufen.",
+      "order": {
+        "heading": "Standardreihenfolge der Abendmahlsversammlung",
+        "intro": "Der typische Ablauf einer Abendmahlsversammlung ist:",
+        "items": [
+          "Vorspielmusik",
+          "Begrüßung und Ankündigungen",
+          "Anerkennung der präsidierenden Autorität",
+          "Anfangslied",
+          "Anfangsgebet",
+          "Gemeindeangelegenheiten",
+          "Babysegnungen (falls zutreffend)",
+          "Abendmahlslied",
+          "Austeilung des Abendmahls",
+          "Redner und musikalische Beiträge",
+          "Schlusslied",
+          "Schlussgebet",
+          "Nachspielmusik"
+        ]
+      },
+      "include": {
+        "heading": "Was in Ihr Programm Gehört",
+        "leadership": "Führungsinformationen",
+        "leadershipItems": [
+          "Vorsitz — normalerweise der Bischof oder Zweigpräsident",
+          "Leitung — das leitende Mitglied der Bischofschaft",
+          "Chorleiter — wer die Musik leitet",
+          "Organist/Pianist — wer die Musik spielt"
+        ],
+        "hymns": "Lieder",
+        "hymnsIntro": "Eine Standard-Abendmahlsversammlung umfasst drei Gemeindelieder:",
+        "hymnsItems": [
+          "Anfangslied — setzt den Ton",
+          "Abendmahlslied — sollte sich auf den Erretter und Sein Sühnopfer konzentrieren",
+          "Schlusslied — schließt die Versammlung ab"
+        ],
+        "hymnsOptional": "Optional: Ein Zwischenlied oder musikalischer Beitrag kann zwischen Rednern platziert werden.",
+        "speakers": "Redner",
+        "speakersDesc": "Listen Sie jeden Redner auf. Die Bischofschaft weist in der Regel 2-3 Redner pro Woche zu.",
+        "prayers": "Gebete",
+        "prayersDesc": "Fügen Sie die Namen der Mitglieder ein, die die Gebete sprechen."
+      },
+      "special": {
+        "heading": "Besondere Versammlungsarten",
+        "fastTestimony": "Fasten- und Zeugnisversammlung",
+        "fastTestimonyDesc": "Am ersten Sonntag jedes Monats. Ersetzen Sie den Rednerabschnitt durch „Zeugnisgeben\".",
+        "babyBlessing": "Babysegnung",
+        "babyBlessingDesc": "Wenn ein Kind gesegnet wird, geschieht dies nach den Gemeindeangelegenheiten und vor dem Abendmahlslied.",
+        "conference": "Pfahlkonferenz / Gemeindekonferenz",
+        "conferenceDesc": "Bei der Gemeindekonferenz können Pfahlführer präsidieren und sprechen.",
+        "primaryProgram": "PV-Programm / Jugendprogramm",
+        "primaryProgramDesc": "Sonderprogramme können das normale Rednerformat ersetzen, sollten aber Lieder, Gebete und das Abendmahl beinhalten."
+      },
+      "branchWard": {
+        "heading": "Unterschiede zwischen Zweig und Gemeinde",
+        "intro": "Die Programmstruktur ist identisch. Die Hauptunterschiede betreffen die Terminologie:",
+        "items": [
+          "Eine Gemeinde wird von einem Bischof geleitet; ein Zweig von einem Zweigpräsidenten",
+          "Eine Gemeinde gehört zu einem Pfahl; ein Zweig kann zu einem Distrikt oder Pfahl gehören",
+          "WardBulletin unterstützt beides — wechseln Sie zwischen den Modi, um die Terminologie automatisch anzupassen"
+        ]
+      }
+    }
   }
 }

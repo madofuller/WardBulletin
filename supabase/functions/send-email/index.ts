@@ -110,7 +110,7 @@ async function sendInvitationEmail(data: InvitationEmailData) {
 
       <div style="text-align: center; padding: 20px; border-top: 1px solid #eee;">
         <p style="color: #666; font-size: 14px; margin: 0;">
-          Powered by <strong>MyWardBulletin</strong> - Making ward bulletins beautiful and easy to create.
+          Powered by <strong>WardBulletin</strong> - Making ward bulletins beautiful and easy to create.
         </p>
       </div>
 
@@ -122,7 +122,7 @@ async function sendInvitationEmail(data: InvitationEmailData) {
     to: invitedEmail,
     subject: emailSubject,
     html: emailHtml,
-    from: 'MyWardBulletin <noreply@mywardbulletin.com>',
+    from: 'WardBulletin <noreply@wardbulletin.com>',
   };
 
   const response = await fetch('https://api.resend.com/emails', {

@@ -1,4 +1,4 @@
-import { SongType } from '../lib/songService';
+import type { SongType } from '../lib/songService';
 
 export interface AnnouncementImage {
   imageId: string;

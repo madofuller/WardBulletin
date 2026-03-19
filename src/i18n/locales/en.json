@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "New Bulletin",
     "exportPdf": "Export PDF",
+    "exporting": "Exporting...",
     "myQrCode": "My QR Code",
     "signIn": "Sign In",
     "signOut": "Sign Out",
@@ -75,7 +76,7 @@
     "general": "General"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "{{unit}} Bulletin Creator",
     "profile": "Profile",
     "currentlyViewingProfile": "Profile: {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "No announcements for this week.",
     "haveAnnouncementToShare": "Have an announcement to share?",
     "submitAnnouncement": "Submit Announcement",
-    "builtWithMyWardBulletin": "Built with MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Built with WardBulletin.com",
     "createYourOwnBulletin": "Create your own bulletin",
     "bulletinNotAvailable": "Bulletin Not Available",
     "bulletinNotAvailableDescription": "This bulletin link doesn't exist or may have been removed.",
@@ -727,7 +728,9 @@
     "contentCutOffAnnouncements": "Some announcements may be cut off when printed. Try tight margins or fewer announcements.",
     "contentCutOffBoth": "Some content on the back cover and some announcements may be cut off when printed. Try tight margins or reducing content.",
     "print": "Print",
-    "printNow": "Print now"
+    "printNow": "Print now",
+    "duplexHint": "This bulletin is designed to be printed double-sided (flip on short edge), then folded in half.",
+    "scanForFullAnnouncements": "Scan for full announcements"
   },
   "languages": {
     "en": "English",
@@ -873,5 +876,219 @@
     "primary": "Primary",
     "stake": "Stake",
     "other": "Other"
+  },
+  "templates": {
+    "quickStart": "Quick Start Templates",
+    "yourTemplates": "Your Saved Templates",
+    "sacramentMeeting": "Sacrament Meeting",
+    "sacramentMeetingDesc": "Standard meeting with speakers and sacrament",
+    "fastTestimony": "Fast & Testimony Meeting",
+    "fastTestimonyDesc": "First Sunday with open testimony bearing",
+    "baptismProgram": "Baptism Program",
+    "baptismProgramDesc": "Baptismal service with speakers and music",
+    "wardConference": "Ward Conference",
+    "wardConferenceDesc": "Stake leadership visiting with multiple speakers",
+    "specialProgram": "Special Program",
+    "specialProgramDesc": "Musical program for Christmas, Easter, etc.",
+    "fifthSunday": "5th Sunday",
+    "fifthSundayDesc": "Combined meeting with focused speakers",
+    "applied": "Template applied"
+  },
+  "guide": {
+    "toc": "In this guide",
+    "readyToCreate": "Ready to Create Your Bulletin?",
+    "readyToCreateDesc": "WardBulletin makes it easy to build, share, and print beautiful ward bulletins in minutes. No download required — just visit the site and start building.",
+    "startBuilding": "Start Building Your Bulletin",
+    "startWithTemplate": "Start With a Template",
+    "startWithTemplateDesc": "Jump in and start creating your bulletin. Choose a theme, fill in the details, and you'll have a beautiful program ready in minutes.",
+    "tryTemplateNow": "Try a Template Now",
+    "buildYourProgram": "Build Your Program Now",
+    "buildYourProgramDesc": "WardBulletin handles all of this structure for you. Just fill in the details and let the tool format everything beautifully for print and digital sharing.",
+    "createYourProgram": "Create Your Program",
+    "bulletinGuide": {
+      "title": "How to Create a Great Ward Bulletin",
+      "intro": "A well-crafted ward bulletin helps members follow along during sacrament meeting and stay informed about ward activities. Here are practical tips for creating bulletins that serve your ward effectively.",
+      "essentials": {
+        "heading": "Start With the Essentials",
+        "intro": "Every sacrament meeting program should include these core elements:",
+        "items": [
+          "Date and ward/branch name — helps members confirm they have the right bulletin",
+          "Presiding and conducting — who is leading the meeting",
+          "Opening and closing hymns — include both the hymn number and title so members can find them quickly",
+          "Sacrament hymn — always listed before the administration of the sacrament",
+          "Speakers — list names and whether they are youth or adult speakers",
+          "Opening and closing prayers — invocation and benediction"
+        ]
+      },
+      "announcements": {
+        "heading": "Make Announcements Clear and Useful",
+        "intro": "Announcements are often the most-read part of the bulletin. Keep them effective:",
+        "items": [
+          "Lead with the most important items — ward-wide events first, then organization-specific",
+          "Include dates, times, and locations — don't make members guess",
+          "Keep it concise — one or two sentences per announcement is usually enough",
+          "Group by audience — separate Relief Society, Elders Quorum, Youth, and Primary announcements so members can quickly find what's relevant",
+          "Remove old announcements — nothing makes a bulletin feel stale like last month's activity still listed"
+        ],
+        "tip": "WardBulletin lets ward members submit announcements directly. No more chasing people down on Saturday night."
+      },
+      "hymns": {
+        "heading": "Choose Hymns Thoughtfully",
+        "intro": "Hymns set the tone for the meeting. A few things to keep in mind:",
+        "items": [
+          "The sacrament hymn should focus on the Savior's sacrifice and the ordinance of the sacrament",
+          "Consider hymns that tie into the meeting's theme or the speakers' topics",
+          "Mix familiar favorites with less-common hymns to help the congregation learn new music",
+          "The new \"Hymns — For Home and Church\" collection offers fresh options alongside traditional hymns"
+        ]
+      },
+      "readability": {
+        "heading": "Design for Readability",
+        "intro": "A bulletin that's hard to read won't get read. Keep these design principles in mind:",
+        "items": [
+          "Don't overcrowd — white space makes content easier to scan",
+          "Use a clear hierarchy — headings for sections, bold for key details",
+          "Print large enough — many members are reading from a distance or without glasses",
+          "Consider both print and digital — some members prefer paper, others want to view on their phone"
+        ]
+      },
+      "sharing": {
+        "heading": "Share It Effectively",
+        "intro": "The best bulletin is useless if nobody sees it. Here are ways to distribute:",
+        "items": [
+          "QR code on the foyer table — members scan on the way in",
+          "Text or email the link — send through your ward communication channels",
+          "Print a few copies — for the foyer table and for members who prefer paper"
+        ]
+      },
+      "efficiency": {
+        "heading": "Save Time Each Week",
+        "intro": "Creating a bulletin doesn't have to take hours. Here's how to streamline the process:",
+        "items": [
+          "Use last week's bulletin as a template — duplicate it and update the details",
+          "Set up recurring announcements — weekly activities that don't change can be saved and reused",
+          "Let members submit announcements — use the submission feature so you don't have to chase people down",
+          "Save your leadership info as a default — ward leadership, missionaries, and other static information only needs to be entered once"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Ward Bulletin Templates & Ideas",
+      "intro": "Not sure where to start? WardBulletin includes built-in themes and a flexible editor that lets you create the perfect bulletin for your ward. Here are some ideas and approaches to get inspired.",
+      "themes": {
+        "heading": "Built-In Themes",
+        "intro": "WardBulletin comes with several professionally designed themes you can apply with one click:",
+        "formal": "Formal",
+        "formalDesc": "Classic serif fonts with a traditional, dignified feel. Great for stakes or wards that prefer a classic look.",
+        "modern": "Modern",
+        "modernDesc": "Clean sans-serif fonts with a contemporary layout. Popular with younger wards and new units.",
+        "elegant": "Elegant",
+        "elegantDesc": "Refined typography with subtle styling. A balanced middle ground between formal and modern.",
+        "simple": "Simple",
+        "simpleDesc": "Minimal design that puts content first. Perfect for wards that want clarity above all else.",
+        "friendly": "Friendly",
+        "friendlyDesc": "Warm, approachable styling with rounded elements. Great for family wards and branches.",
+        "handwritten": "Handwritten",
+        "handwrittenDesc": "A personal, hand-lettered feel that gives bulletins a warm, homemade touch."
+      },
+      "layouts": {
+        "heading": "Bulletin Layout Ideas",
+        "standard": "The Standard Sacrament Meeting Program",
+        "standardIntro": "The most common layout includes:",
+        "fastSunday": "Fast Sunday / Testimony Meeting",
+        "fastSundayDesc": "On fast Sundays, replace the speaker section with \"Bearing of Testimonies.\" You can add an optional note like \"Members are invited to share their testimonies.\"",
+        "babyBlessing": "Baby Blessing Sunday",
+        "babyBlessingDesc": "Use the \"Add Baby Blessing\" button to add a naming and blessing section. It displays as \"Naming and Blessing of [Child's Name]\" with an optional \"Child of [Parents]\" line.",
+        "heavyAnnouncements": "Announcement-Heavy Weeks",
+        "heavyAnnouncementsDesc": "For weeks with many announcements, use the grouping feature to organize by audience (Ward, Relief Society, Elders Quorum, Youth, Primary). This helps members quickly find relevant information without scrolling through everything."
+      },
+      "images": {
+        "heading": "Header Image Ideas",
+        "intro": "WardBulletin lets you add a header image to personalize your bulletin. Some popular choices:",
+        "items": [
+          "Your local temple",
+          "A seasonal nature scene",
+          "The Christus statue",
+          "A scripture-themed illustration",
+          "Your ward or branch building"
+        ],
+        "tip": "WardBulletin includes 26+ curated LDS artwork images you can use instantly — no upload needed."
+      },
+      "tips": {
+        "heading": "Tips for a Polished Bulletin",
+        "items": [
+          "Proofread names — nothing is more embarrassing than misspelling a speaker's name",
+          "Verify hymn numbers — double-check that the number matches the title",
+          "Update weekly — a stale bulletin with old dates erodes trust",
+          "Save as a template — keep your ward's default leadership info and layout saved so you only need to update the changing details each week",
+          "Test the QR code — scan it yourself before printing to make sure it works"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Sacrament Meeting Program Guide",
+      "intro": "Sacrament meeting is the most important meeting of the week for members of The Church of Jesus Christ of Latter-day Saints. A clear, well-organized program helps the meeting run smoothly and allows members to focus on worship.",
+      "order": {
+        "heading": "Standard Order of Sacrament Meeting",
+        "intro": "While each bishopric may adjust the order slightly, the typical flow of a sacrament meeting is:",
+        "items": [
+          "Prelude music — played by the organist or pianist as members gather",
+          "Welcome and announcements — the conducting member of the bishopric welcomes the congregation",
+          "Acknowledgment of presiding authority",
+          "Opening hymn — sung by the congregation",
+          "Invocation (opening prayer)",
+          "Ward business — sustainings, releases, and other items as needed",
+          "Baby blessings — naming and blessing of children (when applicable)",
+          "Sacrament hymn — prepares the congregation for the sacrament ordinance",
+          "Administration of the sacrament — the bread and water are blessed and passed",
+          "Speakers and musical numbers — the main body of the meeting",
+          "Closing hymn",
+          "Benediction (closing prayer)",
+          "Postlude music"
+        ]
+      },
+      "include": {
+        "heading": "What to Include in Your Program",
+        "leadership": "Leadership Information",
+        "leadershipItems": [
+          "Presiding — typically the bishop or branch president (or a visiting authority)",
+          "Conducting — the bishopric member conducting the meeting",
+          "Chorister — who is leading the music",
+          "Organist/Pianist — who is playing the music"
+        ],
+        "hymns": "Hymns",
+        "hymnsIntro": "A standard sacrament meeting includes three congregational hymns:",
+        "hymnsItems": [
+          "Opening hymn — sets the tone for the meeting",
+          "Sacrament hymn — should focus on the Savior and His Atonement. Must be a hymn (not a children's song or special number)",
+          "Closing hymn — wraps up the meeting"
+        ],
+        "hymnsOptional": "Optional: An intermediate hymn or musical number can be placed between speakers.",
+        "speakers": "Speakers",
+        "speakersDesc": "List each speaker's name. You can also note whether they are a youth or adult speaker. The bishopric typically assigns 2-3 speakers per week and may include a youth speaker.",
+        "prayers": "Prayers",
+        "prayersDesc": "Include the names of members giving the invocation (opening prayer) and benediction (closing prayer). These are typically assigned in advance by the bishopric."
+      },
+      "special": {
+        "heading": "Special Meeting Types",
+        "fastTestimony": "Fast and Testimony Meeting",
+        "fastTestimonyDesc": "Held on the first Sunday of each month. After the sacrament, the bishopric member opens the meeting for members to share their testimonies. Replace the speaker section with \"Bearing of Testimonies\" in your bulletin.",
+        "babyBlessing": "Baby Blessing",
+        "babyBlessingDesc": "When a child is blessed during sacrament meeting, it typically happens after ward business and before the sacrament hymn. List it as \"Naming and Blessing of [Child's Name]\" in the program. You can optionally include the parents' names.",
+        "conference": "Stake Conference / Ward Conference",
+        "conferenceDesc": "During ward conference, stake leaders may preside and speak. During stake conference, the ward does not hold its own sacrament meeting. Adjust your bulletin accordingly.",
+        "primaryProgram": "Primary Program / Youth Program",
+        "primaryProgramDesc": "Special programs (like the annual Primary presentation) may replace the normal speaker format. The program should still include hymns, prayers, and the sacrament, but the middle portion features the Primary children or youth."
+      },
+      "branchWard": {
+        "heading": "Branch vs. Ward Differences",
+        "intro": "The program structure is the same whether you're in a ward or branch. The main differences are terminology:",
+        "items": [
+          "A ward is led by a bishop; a branch is led by a branch president",
+          "A ward belongs to a stake; a branch may belong to a district or stake",
+          "WardBulletin supports both — just toggle between ward and branch mode to update all terminology automatically"
+        ]
+      }
+    }
   }
 }

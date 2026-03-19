@@ -1,66 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useTranslation } from 'react-i18next';
-import Header from '../components/Header';
-import AuthModal from '../components/AuthModal';
+import StaticPageLayout from '../components/StaticPageLayout';
 
 export default function HowToUsePage() {
-  const { t } = useTranslation();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  // Handler to redirect to homepage
-  const goHome = () => { window.location.href = '/'; };
-  // Handler to open auth modal
-  const openAuthModal = () => setShowAuthModal(true);
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <StaticPageLayout>
       <Helmet>
-        <title>How to Use MyWardBulletin - Create Your Ward Bulletin in Minutes</title>
-        <meta name="description" content="Step-by-step guide to creating your LDS ward bulletin with MyWardBulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
-        <link rel="canonical" href="https://www.mywardbulletin.com/how-to-use" />
-        <meta property="og:title" content="How to Use MyWardBulletin - Create Your Ward Bulletin in Minutes" />
-        <meta property="og:description" content="Step-by-step guide to creating your LDS ward bulletin with MyWardBulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
-        <meta property="og:url" content="https://www.mywardbulletin.com/how-to-use" />
+        <title>How to Use | WardBulletin</title>
+        <meta name="description" content="Step-by-step guide to creating your LDS ward bulletin with Ward Bulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
+        <link rel="canonical" href="https://wardbulletin.com/how-to-use" />
+        <meta property="og:title" content="How to Use | WardBulletin" />
+        <meta property="og:description" content="Step-by-step guide to creating your LDS ward bulletin with Ward Bulletin. Set up your sacrament meeting program, add announcements, share with QR codes, and print." />
+        <meta property="og:url" content="https://wardbulletin.com/how-to-use" />
       </Helmet>
-      <Header
-        user={null}
-        loading={false}
-        currentBulletinId={null}
-        hasUnsavedChanges={false}
-        showQRCode={false}
-        setShowQRCode={() => {}}
-        setShowAuthModal={openAuthModal}
-        handleNewBulletin={goHome}
-        handleExportPDF={goHome}
-        handleSaveBulletin={goHome}
-        handleViewSavedBulletins={goHome}
-        setUser={goHome}
-        setShowProfile={goHome}
-        showMobileMenu={showMobileMenu}
-        setShowMobileMenu={setShowMobileMenu}
-
-        hideExportPDF={true}
-        hideQRCode={true}
-        onlyNewBulletin={true}
-      />
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onAuthSuccess={() => setShowAuthModal(false)}
-      />
       <main className="max-w-3xl mx-auto px-4 py-10">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-auto mt-8">
-          <h1 className="text-3xl font-bold mb-4 text-blue-800">How to Use MyWardBulletin</h1>
+          <h1 className="text-3xl font-bold mb-4 text-blue-800">How to Use WardBulletin</h1>
           <p className="mb-6 text-lg text-gray-700">
-            Creating and sharing a Sunday program should be simple. Here’s how to do it with MyWardBulletin:
+            Creating and sharing a Sunday program should be simple. Here's how to do it with WardBulletin:
           </p>
           <ol className="list-decimal list-inside mb-6 space-y-6 text-gray-700">
             <li>
               <b>Start Your Bulletin</b>
               <ul className="list-disc ml-6 mt-2 space-y-1">
-                <li>Go to <b>mywardbulletin.com</b></li>
-                <li>Click “Start a New Bulletin”</li>
-                <li>You’ll see a clean editor where you can add sections like:
+                <li>Go to <b>wardbulletin.com</b></li>
+                <li>Click "Start a New Bulletin"</li>
+                <li>You'll see a clean editor where you can add sections like:
                   <ul className="list-disc ml-6 mt-1">
                     <li>Date and Ward Name</li>
                     <li>Presiding and conducting</li>
@@ -78,7 +43,7 @@ export default function HowToUsePage() {
               <ul className="list-disc ml-6 mt-2 space-y-1">
                 <li>Rearrange agenda items with simple position changes</li>
                 <li>Click into each field to edit text</li>
-                <li>Use the “+ Add Section” button for Speakers, Musical Numbers, or Bearing of Testimonies</li>
+                <li>Use the "+ Add Section" button for Speakers, Musical Numbers, or Bearing of Testimonies</li>
                 <li>You can build as much as you want before signing in.</li>
               </ul>
             </li>
@@ -86,12 +51,12 @@ export default function HowToUsePage() {
               <b>Sign In to Save and Share</b>
               <p className="mt-2">Once your bulletin is ready:</p>
               <ul className="list-disc ml-6 mt-1 space-y-1">
-                <li>Click “Save or Share”</li>
-                <li>You’ll be prompted to sign in or create a free account</li>
-                <li>After signing in, your bulletin will be saved to your account and you’ll get:</li>
+                <li>Click "Save or Share"</li>
+                <li>You'll be prompted to sign in or create a free account</li>
+                <li>After signing in, your bulletin will be saved to your account and you'll get:</li>
                 <ul className="list-disc ml-6 mt-1">
-                  <li>✅ A custom link to share (great for email, text, or announcements)</li>
-                  <li>✅ An auto-generated QR code (great for chapel doors, screens, or printed copies)</li>
+                  <li>A custom link to share (great for email, text, or announcements)</li>
+                  <li>An auto-generated QR code (great for chapel doors, screens, or printed copies)</li>
                 </ul>
                 <li>You can return to your saved bulletins anytime from any device.</li>
               </ul>
@@ -99,7 +64,7 @@ export default function HowToUsePage() {
             <li>
               <b>Print (If Needed)</b>
               <ul className="list-disc ml-6 mt-2 space-y-1">
-                <li>Click “Export as PDF” to generate a printable version</li>
+                <li>Click "Export as PDF" to generate a printable version</li>
                 <li>The layout is automatically optimized for folding and Sunday distribution</li>
                 <li>Works on standard printer paper with no formatting required</li>
               </ul>
@@ -117,7 +82,7 @@ export default function HowToUsePage() {
           <h2 className="text-2xl font-bold mt-8 mb-4 text-blue-700">Need to Keep It Offline?</h2>
           <ul className="mb-6 list-disc ml-6 text-gray-700">
             <li>You can build a full bulletin before signing in</li>
-            <li>If you don’t want to create an account, you can still print directly from your browser<br/>
+            <li>If you don't want to create an account, you can still print directly from your browser<br/>
               <span className="text-xs text-gray-500">(Note: sharing links and QR codes require sign-in)</span>
             </li>
           </ul>
@@ -130,13 +95,13 @@ export default function HowToUsePage() {
 
           <h2 className="text-2xl font-bold mt-8 mb-4 text-blue-700">Announcement Submissions</h2>
           <p className="mb-4 text-gray-700">
-            MyWardBulletin now includes a collaborative announcement system that allows ward members to submit announcements directly to your bulletin!
+            WardBulletin now includes a collaborative announcement system that allows ward members to submit announcements directly to your bulletin!
           </p>
-          
+
           <div className="bg-blue-50 rounded-lg p-6 mb-6">
             <h3 className="text-lg font-semibold mb-3 text-blue-800">For Ward Members (Submitting Announcements)</h3>
             <ol className="list-decimal list-inside space-y-2 text-gray-700">
-              <li><b>Get the submissions link</b> - Ask your bulletin editor for the submissions link (usually something like <code className="bg-gray-100 px-1 rounded">mywardbulletin.com/submit/your-ward-name</code>)</li>
+              <li><b>Get the submissions link</b> - Ask your bulletin editor for the submissions link (usually something like <code className="bg-gray-100 px-1 rounded">wardbulletin.com/submit/your-ward-name</code>)</li>
               <li><b>Submit announcements</b> - Use the form to add:
                 <ul className="list-disc ml-6 mt-1">
                   <li>Your name and email</li>
@@ -177,27 +142,12 @@ export default function HowToUsePage() {
             <ul className="list-disc list-inside space-y-2 text-gray-700">
               <li><b>Consolidation magic</b> - When you approve multiple announcements for the same audience, they're automatically combined with original titles preserved as headers</li>
               <li><b>Rich formatting</b> - Submitters can use bold, italics, and different font sizes to make their announcements stand out</li>
-
               <li><b>Mobile-friendly</b> - The submissions form works great on phones and tablets</li>
               <li><b>Audience targeting</b> - Organize announcements by specific groups (Ward, Relief Society, Young Men, etc.) for better bulletin organization</li>
             </ul>
           </div>
         </div>
       </main>
-      <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p className="text-gray-600">
-              MyWardBulletin.com - {t('footer.freeCreator')}
-            </p>
-            <nav className="mt-4 space-x-4">
-              <a href="/about" className="text-gray-600 hover:text-gray-900">{t('footer.about')}</a>
-              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">{t('footer.howToUse')}</a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">{t('footer.contact')}</a>
-            </nav>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </StaticPageLayout>
   );
 }

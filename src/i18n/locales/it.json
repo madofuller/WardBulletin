@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "Nuovo Bollettino",
     "exportPdf": "Esporta PDF",
+    "exporting": "Esportazione...",
     "myQrCode": "Il Mio Codice QR",
     "signIn": "Accedi",
     "signOut": "Esci",
@@ -75,7 +76,7 @@
     "general": "Generale"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "Creatore Bollettino {{unit}}",
     "profile": "Profilo",
     "currentlyViewingProfile": "Profilo: {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "Nessun annuncio per questa settimana.",
     "haveAnnouncementToShare": "Hai un annuncio da condividere?",
     "submitAnnouncement": "Invia Annuncio",
-    "builtWithMyWardBulletin": "Creato con MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Creato con WardBulletin.com",
     "createYourOwnBulletin": "Crea il tuo bollettino",
     "bulletinNotAvailable": "Bollettino Non Disponibile",
     "bulletinNotAvailableDescription": "Questo link del bollettino non esiste o potrebbe essere stato rimosso.",
@@ -674,7 +675,9 @@
     "qrCodeOff": "Codice QR: Disattivo",
     "qrOnShort": "QR Attivo",
     "qrOffShort": "QR Disattivo",
-    "toggleQrCodeTooltip": "{{action}} codice QR sul bollettino stampato"
+    "toggleQrCodeTooltip": "{{action}} codice QR sul bollettino stampato",
+    "duplexHint": "Questo bollettino è progettato per essere stampato fronte-retro (capovolgi sul lato corto) e poi piegato a metà.",
+    "scanForFullAnnouncements": "Scansiona per tutti gli annunci"
   },
   "invite": {
     "youreInvited": "Sei stato invitato!",
@@ -760,5 +763,205 @@
     "ja": "Giapponese",
     "ko": "Coreano",
     "zh": "Cinese"
+  },
+  "templates": {
+    "applied": "Modello applicato"
+  },
+  "guide": {
+    "toc": "In questa guida",
+    "readyToCreate": "Pronto a Creare il Tuo Bollettino?",
+    "readyToCreateDesc": "WardBulletin rende facile creare, condividere e stampare bellissimi bollettini di rione in pochi minuti. Nessun download richiesto — basta visitare il sito e iniziare a creare.",
+    "startBuilding": "Inizia a Creare il Tuo Bollettino",
+    "startWithTemplate": "Inizia con un Modello",
+    "startWithTemplateDesc": "Inizia a creare il tuo bollettino. Scegli un tema, compila i dettagli e avrai un bel programma pronto in pochi minuti.",
+    "tryTemplateNow": "Prova un Modello Ora",
+    "buildYourProgram": "Crea il Tuo Programma Ora",
+    "buildYourProgramDesc": "WardBulletin gestisce tutta la struttura per te. Compila i dettagli e lascia che lo strumento formatti tutto per la stampa e la condivisione digitale.",
+    "createYourProgram": "Crea il Tuo Programma",
+    "bulletinGuide": {
+      "title": "Come Creare un Ottimo Bollettino di Rione",
+      "intro": "Un bollettino di rione ben realizzato aiuta i membri a seguire la riunione sacramentale e a rimanere informati sulle attività del rione. Ecco consigli pratici per creare bollettini efficaci.",
+      "essentials": {
+        "heading": "Inizia con l'Essenziale",
+        "intro": "Ogni programma della riunione sacramentale dovrebbe includere questi elementi:",
+        "items": [
+          "Data e nome del rione/ramo — aiuta i membri a confermare di avere il bollettino giusto",
+          "Chi presiede e dirige — chi conduce la riunione",
+          "Inni di apertura e chiusura — includere numero e titolo",
+          "Inno sacramentale — sempre elencato prima dell'amministrazione del Sacramento",
+          "Oratori — elencare i nomi e indicare se giovani o adulti",
+          "Preghiere di apertura e chiusura"
+        ]
+      },
+      "announcements": {
+        "heading": "Rendi gli Annunci Chiari e Utili",
+        "intro": "Gli annunci sono spesso la parte più letta del bollettino. Mantienili efficaci:",
+        "items": [
+          "Inizia con gli elementi più importanti — eventi del rione prima, poi quelli specifici",
+          "Includi date, orari e luoghi — non far indovinare i membri",
+          "Sii conciso — una o due frasi per annuncio sono sufficienti",
+          "Raggruppa per pubblico — separa gli annunci per organizzazione",
+          "Rimuovi gli annunci vecchi — niente rende un bollettino obsoleto come attività passate ancora elencate"
+        ],
+        "tip": "WardBulletin permette ai membri di inviare annunci direttamente. Basta rincorrere le persone il sabato sera."
+      },
+      "hymns": {
+        "heading": "Scegli gli Inni con Cura",
+        "intro": "Gli inni stabiliscono il tono della riunione. Alcuni punti da considerare:",
+        "items": [
+          "L'inno sacramentale dovrebbe concentrarsi sul sacrificio del Salvatore e sull'ordinanza",
+          "Considera inni legati al tema della riunione",
+          "Mescola favoriti noti con inni meno comuni",
+          "La nuova raccolta \"Inni — Per la casa e la Chiesa\" offre nuove opzioni"
+        ]
+      },
+      "readability": {
+        "heading": "Progetta per la Leggibilità",
+        "intro": "Un bollettino difficile da leggere non verrà letto. Tieni a mente questi principi:",
+        "items": [
+          "Non sovraccaricare — lo spazio bianco facilita la lettura",
+          "Usa una gerarchia chiara — titoli per le sezioni, grassetto per i dettagli chiave",
+          "Stampa abbastanza grande — molti membri leggono da lontano",
+          "Considera sia stampa che digitale — alcuni preferiscono la carta, altri il telefono"
+        ]
+      },
+      "sharing": {
+        "heading": "Condividilo Efficacemente",
+        "intro": "Il miglior bollettino è inutile se nessuno lo vede. Modi per distribuirlo:",
+        "items": [
+          "Codice QR sul tavolo dell'atrio — i membri scansionano entrando",
+          "Invia il link via messaggio o email",
+          "Stampa alcune copie — per il tavolo dell'atrio"
+        ]
+      },
+      "efficiency": {
+        "heading": "Risparmia Tempo Ogni Settimana",
+        "intro": "Creare un bollettino non deve richiedere ore. Come ottimizzare:",
+        "items": [
+          "Usa il bollettino della settimana scorsa come modello — duplica e aggiorna",
+          "Imposta annunci ricorrenti — le attività settimanali possono essere riutilizzate",
+          "Lascia che i membri inviino annunci — usa la funzione di invio",
+          "Salva le informazioni di dirigenza come predefinite — devono essere inserite una sola volta"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Modelli e Idee per Bollettini di Rione",
+      "intro": "Non sai da dove iniziare? WardBulletin include temi integrati e un editor flessibile. Ecco alcune idee per ispirarti.",
+      "themes": {
+        "heading": "Temi Integrati",
+        "intro": "WardBulletin offre diversi temi professionali applicabili con un clic:",
+        "formal": "Formale",
+        "formalDesc": "Font con grazie classiche con uno stile tradizionale e dignitoso.",
+        "modern": "Moderno",
+        "modernDesc": "Font senza grazie con layout contemporaneo.",
+        "elegant": "Elegante",
+        "elegantDesc": "Tipografia raffinata con stile sottile.",
+        "simple": "Semplice",
+        "simpleDesc": "Design minimalista che privilegia il contenuto.",
+        "friendly": "Amichevole",
+        "friendlyDesc": "Stile caldo e accogliente con elementi arrotondati.",
+        "handwritten": "Scritto a Mano",
+        "handwrittenDesc": "Uno stile personale e scritto a mano con un tocco caldo e fatto in casa."
+      },
+      "layouts": {
+        "heading": "Idee di Layout",
+        "standard": "Il Programma Standard della Riunione Sacramentale",
+        "standardIntro": "Il layout più comune include:",
+        "fastSunday": "Domenica di Digiuno / Riunione di Testimonianza",
+        "fastSundayDesc": "Nelle domeniche di digiuno, sostituisci la sezione oratori con \"Testimonianze dei Membri\".",
+        "babyBlessing": "Domenica di Benedizione del Bambino",
+        "babyBlessingDesc": "Usa il pulsante \"Aggiungi Benedizione del Bambino\" per aggiungere una sezione di nomina e benedizione.",
+        "heavyAnnouncements": "Settimane con Molti Annunci",
+        "heavyAnnouncementsDesc": "Usa la funzione di raggruppamento per organizzare per pubblico."
+      },
+      "images": {
+        "heading": "Idee per Immagini di Intestazione",
+        "intro": "WardBulletin ti permette di aggiungere un'immagine di intestazione. Scelte popolari:",
+        "items": [
+          "Il tuo tempio locale",
+          "Una scena naturale stagionale",
+          "La statua del Christus",
+          "Un'illustrazione a tema scritturale",
+          "L'edificio del tuo rione o ramo"
+        ],
+        "tip": "WardBulletin include oltre 26 immagini artistiche SGU curate utilizzabili istantaneamente."
+      },
+      "tips": {
+        "heading": "Consigli per un Bollettino Curato",
+        "items": [
+          "Rileggi i nomi — niente è più imbarazzante di scrivere male il nome di un oratore",
+          "Verifica i numeri degli inni — assicurati che il numero corrisponda al titolo",
+          "Aggiorna settimanalmente — un bollettino datato mina la fiducia",
+          "Salva come modello — mantieni le informazioni predefinite salvate",
+          "Testa il codice QR — scansionalo tu stesso prima di stampare"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Guida al Programma della Riunione Sacramentale",
+      "intro": "La riunione sacramentale è la riunione più importante della settimana per i membri de La Chiesa di Gesù Cristo dei Santi degli Ultimi Giorni. Un programma chiaro e ben organizzato aiuta la riunione a svolgersi senza intoppi.",
+      "order": {
+        "heading": "Ordine Standard della Riunione Sacramentale",
+        "intro": "Il flusso tipico di una riunione sacramentale è:",
+        "items": [
+          "Musica di preludio",
+          "Benvenuto e annunci",
+          "Riconoscimento dell'autorità presiedente",
+          "Inno di apertura",
+          "Preghiera di apertura",
+          "Affari del rione",
+          "Benedizioni dei bambini (quando applicabile)",
+          "Inno sacramentale",
+          "Amministrazione del Sacramento",
+          "Oratori e numeri musicali",
+          "Inno di chiusura",
+          "Preghiera di chiusura",
+          "Musica di postludio"
+        ]
+      },
+      "include": {
+        "heading": "Cosa Includere nel Programma",
+        "leadership": "Informazioni sulla Dirigenza",
+        "leadershipItems": [
+          "Chi presiede — di solito il vescovo o presidente di ramo",
+          "Chi dirige — il membro del vescovato che conduce",
+          "Direttore della musica — chi dirige la musica",
+          "Organista/Pianista — chi suona la musica"
+        ],
+        "hymns": "Inni",
+        "hymnsIntro": "Una riunione standard include tre inni:",
+        "hymnsItems": [
+          "Inno di apertura — stabilisce il tono",
+          "Inno sacramentale — deve concentrarsi sul Salvatore e la Sua Espiazione",
+          "Inno di chiusura — conclude la riunione"
+        ],
+        "hymnsOptional": "Opzionale: Un inno intermedio o numero musicale tra gli oratori.",
+        "speakers": "Oratori",
+        "speakersDesc": "Elenca ogni oratore. Il vescovato assegna generalmente 2-3 oratori a settimana.",
+        "prayers": "Preghiere",
+        "prayersDesc": "Includi i nomi dei membri che fanno le preghiere di apertura e chiusura."
+      },
+      "special": {
+        "heading": "Tipi di Riunioni Speciali",
+        "fastTestimony": "Riunione di Digiuno e Testimonianza",
+        "fastTestimonyDesc": "La prima domenica di ogni mese. Sostituisci la sezione oratori con \"Testimonianze dei Membri\".",
+        "babyBlessing": "Benedizione del Bambino",
+        "babyBlessingDesc": "La benedizione avviene dopo gli affari del rione e prima dell'inno sacramentale.",
+        "conference": "Conferenza di Palo / Conferenza di Rione",
+        "conferenceDesc": "Durante la conferenza di rione, i dirigenti di palo possono presiedere e parlare.",
+        "primaryProgram": "Programma della Primaria / Programma dei Giovani",
+        "primaryProgramDesc": "I programmi speciali possono sostituire il formato normale degli oratori, ma devono ancora includere inni, preghiere e il Sacramento."
+      },
+      "branchWard": {
+        "heading": "Differenze tra Ramo e Rione",
+        "intro": "La struttura del programma è la stessa. Le differenze principali sono terminologiche:",
+        "items": [
+          "Un rione è diretto da un vescovo; un ramo da un presidente di ramo",
+          "Un rione appartiene a un palo; un ramo può appartenere a un distretto o palo",
+          "WardBulletin supporta entrambi — basta cambiare modalità per aggiornare la terminologia"
+        ]
+      }
+    }
   }
 }

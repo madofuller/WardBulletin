@@ -2,6 +2,7 @@
   "common": {
     "newBulletin": "Nuevo Boletín",
     "exportPdf": "Exportar PDF",
+    "exporting": "Exportando...",
     "myQrCode": "Mi Código QR",
     "signIn": "Iniciar Sesión",
     "signOut": "Cerrar Sesión",
@@ -75,7 +76,7 @@
     "general": "General"
   },
   "header": {
-    "myWardBulletin": "MyWardBulletin",
+    "myWardBulletin": "WardBulletin",
     "bulletinCreator": "Creador de Boletín de {{unit}}",
     "profile": "Perfil",
     "currentlyViewingProfile": "Perfil: {{slug}}",
@@ -131,7 +132,7 @@
     "noAnnouncementsThisWeek": "No hay anuncios para esta semana.",
     "haveAnnouncementToShare": "¿Tiene un anuncio que compartir?",
     "submitAnnouncement": "Enviar Anuncio",
-    "builtWithMyWardBulletin": "Creado con MyWardBulletin.com",
+    "builtWithMyWardBulletin": "Creado con WardBulletin.com",
     "createYourOwnBulletin": "Cree su propio boletín",
     "bulletinNotAvailable": "Boletín No Disponible",
     "bulletinNotAvailableDescription": "Este enlace de boletín no existe o puede haber sido eliminado.",
@@ -674,7 +675,9 @@
     "qrCodeOff": "Código QR: Desactivado",
     "qrOnShort": "QR Activado",
     "qrOffShort": "QR Desactivado",
-    "toggleQrCodeTooltip": "{{action}} código QR en el boletín impreso"
+    "toggleQrCodeTooltip": "{{action}} código QR en el boletín impreso",
+    "duplexHint": "Este boletín está diseñado para imprimirse a doble cara (voltear por el borde corto) y luego doblarse por la mitad.",
+    "scanForFullAnnouncements": "Escanea para ver todos los anuncios"
   },
   "invite": {
     "youreInvited": "¡Está invitado!",
@@ -760,5 +763,205 @@
     "ja": "Japonés",
     "ko": "Coreano",
     "zh": "Chino"
+  },
+  "templates": {
+    "applied": "Plantilla aplicada"
+  },
+  "guide": {
+    "toc": "En esta guía",
+    "readyToCreate": "¿Listo para Crear su Boletín?",
+    "readyToCreateDesc": "WardBulletin facilita la creación, el intercambio y la impresión de hermosos boletines de barrio en minutos. No se requiere descarga — solo visite el sitio y comience a crear.",
+    "startBuilding": "Comenzar a Crear su Boletín",
+    "startWithTemplate": "Comience con una Plantilla",
+    "startWithTemplateDesc": "Comience a crear su boletín. Elija un tema, complete los detalles y tendrá un hermoso programa listo en minutos.",
+    "tryTemplateNow": "Probar una Plantilla Ahora",
+    "buildYourProgram": "Cree su Programa Ahora",
+    "buildYourProgramDesc": "WardBulletin se encarga de toda esta estructura por usted. Solo complete los detalles y deje que la herramienta formatee todo de forma hermosa para impresión y distribución digital.",
+    "createYourProgram": "Crear su Programa",
+    "bulletinGuide": {
+      "title": "Cómo Crear un Gran Boletín de Barrio",
+      "intro": "Un boletín de barrio bien elaborado ayuda a los miembros a seguir la reunión sacramental y mantenerse informados sobre las actividades del barrio. Aquí hay consejos prácticos para crear boletines que sirvan eficazmente a su barrio.",
+      "essentials": {
+        "heading": "Comience con lo Esencial",
+        "intro": "Todo programa de reunión sacramental debe incluir estos elementos básicos:",
+        "items": [
+          "Fecha y nombre del barrio/rama — ayuda a los miembros a confirmar que tienen el boletín correcto",
+          "Quién preside y dirige — quién está liderando la reunión",
+          "Himnos de apertura y clausura — incluya tanto el número como el título del himno para que los miembros puedan encontrarlos rápidamente",
+          "Himno sacramental — siempre listado antes de la administración de la Santa Cena",
+          "Discursantes — liste nombres e indique si son discursantes jóvenes o adultos",
+          "Oraciones de apertura y clausura — oración de apertura y clausura"
+        ]
+      },
+      "announcements": {
+        "heading": "Haga los Anuncios Claros y Útiles",
+        "intro": "Los anuncios suelen ser la parte más leída del boletín. Manténgalos efectivos:",
+        "items": [
+          "Comience con lo más importante — eventos del barrio primero, luego los específicos de cada organización",
+          "Incluya fechas, horarios y lugares — no haga que los miembros adivinen",
+          "Sea conciso — una o dos oraciones por anuncio suele ser suficiente",
+          "Agrupe por audiencia — separe los anuncios de la Sociedad de Socorro, Cuórum de Élderes, Juventud y Primaria para que los miembros encuentren rápidamente lo relevante",
+          "Elimine los anuncios antiguos — nada hace que un boletín se sienta obsoleto como la actividad del mes pasado aún listada"
+        ],
+        "tip": "WardBulletin permite que los miembros del barrio envíen anuncios directamente. No más perseguir personas el sábado por la noche."
+      },
+      "hymns": {
+        "heading": "Elija los Himnos con Cuidado",
+        "intro": "Los himnos establecen el tono de la reunión. Tenga en cuenta lo siguiente:",
+        "items": [
+          "El himno sacramental debe enfocarse en el sacrificio del Salvador y la ordenanza de la Santa Cena",
+          "Considere himnos que se relacionen con el tema de la reunión o los temas de los discursantes",
+          "Mezcle himnos conocidos con himnos menos comunes para ayudar a la congregación a aprender nueva música",
+          "La nueva colección \"Himnos — Para el Hogar y la Iglesia\" ofrece opciones frescas junto con los himnos tradicionales"
+        ]
+      },
+      "readability": {
+        "heading": "Diseñe para la Legibilidad",
+        "intro": "Un boletín difícil de leer no se leerá. Tenga en cuenta estos principios de diseño:",
+        "items": [
+          "No sature — el espacio en blanco facilita la lectura",
+          "Use una jerarquía clara — encabezados para secciones, negrita para detalles clave",
+          "Imprima lo suficientemente grande — muchos miembros leen a distancia o sin lentes",
+          "Considere tanto la impresión como lo digital — algunos miembros prefieren papel, otros quieren verlo en su teléfono"
+        ]
+      },
+      "sharing": {
+        "heading": "Compártalo Eficazmente",
+        "intro": "El mejor boletín es inútil si nadie lo ve. Estas son formas de distribuirlo:",
+        "items": [
+          "Código QR en la mesa del vestíbulo — los miembros escanean al entrar",
+          "Envíe el enlace por mensaje o correo — distribúyalo por los canales de comunicación del barrio",
+          "Imprima algunas copias — para la mesa del vestíbulo y para los miembros que prefieren papel"
+        ]
+      },
+      "efficiency": {
+        "heading": "Ahorre Tiempo Cada Semana",
+        "intro": "Crear un boletín no tiene que tomar horas. Así puede agilizar el proceso:",
+        "items": [
+          "Use el boletín de la semana pasada como plantilla — duplíquelo y actualice los detalles",
+          "Configure anuncios recurrentes — las actividades semanales que no cambian pueden guardarse y reutilizarse",
+          "Permita que los miembros envíen anuncios — use la función de envío para no tener que perseguir a las personas",
+          "Guarde la información de liderazgo como predeterminada — el liderazgo del barrio, los misioneros y otra información estática solo necesita ingresarse una vez"
+        ]
+      }
+    },
+    "templateIdeas": {
+      "title": "Plantillas e Ideas para Boletines de Barrio",
+      "intro": "¿No sabe por dónde empezar? WardBulletin incluye temas integrados y un editor flexible que le permite crear el boletín perfecto para su barrio. Aquí hay algunas ideas y enfoques para inspirarse.",
+      "themes": {
+        "heading": "Temas Integrados",
+        "intro": "WardBulletin viene con varios temas profesionalmente diseñados que puede aplicar con un clic:",
+        "formal": "Formal",
+        "formalDesc": "Fuentes serif clásicas con un estilo tradicional y digno. Ideal para estacas o barrios que prefieren un aspecto clásico.",
+        "modern": "Moderno",
+        "modernDesc": "Fuentes sans-serif limpias con un diseño contemporáneo. Popular con barrios más jóvenes y unidades nuevas.",
+        "elegant": "Elegante",
+        "elegantDesc": "Tipografía refinada con estilo sutil. Un punto medio equilibrado entre formal y moderno.",
+        "simple": "Simple",
+        "simpleDesc": "Diseño minimalista que prioriza el contenido. Perfecto para barrios que quieren claridad ante todo.",
+        "friendly": "Amigable",
+        "friendlyDesc": "Estilo cálido y accesible con elementos redondeados. Ideal para barrios familiares y ramas.",
+        "handwritten": "Manuscrito",
+        "handwrittenDesc": "Un estilo personal y escrito a mano que le da a los boletines un toque cálido y casero."
+      },
+      "layouts": {
+        "heading": "Ideas de Diseño para Boletines",
+        "standard": "El Programa Estándar de Reunión Sacramental",
+        "standardIntro": "El diseño más común incluye:",
+        "fastSunday": "Domingo de Ayuno / Reunión de Testimonios",
+        "fastSundayDesc": "En los domingos de ayuno, reemplace la sección de discursantes con \"Testimonio de los Miembros\". Puede agregar una nota opcional como \"Se invita a los miembros a compartir sus testimonios\".",
+        "babyBlessing": "Domingo de Bendición de Bebé",
+        "babyBlessingDesc": "Use el botón \"Agregar Bendición de Bebé\" para agregar una sección de nombramiento y bendición. Se muestra como \"Bendición y Nombramiento de [Nombre del Bebé]\" con una línea opcional de \"Hijo(a) de [Padres]\".",
+        "heavyAnnouncements": "Semanas con Muchos Anuncios",
+        "heavyAnnouncementsDesc": "Para semanas con muchos anuncios, use la función de agrupación para organizar por audiencia (Barrio, Sociedad de Socorro, Cuórum de Élderes, Juventud, Primaria). Esto ayuda a los miembros a encontrar rápidamente la información relevante."
+      },
+      "images": {
+        "heading": "Ideas de Imágenes de Encabezado",
+        "intro": "WardBulletin le permite agregar una imagen de encabezado para personalizar su boletín. Algunas opciones populares:",
+        "items": [
+          "Su templo local",
+          "Una escena de naturaleza estacional",
+          "La estatua del Christus",
+          "Una ilustración temática de las escrituras",
+          "El edificio de su barrio o rama"
+        ],
+        "tip": "WardBulletin incluye más de 26 imágenes artísticas SUD seleccionadas que puede usar al instante — sin necesidad de subir nada."
+      },
+      "tips": {
+        "heading": "Consejos para un Boletín Pulido",
+        "items": [
+          "Revise los nombres — nada es más vergonzoso que escribir mal el nombre de un discursante",
+          "Verifique los números de los himnos — revise que el número coincida con el título",
+          "Actualice semanalmente — un boletín desactualizado con fechas antiguas erosiona la confianza",
+          "Guárdelo como plantilla — mantenga la información predeterminada de liderazgo y el diseño guardados para que solo necesite actualizar los detalles cambiantes cada semana",
+          "Pruebe el código QR — escanéelo usted mismo antes de imprimir para asegurarse de que funcione"
+        ]
+      }
+    },
+    "programGuide": {
+      "title": "Guía del Programa de Reunión Sacramental",
+      "intro": "La reunión sacramental es la reunión más importante de la semana para los miembros de La Iglesia de Jesucristo de los Santos de los Últimos Días. Un programa claro y bien organizado ayuda a que la reunión transcurra sin problemas y permite a los miembros concentrarse en la adoración.",
+      "order": {
+        "heading": "Orden Estándar de la Reunión Sacramental",
+        "intro": "Aunque cada obispado puede ajustar ligeramente el orden, el flujo típico de una reunión sacramental es:",
+        "items": [
+          "Música de preludio — tocada por el organista o pianista mientras los miembros se reúnen",
+          "Bienvenida y anuncios — el miembro del obispado que dirige da la bienvenida a la congregación",
+          "Reconocimiento de la autoridad que preside",
+          "Himno de apertura — cantado por la congregación",
+          "Oración de apertura",
+          "Asuntos del barrio — sostenimientos, relevos y otros asuntos según sea necesario",
+          "Bendiciones de bebés — nombramiento y bendición de niños (cuando corresponda)",
+          "Himno sacramental — prepara a la congregación para la ordenanza de la Santa Cena",
+          "Administración de la Santa Cena — se bendicen y reparten el pan y el agua",
+          "Discursantes y números musicales — el cuerpo principal de la reunión",
+          "Himno de clausura",
+          "Oración de clausura",
+          "Música de postludio"
+        ]
+      },
+      "include": {
+        "heading": "Qué Incluir en su Programa",
+        "leadership": "Información de Liderazgo",
+        "leadershipItems": [
+          "Quién preside — generalmente el obispo o presidente de rama (o una autoridad visitante)",
+          "Quién dirige — el miembro del obispado que dirige la reunión",
+          "Director de música — quién dirige la música",
+          "Organista/Pianista — quién toca la música"
+        ],
+        "hymns": "Himnos",
+        "hymnsIntro": "Una reunión sacramental estándar incluye tres himnos congregacionales:",
+        "hymnsItems": [
+          "Himno de apertura — establece el tono de la reunión",
+          "Himno sacramental — debe enfocarse en el Salvador y su Expiación. Debe ser un himno (no una canción infantil ni un número especial)",
+          "Himno de clausura — cierra la reunión"
+        ],
+        "hymnsOptional": "Opcional: Se puede incluir un himno intermedio o número musical entre los discursantes.",
+        "speakers": "Discursantes",
+        "speakersDesc": "Liste el nombre de cada discursante. También puede indicar si son discursantes jóvenes o adultos. El obispado generalmente asigna 2-3 discursantes por semana y puede incluir un discursante joven.",
+        "prayers": "Oraciones",
+        "prayersDesc": "Incluya los nombres de los miembros que ofrecen la oración de apertura y la oración de clausura. Estas generalmente son asignadas con anticipación por el obispado."
+      },
+      "special": {
+        "heading": "Tipos de Reuniones Especiales",
+        "fastTestimony": "Reunión de Ayuno y Testimonios",
+        "fastTestimonyDesc": "Se lleva a cabo el primer domingo de cada mes. Después de la Santa Cena, el miembro del obispado abre la reunión para que los miembros compartan sus testimonios. Reemplace la sección de discursantes con \"Testimonio de los Miembros\" en su boletín.",
+        "babyBlessing": "Bendición de Bebé",
+        "babyBlessingDesc": "Cuando se bendice a un niño durante la reunión sacramental, generalmente ocurre después de los asuntos del barrio y antes del himno sacramental. Lístelo como \"Bendición y Nombramiento de [Nombre del Niño]\" en el programa. Opcionalmente puede incluir los nombres de los padres.",
+        "conference": "Conferencia de Estaca / Conferencia de Barrio",
+        "conferenceDesc": "Durante la conferencia de barrio, los líderes de estaca pueden presidir y hablar. Durante la conferencia de estaca, el barrio no realiza su propia reunión sacramental. Ajuste su boletín en consecuencia.",
+        "primaryProgram": "Programa de Primaria / Programa de la Juventud",
+        "primaryProgramDesc": "Los programas especiales (como la presentación anual de la Primaria) pueden reemplazar el formato normal de discursantes. El programa aún debe incluir himnos, oraciones y la Santa Cena, pero la parte central presenta a los niños de la Primaria o a la juventud."
+      },
+      "branchWard": {
+        "heading": "Diferencias entre Rama y Barrio",
+        "intro": "La estructura del programa es la misma ya sea en un barrio o en una rama. Las principales diferencias son de terminología:",
+        "items": [
+          "Un barrio es liderado por un obispo; una rama es liderada por un presidente de rama",
+          "Un barrio pertenece a una estaca; una rama puede pertenecer a un distrito o estaca",
+          "WardBulletin soporta ambos — solo cambie entre modo barrio y modo rama para actualizar toda la terminología automáticamente"
+        ]
+      }
+    }
   }
 }

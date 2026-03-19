@@ -4,7 +4,7 @@ export interface Template {
   data: import('../types/bulletin').BulletinData;
 }
 
-const STORAGE_KEY = 'mywardbulletin_templates';
+const STORAGE_KEY = 'wardbulletin_templates';
 const ACTIVE_TEMPLATE_KEY = 'active_template_id';
 
 function loadTemplates(): Template[] {
