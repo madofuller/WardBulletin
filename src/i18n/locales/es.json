@@ -829,10 +829,9 @@
         "heading": "Compártalo Eficazmente",
         "intro": "El mejor boletín es inútil si nadie lo ve. Estas son formas de distribuirlo:",
         "items": [
-          "Código QR en la puerta de la capilla — los miembros escanean al entrar",
+          "Código QR en la mesa del vestíbulo — los miembros escanean al entrar",
           "Envíe el enlace por mensaje o correo — distribúyalo por los canales de comunicación del barrio",
-          "Imprima algunas copias — para la mesa del vestíbulo y para los miembros que prefieren papel",
-          "Proyecte en una pantalla — si su edificio tiene una pantalla, muestre el código QR antes de que comience la reunión"
+          "Imprima algunas copias — para la mesa del vestíbulo y para los miembros que prefieren papel"
         ]
       },
       "efficiency": {

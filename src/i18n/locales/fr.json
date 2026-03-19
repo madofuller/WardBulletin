@@ -829,10 +829,9 @@
         "heading": "Partagez-le Efficacement",
         "intro": "Le meilleur bulletin est inutile si personne ne le voit. Voici comment le distribuer :",
         "items": [
-          "Code QR sur la porte de la chapelle — les membres scannent en entrant",
+          "Code QR sur la table du hall d'entrée — les membres scannent en entrant",
           "Envoyez le lien par SMS ou e-mail",
-          "Imprimez quelques copies — pour le hall et les membres qui préfèrent le papier",
-          "Projetez sur un écran — montrez le code QR avant le début de la réunion"
+          "Imprimez quelques copies — pour le hall et les membres qui préfèrent le papier"
         ]
       },
       "efficiency": {
