@@ -147,7 +147,7 @@ function BulletinHeader({
             {wardName}
           </h1>
         )}
-        <h2 className="text-2xl font-semibold text-gray-800 mb-3">{heading}</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-3 whitespace-pre-line">{heading}</h2>
         <p className="text-lg text-gray-600 italic font-medium">{dateLabel}</p>
         {children}
       </div>
@@ -536,9 +536,11 @@ export default function BulletinPreview({
         <div className="p-6 space-y-4 text-sm leading-relaxed">
           <div className="relative">
             <BulletinHeader
-              wardName={data?.wardName}
+              wardName={data?.meetingType === 'baptism' ? undefined : data?.wardName}
               dateLabel={formattedDate}
-              heading={t('bulletin.sacramentMeeting')}
+              heading={data?.meetingType === 'baptism'
+                ? `${t('bulletin.theBaptismOf')}\n${data?.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}`
+                : t('bulletin.sacramentMeeting')}
               image={selectedImage}
               imagePosition={imagePosition}
               imageOpacity={data.imageOpacity ?? 40}
@@ -624,10 +626,12 @@ export default function BulletinPreview({
             </DottedLine>
           )}
 
-          {/* Unit Business */}
-          <div className="text-center">
-            <p className="font-medium text-gray-900">{t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</p>
-          </div>
+          {/* Unit Business - hidden for baptism programs */}
+          {data?.meetingType !== 'baptism' && (
+            <div className="text-center">
+              <p className="font-medium text-gray-900">{t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</p>
+            </div>
+          )}
 
 
           {/* Agenda */}
@@ -639,7 +643,7 @@ export default function BulletinPreview({
                 <div key={idx} className="space-y-1">
                   {item.type === 'speaker' && (
                     <DottedLine rightAlign={item.name}>
-                      <span>{item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker')}</span>
+                      <span>{item.customLabel || (item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker'))}</span>
                     </DottedLine>
                   )}
                   {item.type === 'musical' && (
@@ -683,6 +687,22 @@ export default function BulletinPreview({
                       <p className="font-bold text-lg text-gray-900">{t('bulletin.babyBlessing')} {item.childName || ''}</p>
                       {item.parentNames && (
                         <p className="text-sm text-gray-700 italic mt-1">{t('form.childOf')} {item.parentNames}</p>
+                      )}
+                    </div>
+                  )}
+                  {item.type === 'baptism_ordinance' && (
+                    <div className="text-center py-2">
+                      <p className="font-bold text-lg text-gray-900 uppercase">{t('bulletin.baptismOf')} {item.candidateName || ''}</p>
+                      {item.performedBy && (
+                        <p className="text-sm text-gray-700 italic mt-1">{t('form.performedByLabel')} {item.performedBy}</p>
+                      )}
+                    </div>
+                  )}
+                  {item.type === 'confirmation' && (
+                    <div className="text-center py-2">
+                      <p className="font-bold text-lg text-gray-900 uppercase">{t('bulletin.confirmationOf')} {item.candidateName || ''}</p>
+                      {item.performedBy && (
+                        <p className="text-sm text-gray-700 italic mt-1">{t('form.performedByLabel')} {item.performedBy}</p>
                       )}
                     </div>
                   )}

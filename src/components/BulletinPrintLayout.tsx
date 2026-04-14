@@ -458,6 +458,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         style={{ pageBreakAfter: 'always' }}
       >
                  {/* Back Cover (left) - Unit Information */}
+          {data.meetingType === 'baptism' ? (
+            <div className="w-1/2" />
+          ) : (
           <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`}>
            {/* Scrollable content area - reserves space for QR code if enabled */}
            <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
@@ -608,13 +611,24 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
            )}
 
          </div>
+         )}
 
         {/* Front Cover (right) */}
         <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
-          <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
-          <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
-          <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
-          <p className="text-base mb-4 print:!text-xl print:!text-black">{t('bulletin.sacramentMeeting')}</p>
+          {data.meetingType === 'baptism' ? (
+            <>
+              <p className="text-lg mb-1 print:!text-2xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
+              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h1>
+              <p className="text-lg mb-4 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
+              <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+              <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
+              <p className="text-base mb-4 print:!text-xl print:!text-black">{t('bulletin.sacramentMeeting')}</p>
+            </>
+          )}
 
           {/* Image Display - moved below text, above theme */}
           {data.imageId && data.imageId !== 'none' && (
@@ -644,7 +658,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
       {/* Page 2: Inside (landscape) */}
       <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
-        {/* Announcements (left) */}
+        {/* Announcements (left) - blank for baptism */}
+        {data.meetingType === 'baptism' ? (
+          <div className="w-1/2" />
+        ) : (
         <div className={`w-1/2 text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
               <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -790,12 +807,23 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 </div>
               )}
         </div>
+        )}
 
         {/* Program (right) */}
-        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
-          <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
-          <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
-          <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+        <div className={`w-1/2 ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+          {data.meetingType === 'baptism' ? (
+            <>
+              <p className="text-lg mb-1 print:!text-xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
+              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h2>
+              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
+              <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
+              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+            </>
+          )}
 
           <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
             <tbody>
@@ -812,14 +840,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 extra={data.musicProgram?.openingHymnTitle}
               />
               <ProgramTableRow label={t('bulletin.invocation')} value={data.prayers?.opening} />
-              <tr>
-                <td colSpan={3} className="text-center font-medium text-lg print:!text-xl print:!text-black">
-                  {t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
-                </td>
-              </tr>
+              {data.meetingType !== 'baptism' && (
+                <tr>
+                  <td colSpan={3} className="text-center font-medium text-lg print:!text-xl print:!text-black">
+                    {t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
+                  </td>
+                </tr>
+              )}
               {data.agenda?.map((item: any, idx: number) => (
                 item.type === 'speaker' ? (
-                  <ProgramTableRow key={idx} label={item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker')} value={item.name} />
+                  <ProgramTableRow key={idx} label={item.customLabel || (item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : t('bulletin.speaker'))} value={item.name} />
                 ) : item.type === 'musical' ? (
                   <ProgramTableRow key={idx} label={item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')} value={item.hymnNumber || item.songName} extra={item.hymnTitle} />
                 ) : item.type === 'testimony' ? (
@@ -843,6 +873,32 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                         {item.parentNames && (
                           <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black">
                             {t('form.childOf')} {item.parentNames}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                ) : item.type === 'baptism_ordinance' ? (
+                  <React.Fragment key={idx}>
+                    <tr>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black uppercase">
+                        {t('bulletin.baptismOf')} {item.candidateName || ''}
+                        {item.performedBy && (
+                          <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black normal-case">
+                            {t('form.performedByLabel')} {item.performedBy}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                ) : item.type === 'confirmation' ? (
+                  <React.Fragment key={idx}>
+                    <tr>
+                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black uppercase">
+                        {t('bulletin.confirmationOf')} {item.candidateName || ''}
+                        {item.performedBy && (
+                          <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black normal-case">
+                            {t('form.performedByLabel')} {item.performedBy}
                           </div>
                         )}
                       </td>

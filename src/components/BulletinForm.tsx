@@ -331,7 +331,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   const [showAddSection, setShowAddSection] = useState(false);
   const addSectionRef = useRef<HTMLDivElement>(null);
 
-  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing') => {
+  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing' | 'baptism_ordinance' | 'confirmation') => {
     if (type === 'speaker') {
       updateField('agenda', [
         ...data.agenda,
@@ -348,6 +348,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'sacrament' }]);
     } else if (type === 'baby_blessing') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baby_blessing', childName: '' }]);
+    } else if (type === 'baptism_ordinance') {
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baptism_ordinance', candidateName: '', performedBy: '' }]);
+    } else if (type === 'confirmation') {
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'confirmation', candidateName: '', performedBy: '' }]);
     }
     setShowAddSection(false);
   };
@@ -1367,13 +1371,59 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
+                ) : item.type === 'baptism_ordinance' ? (
+                  <div className="w-full space-y-2">
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.baptismOrdinance')} {item.candidateName || '...'}</span>
+                    <input
+                      type="text"
+                      value={item.candidateName || ''}
+                      onChange={e => updateAgendaItem(item.id, { candidateName: e.target.value })}
+                      placeholder={t('form.candidateNamePlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={item.performedBy || ''}
+                      onChange={e => updateAgendaItem(item.id, { performedBy: e.target.value })}
+                      placeholder={t('form.performedByPlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                ) : item.type === 'confirmation' ? (
+                  <div className="w-full space-y-2">
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{t('bulletin.confirmation')} {item.candidateName || '...'}</span>
+                    <input
+                      type="text"
+                      value={item.candidateName || ''}
+                      onChange={e => updateAgendaItem(item.id, { candidateName: e.target.value })}
+                      placeholder={t('form.candidateNamePlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={item.performedBy || ''}
+                      onChange={e => updateAgendaItem(item.id, { performedBy: e.target.value })}
+                      placeholder={t('form.performedByPlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 ) : item.type === 'speaker' ? (
                   <>
                     <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder={t('form.speakerName')} className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
-                    <select value={item.speakerType || 'adult'} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
-                      <option value="youth">{t('bulletin.youthSpeaker')}</option>
-                      <option value="adult">{t('bulletin.speaker')}</option>
-                    </select>
+                    {data.meetingType === 'baptism' ? (
+                      <input
+                        type="text"
+                        value={item.customLabel || ''}
+                        onChange={e => updateAgendaItem(item.id, { customLabel: e.target.value })}
+                        placeholder={t('form.roleLabelPlaceholder')}
+                        className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    ) : (
+                      <select value={item.speakerType || 'adult'} onChange={e => updateAgendaItem(item.id, { speakerType: e.target.value as 'youth' | 'adult' })} className="px-2 py-1 border rounded-lg min-w-[120px]">
+                        <option value="youth">{t('bulletin.youthSpeaker')}</option>
+                        <option value="adult">{t('bulletin.speaker')}</option>
+                      </select>
+                    )}
                   </>
                 ) : (
                   <div className="w-full space-y-3">
@@ -1506,41 +1556,55 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </div>
             ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
               <button
                 type="button"
                 onClick={() => handleAddSection('speaker')}
-                className="px-4 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors flex-1"
+                className="px-4 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
               >
                 {t('form.addSpeaker')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('musical')}
-                className="px-4 py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors flex-1"
+                className="px-4 py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors"
               >
                 {t('form.addMusicalNumber')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('testimony')}
-                className="px-4 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors flex-1"
+                className="px-4 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
               >
                 {t('form.addTestimonies')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('sacrament')}
-                className="px-4 py-3 bg-orange-600 text-white rounded-lg text-base font-medium hover:bg-orange-700 transition-colors flex-1"
+                className="px-4 py-3 bg-orange-600 text-white rounded-lg text-base font-medium hover:bg-orange-700 transition-colors"
               >
                 {t('form.addSacrament')}
               </button>
               <button
                 type="button"
                 onClick={() => handleAddSection('baby_blessing')}
-                className="px-4 py-3 bg-pink-600 text-white rounded-lg text-base font-medium hover:bg-pink-700 transition-colors flex-1"
+                className="px-4 py-3 bg-pink-600 text-white rounded-lg text-base font-medium hover:bg-pink-700 transition-colors"
               >
                 {t('form.addBabyBlessing')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddSection('baptism_ordinance')}
+                className="px-4 py-3 bg-cyan-600 text-white rounded-lg text-base font-medium hover:bg-cyan-700 transition-colors"
+              >
+                {t('form.addBaptism')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddSection('confirmation')}
+                className="px-4 py-3 bg-teal-600 text-white rounded-lg text-base font-medium hover:bg-teal-700 transition-colors"
+              >
+                {t('form.addConfirmation')}
               </button>
             </div>
           </section>
