@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { X, Trash2, Edit, FileText } from 'lucide-react';
 import templateService, { Template } from '../lib/templateService';
 import { BUILT_IN_TEMPLATES, BuiltInTemplate } from '../data/builtInTemplates';
@@ -12,6 +13,7 @@ interface TemplatesModalProps {
 
 export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesModalProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -66,7 +68,7 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
               {t('templates.quickStart')}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {BUILT_IN_TEMPLATES.map(tmpl => (
+              {BUILT_IN_TEMPLATES.filter(tmpl => tmpl.id !== 'builtin-baptism').map(tmpl => (
                 <button
                   key={tmpl.id}
                   onClick={() => onSelect(null, tmpl)}
@@ -79,6 +81,17 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
                   </div>
                 </button>
               ))}
+              {/* Baptism links to dedicated page */}
+              <button
+                onClick={() => { onClose(); navigate('/baptism'); }}
+                className="flex items-start gap-2 p-3 border border-cyan-200 rounded-lg hover:border-cyan-400 hover:bg-cyan-50 transition-colors text-left"
+              >
+                <span className="text-xl flex-shrink-0">💧</span>
+                <div className="min-w-0">
+                  <div className="font-medium text-sm text-gray-900">{t('templates.baptismProgram')}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{t('templates.baptismProgramDesc')}</div>
+                </div>
+              </button>
             </div>
           </div>
 

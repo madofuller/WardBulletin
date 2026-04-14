@@ -5,7 +5,7 @@ import UserMenu from './UserMenu';
 import TerminologyToggle from './TerminologyToggle';
 import LanguageSelector from './LanguageSelector';
 import BulletinActions from './BulletinActions';
-import { Plus, Download, QrCode, LogIn, Menu, X } from 'lucide-react';
+import { Plus, Download, QrCode, LogIn, Menu, X, Droplet } from 'lucide-react';
 import { getUnitLabel, getTranslatedUnitLabel } from '../lib/terminology';
 import { BulletinData } from '../types/bulletin';
 
@@ -91,6 +91,14 @@ export default function Header({
               <Plus className="w-4 h-4 mr-1.5 flex-shrink-0" />
               <span className="truncate">{t('common.newBulletin')}</span>
             </button>
+            <a
+              href={currentProfileSlug ? `/baptism/${currentProfileSlug}` : '/baptism'}
+              className="inline-flex items-center px-3 py-2 bg-cyan-600 text-white text-sm rounded-full hover:bg-cyan-700 transition-colors whitespace-nowrap"
+              title="Baptism Program"
+            >
+              <Droplet className="w-4 h-4 mr-1.5 flex-shrink-0" />
+              <span className="truncate">Baptism</span>
+            </a>
             {!onlyNewBulletin && !hideExportPDF && (
               <button
                 onClick={handleExportPDF}
@@ -173,6 +181,14 @@ export default function Header({
                 <Plus className="w-4 h-4 mr-2" />
                 {t('common.newBulletin')}
               </button>
+              <a
+                href={currentProfileSlug ? `/baptism/${currentProfileSlug}` : '/baptism'}
+                onClick={() => setShowMobileMenu(false)}
+                className="w-full flex items-center px-4 py-2 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 transition-colors"
+              >
+                <Droplet className="w-4 h-4 mr-2" />
+                Baptism Program
+              </a>
               {!onlyNewBulletin && !hideExportPDF && (
                 <button
                   onClick={() => {

@@ -77,11 +77,13 @@ export interface Speaker {
 }
 
 export type AgendaItem =
-  | { type: 'speaker'; id: string; name: string; speakerType: 'youth' | 'adult' }
+  | { type: 'speaker'; id: string; name: string; speakerType: 'youth' | 'adult'; customLabel?: string }
   | { type: 'musical'; id: string; label?: string; hymnNumber?: string; hymnTitle?: string; hymnType?: SongType; songName?: string; performers?: string }
   | { type: 'testimony'; id: string; note?: string }
   | { type: 'sacrament'; id: string }
-  | { type: 'baby_blessing'; id: string; childName?: string; parentNames?: string };
+  | { type: 'baby_blessing'; id: string; childName?: string; parentNames?: string }
+  | { type: 'baptism_ordinance'; id: string; candidateName?: string; performedBy?: string }
+  | { type: 'confirmation'; id: string; candidateName?: string; performedBy?: string };
 
 export interface UnitLeadershipEntry {
   title: string;

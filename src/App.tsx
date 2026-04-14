@@ -15,6 +15,7 @@ const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const BulletinGuidePage = lazy(() => import('./pages/BulletinGuidePage'));
 const TemplateIdeasPage = lazy(() => import('./pages/TemplateIdeasPage'));
 const ProgramGuidePage = lazy(() => import('./pages/ProgramGuidePage'));
+const BaptismEditor = lazy(() => import('./pages/BaptismEditor'));
 
 // Loading fallback for i18n
 const LoadingFallback = () => (
@@ -41,6 +42,8 @@ export default function App() {
             <Route path="/guide/create-ward-bulletin" element={<BulletinGuidePage />} />
             <Route path="/guide/bulletin-templates" element={<TemplateIdeasPage />} />
             <Route path="/guide/sacrament-meeting-program" element={<ProgramGuidePage />} />
+            <Route path="/baptism" element={<BaptismEditor />} />
+            <Route path="/baptism/:slug" element={<BaptismEditor />} />
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
