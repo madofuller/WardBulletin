@@ -157,3 +157,37 @@ export function getTranslatedLeaderTitle(t: TFunction, unitTypeOverride?: UnitTy
   const unitType = unitTypeOverride || (typeof window !== 'undefined' ? localStorage.getItem('selectedUnitType') as UnitType : 'ward') || 'ward';
   return unitType === 'branch' ? t('terminology.branchPresident') : t('terminology.bishop');
 }
+
+/**
+ * Get a translated audience display name using i18next translations
+ */
+export function getTranslatedAudienceDisplayName(t: TFunction, audience: string, unitTypeOverride?: UnitType): string {
+  switch (audience) {
+    case 'ward':
+    case 'branch':
+      return getTranslatedUnitLabel(t, unitTypeOverride);
+    case 'stake':
+    case 'district':
+      return getTranslatedHigherUnitLabel(t, unitTypeOverride);
+    case 'relief_society':
+      return t('terminology.reliefSociety');
+    case 'elders_quorum':
+      return t('terminology.eldersQuorum');
+    case 'young_women':
+      return t('terminology.youngWomen');
+    case 'young_men':
+      return t('terminology.youngMen');
+    case 'youth':
+      return t('terminology.youth');
+    case 'primary':
+      return t('terminology.primary');
+    case 'sunday_school':
+      return t('terminology.sundaySchool');
+    case 'gospel_doctrine':
+      return t('terminology.gospelDoctrine');
+    case 'other':
+      return t('common.other');
+    default:
+      return audience;
+  }
+}
