@@ -15,7 +15,7 @@ import {
   getHigherUnitLabel,
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
-  getAudienceDisplayName,
+  getTranslatedAudienceDisplayName,
   getLeadershipMessageLabel,
   getTranslatedUnitLabel,
   UnitType
@@ -401,7 +401,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   // Dynamic audience labels based on terminology
   const getAudienceLabel = (audience: string): string => {
-    return getAudienceDisplayName(audience, unitTypeOverride);
+    return getTranslatedAudienceDisplayName(t, audience, unitTypeOverride);
   };
 
   // Helper function to check if ward info entry has meaningful data

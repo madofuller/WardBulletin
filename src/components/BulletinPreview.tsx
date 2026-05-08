@@ -13,7 +13,7 @@ import {
   getHigherUnitLabel,
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
-  getAudienceDisplayName,
+  getTranslatedAudienceDisplayName,
   getTranslatedUnitLabel,
   UnitType
 } from '../lib/terminology';
@@ -389,7 +389,7 @@ export default function BulletinPreview({
 
   // Dynamic audience labels based on terminology
   const getAudienceLabel = (audience: string): string => {
-    return getAudienceDisplayName(audience, unitTypeOverride);
+    return getTranslatedAudienceDisplayName(t, audience, unitTypeOverride);
   };
   const [activeTab, setActiveTab] = useState<'program' | 'announcements' | 'unitinfo'>(() => {
     const hash = window.location.hash.replace('#', '');
