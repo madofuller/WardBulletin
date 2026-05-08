@@ -5,6 +5,7 @@ import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, Edit3, Copy } from 'lu
 import { toast } from 'react-toastify';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { decodeHtml } from '../lib/decodeHtml';
+import { getTranslatedAudienceDisplayName } from '../lib/terminology';
 
 // Helper function to strip HTML tags and return plain text
 const stripHtmlTags = (html: string): string => {
@@ -339,8 +340,8 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                               <div className="flex flex-wrap gap-2 text-xs">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                   {announcement.audience === 'standalone'
-                                    ? (announcement.custom_audience_label || 'Standalone')
-                                    : announcement.audience.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    ? (announcement.custom_audience_label || t('form.standaloneAnnouncement'))
+                                    : getTranslatedAudienceDisplayName(t, announcement.audience)}
                                 </span>
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
                                   {announcement.is_active ? t('recurring.active') : t('recurring.inactive')}
