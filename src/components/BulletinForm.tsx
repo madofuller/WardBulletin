@@ -17,7 +17,7 @@ import {
   getUnitNameLabel,
   getUnitLeadershipLabel,
   getUnitMissionariesLabel,
-  getAudienceDisplayName,
+  getTranslatedAudienceDisplayName,
   getAudienceValue,
   getTranslatedUnitLabel,
   getTranslatedUnitLowercase,
@@ -1469,7 +1469,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {getSongTypeForField(`agenda-${item.id}`) === 'hymn' ? 'Hymn' : 'Song'} Number
+                          {getSongTypeForField(`agenda-${item.id}`) === 'hymn' ? t('form.hymn') : t('form.song')} #
                         </label>
                         <input
                           type="text"
@@ -1482,7 +1482,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                       
                       <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {getSongTypeForField(`agenda-${item.id}`) === 'hymn' ? 'Hymn' : 'Song'} Title
+                          {getSongTypeForField(`agenda-${item.id}`) === 'hymn' ? t('form.hymnTitle') : t('form.songName')}
                         </label>
                         <input
                           type="text"
@@ -1669,8 +1669,8 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               return Object.entries(grouped).map(([audience, announcements]) => {
                 const isStandalone = isStandaloneAudience(audience);
                 const audienceLabel = isStandalone
-                  ? 'Standalone'
-                  : (audienceOptions.find(opt => opt.value === audience)?.label || getAudienceDisplayName(audience));
+                  ? t('form.standaloneAnnouncement')
+                  : (audienceOptions.find(opt => opt.value === audience)?.label || getTranslatedAudienceDisplayName(t, audience));
 
                 // Get the index of this group's first announcement in the full list for move operations
                 const groupFirstIndex = data.announcements.findIndex(a => a.audience === audience);
@@ -1967,10 +1967,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                         }}
                                         className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0 max-w-32"
                                       >
-                                        <option value="small">Small (120px)</option>
-                                        <option value="medium">Medium (200px)</option>
-                                        <option value="large">Large (300px)</option>
-                                        <option value="xlarge">X-Large (400px)</option>
+                                        <option value="small">{t('form.small')} (120px)</option>
+                                        <option value="medium">{t('form.medium')} (200px)</option>
+                                        <option value="large">{t('form.large')} (300px)</option>
+                                        <option value="xlarge">{t('form.xLarge')} (400px)</option>
                                       </select>
                                     </label>
                                   </div>
