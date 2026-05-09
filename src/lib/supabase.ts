@@ -11,6 +11,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase configuration is required')
 }
 
+// If the URL carries a Supabase password-recovery hash, redirect to /reset-password
+// before the client below consumes it. Otherwise the recovery event fires before any
+// React listener is attached and the user lands signed-in on / with no way to set a
+// new password.
+if (typeof window !== 'undefined') {
+  const hash = window.location.hash
+  if (
+    hash.includes('type=recovery') &&
+    window.location.pathname !== '/reset-password'
+  ) {
+    try {
+      sessionStorage.setItem('password_recovery_hash', hash)
+    } catch (_) {}
+    window.location.replace('/reset-password' + hash)
+  }
+}
+
 // Create Supabase client with better error handling
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
