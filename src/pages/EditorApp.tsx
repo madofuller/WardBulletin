@@ -1017,141 +1017,96 @@ function EditorApp() {
   };
 
   const handleLoadSavedBulletin = (bulletin: any) => {
-    // Check for unsaved changes
+    const defaultWardLeadership = [
+      { title: 'Bishop', name: '', phone: '' },
+      { title: '1st Counselor', name: '', phone: '' },
+      { title: '2nd Counselor', name: '', phone: '' },
+      { title: 'Executive Secretary', name: '', phone: '' },
+      { title: 'Ward Clerk', name: '', phone: '' },
+      { title: 'Elders Quorum President', name: '', phone: '' },
+      { title: 'Relief Society President', name: '', phone: '' },
+      { title: 'Young Women\'s President', name: '', phone: '' },
+      { title: 'Primary President', name: '', phone: '' },
+      { title: 'Sunday School President', name: '', phone: '' },
+      { title: 'Ward Mission Leader', name: '', phone: '' },
+      { title: 'Building Representative', name: '', phone: '' },
+      { title: 'Temple & Family History', name: '', phone: '' }
+    ];
+    const asArray = (v: unknown) => (Array.isArray(v) ? v : []);
+    const asObject = <T extends object>(v: unknown, fallback: T): T =>
+      v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback;
+
+    const applyLoad = () => {
+      try {
+        const loadedData: BulletinData = {
+          wardName: bulletin.ward_name || '',
+          date: bulletin.date,
+          meetingType: bulletin.meeting_type,
+          theme: bulletin.theme || '',
+          bishopricMessage: bulletin.bishopric_message || '',
+          announcements: asArray(bulletin.announcements),
+          meetings: asArray(bulletin.meetings),
+          specialEvents: asArray(bulletin.special_events),
+          agenda: ensureSacramentItem(asArray(bulletin.agenda), bulletin.meeting_type),
+          prayers: asObject(bulletin.prayers, {
+            opening: '',
+            closing: '',
+            invocation: '',
+            benediction: ''
+          }),
+          musicProgram: asObject(bulletin.music_program, {
+            openingHymn: '',
+            openingHymnNumber: '',
+            openingHymnTitle: '',
+            sacramentHymn: '',
+            sacramentHymnNumber: '',
+            sacramentHymnTitle: '',
+            closingHymn: '',
+            closingHymnNumber: '',
+            closingHymnTitle: ''
+          }),
+          leadership: asObject(bulletin.leadership, {
+            presiding: '',
+            chorister: '',
+            organist: ''
+          }),
+          status: bulletin.status || 'draft',
+          scheduledDate: bulletin.scheduled_date,
+          autoActivate: bulletin.auto_activate,
+          wardLeadership: asArray(bulletin.wardLeadership).length
+            ? asArray(bulletin.wardLeadership)
+            : defaultWardLeadership,
+          missionaries: asArray(bulletin.missionaries),
+          wardMissionaries: asArray(bulletin.wardMissionaries),
+          imageId: bulletin.imageId || 'none',
+          imagePosition: asObject(bulletin.imagePosition, { x: 50, y: 50 })
+        };
+
+        setBulletinData(loadedData);
+        setCurrentBulletinId(bulletin.id);
+        setHasUnsavedChanges(false);
+        setShowSavedBulletins(false);
+        setShowQRCode(false);
+      } catch (err) {
+        console.error('Failed to load bulletin', { id: bulletin?.id, bulletin, error: err });
+        toast.error(
+          `Couldn't load this bulletin (id: ${bulletin?.id ?? 'unknown'}). Please contact support with this ID.`
+        );
+      }
+    };
+
     if (hasUnsavedChanges) {
       setConfirmationModal({
         isOpen: true,
         title: 'Unsaved Changes',
         message: 'You have unsaved changes. Loading this bulletin will discard them. Continue?',
-        onConfirm: () => {
-          // Convert database format back to app format
-          const loadedData: BulletinData = {
-            wardName: bulletin.ward_name,
-            date: bulletin.date,
-            meetingType: bulletin.meeting_type,
-            theme: bulletin.theme || '',
-            bishopricMessage: bulletin.bishopric_message || '',
-            announcements: bulletin.announcements || [],
-            meetings: bulletin.meetings || [],
-            specialEvents: bulletin.special_events || [],
-            agenda: ensureSacramentItem(bulletin.agenda || [], bulletin.meeting_type),
-            prayers: bulletin.prayers || {
-              opening: '',
-              closing: '',
-              invocation: '',
-              benediction: ''
-            },
-            musicProgram: bulletin.music_program || {
-              openingHymn: '',
-              openingHymnNumber: '',
-              openingHymnTitle: '',
-              sacramentHymn: '',
-              sacramentHymnNumber: '',
-              sacramentHymnTitle: '',
-              closingHymn: '',
-              closingHymnNumber: '',
-              closingHymnTitle: ''
-            },
-            leadership: bulletin.leadership || {
-              presiding: '',
-              chorister: '',
-              organist: ''
-            },
-            wardLeadership: bulletin.wardLeadership || [
-              { title: 'Bishop', name: '', phone: '' },
-              { title: '1st Counselor', name: '', phone: '' },
-              { title: '2nd Counselor', name: '', phone: '' },
-              { title: 'Executive Secretary', name: '', phone: '' },
-              { title: 'Ward Clerk', name: '', phone: '' },
-              { title: 'Elders Quorum President', name: '', phone: '' },
-              { title: 'Relief Society President', name: '', phone: '' },
-              { title: 'Young Women\'s President', name: '', phone: '' },
-              { title: 'Primary President', name: '', phone: '' },
-              { title: 'Sunday School President', name: '', phone: '' },
-              { title: 'Ward Mission Leader', name: '', phone: '' },
-              { title: 'Building Representative', name: '', phone: '' },
-              { title: 'Temple & Family History', name: '', phone: '' }
-            ],
-            missionaries: bulletin.missionaries || [],
-            wardMissionaries: bulletin.wardMissionaries || [],
-            imageId: bulletin.imageId || 'none',
-            imagePosition: bulletin.imagePosition || { x: 50, y: 50 }
-          };
-
-          setBulletinData(loadedData);
-          setCurrentBulletinId(bulletin.id);
-          setHasUnsavedChanges(false);
-          setShowSavedBulletins(false);
-          setShowQRCode(false);
-        },
+        onConfirm: applyLoad,
         variant: 'warning'
       });
       return;
     }
 
-    // Convert database format back to app format
-    const loadedData: BulletinData = {
-      wardName: bulletin.ward_name,
-      date: bulletin.date,
-      meetingType: bulletin.meeting_type,
-      theme: bulletin.theme || '',
-      bishopricMessage: bulletin.bishopric_message || '',
-      announcements: bulletin.announcements || [],
-      meetings: bulletin.meetings || [],
-      specialEvents: bulletin.special_events || [],
-      agenda: ensureSacramentItem(bulletin.agenda || [], bulletin.meeting_type),
-      prayers: bulletin.prayers || {
-        opening: '',
-        closing: '',
-        invocation: '',
-        benediction: ''
-      },
-      musicProgram: bulletin.music_program || {
-        openingHymn: '',
-        openingHymnNumber: '',
-        openingHymnTitle: '',
-        sacramentHymn: '',
-        sacramentHymnNumber: '',
-        sacramentHymnTitle: '',
-        closingHymn: '',
-        closingHymnNumber: '',
-        closingHymnTitle: ''
-      },
-      leadership: bulletin.leadership || {
-        presiding: '',
-        chorister: '',
-        organist: ''
-      },
-      // Include status and scheduling fields
-      status: bulletin.status || 'draft',
-      scheduledDate: bulletin.scheduled_date,
-      autoActivate: bulletin.auto_activate,
-      wardLeadership: bulletin.wardLeadership || [
-        { title: 'Bishop', name: '', phone: '' },
-        { title: '1st Counselor', name: '', phone: '' },
-        { title: '2nd Counselor', name: '', phone: '' },
-        { title: 'Executive Secretary', name: '', phone: '' },
-        { title: 'Ward Clerk', name: '', phone: '' },
-        { title: 'Elders Quorum President', name: '', phone: '' },
-        { title: 'Relief Society President', name: '', phone: '' },
-        { title: 'Young Women\'s President', name: '', phone: '' },
-        { title: 'Primary President', name: '', phone: '' },
-        { title: 'Sunday School President', name: '', phone: '' },
-        { title: 'Ward Mission Leader', name: '', phone: '' },
-        { title: 'Building Representative', name: '', phone: '' },
-        { title: 'Temple & Family History', name: '', phone: '' }
-      ],
-      missionaries: bulletin.missionaries || [],
-      wardMissionaries: bulletin.wardMissionaries || [],
-      imageId: bulletin.imageId || 'none',
-      imagePosition: bulletin.imagePosition || { x: 50, y: 50 }
-    };
-
-    setBulletinData(loadedData);
-    setCurrentBulletinId(bulletin.id);
-    setHasUnsavedChanges(false);
-    setShowSavedBulletins(false);
-    setShowQRCode(false);
+    applyLoad();
   };
 
   const handleTemplateSelect = (template: Template | null, builtIn?: BuiltInTemplate) => {

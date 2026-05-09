@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, ArrowLeft, Copy, Check } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -11,6 +11,7 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  copied: boolean;
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
@@ -19,7 +20,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      copied: false
     };
   }
 
@@ -27,7 +29,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorInfo: null
+      errorInfo: null,
+      copied: false
     };
   }
 
@@ -52,7 +55,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      copied: false
     });
   };
 
@@ -62,6 +66,30 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   handleGoBack = () => {
     window.history.back();
+  };
+
+  buildErrorReport = (): string => {
+    const { error, errorInfo } = this.state;
+    const url = typeof window !== 'undefined' ? window.location.href : 'unknown';
+    const ts = new Date().toISOString();
+    const lines = [
+      `Time: ${ts}`,
+      `URL: ${url}`,
+      `Error: ${error?.message ?? 'unknown'}`
+    ];
+    if (error?.stack) lines.push(`Stack:\n${error.stack}`);
+    if (errorInfo?.componentStack) lines.push(`Component stack:\n${errorInfo.componentStack}`);
+    return lines.join('\n\n');
+  };
+
+  handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(this.buildErrorReport());
+      this.setState({ copied: true });
+      setTimeout(() => this.setState({ copied: false }), 2000);
+    } catch {
+      // Clipboard API unavailable — leave the textarea visible so user can copy manually
+    }
   };
 
   render() {
@@ -87,24 +115,40 @@ export default class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {this.state.error && (
               <details className="mb-6 text-left">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
-                  Error Details (Development)
+                  Error details (please include when contacting support)
                 </summary>
-                <div className="bg-gray-100 rounded-lg p-4 text-xs font-mono text-gray-800 overflow-auto max-h-32">
+                <div className="bg-gray-100 rounded-lg p-4 text-xs font-mono text-gray-800 overflow-auto max-h-48">
                   <div className="mb-2">
                     <strong>Error:</strong> {this.state.error.message}
                   </div>
-                  {this.state.errorInfo && (
+                  {this.state.errorInfo?.componentStack && (
                     <div>
-                      <strong>Stack:</strong>
+                      <strong>Component stack:</strong>
                       <pre className="whitespace-pre-wrap mt-1">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={this.handleCopy}
+                  className="mt-2 inline-flex items-center text-xs text-blue-600 hover:text-blue-700"
+                >
+                  {this.state.copied ? (
+                    <>
+                      <Check className="w-3 h-3 mr-1" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy details
+                    </>
+                  )}
+                </button>
               </details>
             )}
 
