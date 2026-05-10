@@ -25,6 +25,19 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const { t } = useTranslation();
 
+  // Handle escape key. Must run before any conditional return so that hook
+  // order stays stable across renders — otherwise React throws #310.
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const finalConfirmText = confirmText || t('common.confirm');
@@ -74,20 +87,6 @@ export default function ConfirmationModal({
   const handleCancel = () => {
     onClose();
   };
-
-  // Handle escape key
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
