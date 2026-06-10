@@ -5,6 +5,7 @@ import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { linkifyHtml } from '../lib/linkifyHtml';
 import { decodeHtml } from '../lib/decodeHtml';
+import { detectMeetingPlatform, normalizeMeetingUrl } from '../lib/meetingPlatform';
 import { getSongUrl, getSongTitle } from '../lib/songService';
 import { getImageByIdSync, LDS_IMAGES, ImageData } from '../data/images';
 
@@ -503,6 +504,9 @@ function BulletinPreview({
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`;
   }, []);
 
+  const meetingLink = typeof data?.leadership?.meetingLink === 'string' ? data.leadership.meetingLink.trim() : '';
+  const meetingPlatform = useMemo(() => (meetingLink ? detectMeetingPlatform(meetingLink) : null), [meetingLink]);
+
   /* --------------------------------- Render -------------------------------- */
 
   return (
@@ -572,19 +576,19 @@ function BulletinPreview({
             )}
           </div>
 
-          {/* Virtual meeting link (e.g. Zoom) */}
-          {typeof data?.leadership?.meetingLink === 'string' && data.leadership.meetingLink.trim() !== '' && (
+          {/* Virtual meeting link (Zoom, Google Meet, Teams, ...) */}
+          {meetingLink !== '' && (
             <div className="flex justify-center print:hidden">
               <a
-                href={/^https?:\/\//i.test(data.leadership.meetingLink.trim())
-                  ? data.leadership.meetingLink.trim()
-                  : `https://${data.leadership.meetingLink.trim()}`}
+                href={normalizeMeetingUrl(meetingLink)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors"
               >
                 <Video className="w-4 h-4" aria-hidden="true" />
-                {t('bulletin.joinMeeting')}
+                {meetingPlatform
+                  ? t('bulletin.joinMeeting', { platform: meetingPlatform })
+                  : t('bulletin.joinMeetingGeneric')}
               </a>
             </div>
           )}

@@ -6,6 +6,11 @@
     "myQrCode": "Mon code QR",
     "signIn": "Se connecter",
     "signOut": "Se déconnecter",
+    "signOutUnsavedConfirm": "Vous avez des modifications non enregistrées. Se déconnecter quand même ?",
+    "undo": "Annuler",
+    "itemDeleted": "Supprimé",
+    "unsavedChangesShort": "Modifications non enregistrées",
+    "unsavedChangesTitle": "Modifications non enregistrées",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "close": "Fermer",
@@ -188,10 +193,12 @@
     "chorister": "Choriste",
     "organist": "Organiste",
     "preludeMusic": "Musique de prélude",
-    "meetingLinkLabel": "Lien de réunion virtuelle (Zoom)",
+    "meetingLinkLabel": "Lien de réunion virtuelle",
     "meetingLinkHelp": "Si renseigné, un bouton « Rejoindre » apparaît en haut du programme public.",
-    "joinMeeting": "Rejoindre via Zoom",
-    "joinMeetingPrint": "Rejoindre en ligne :"
+    "joinMeeting": "Rejoindre via {{platform}}",
+    "joinMeetingGeneric": "Rejoindre la réunion en ligne",
+    "joinMeetingPrint": "Rejoindre en ligne :",
+    "draftRestored": "Vos modifications non enregistrées sur cet appareil ont été restaurées"
   },
   "terminology": {
     "ward": "Paroisse",

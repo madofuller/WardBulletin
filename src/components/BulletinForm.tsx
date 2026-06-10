@@ -79,6 +79,49 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     onChange({ ...data, [field]: value });
   };
 
+  // Always-current data for undo closures: a toast's Undo button fires long
+  // after the render that created it, so it must not act on stale props.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // Remove a list item with a 6-second Undo toast instead of a confirm
+  // dialog: no friction on intentional deletes, but mis-taps are recoverable.
+  const removeWithUndo = (
+    field: 'announcements' | 'meetings' | 'specialEvents' | 'agenda',
+    id: string
+  ) => {
+    const list = dataRef.current[field] as Array<{ id: string }>;
+    const index = list.findIndex(item => item.id === id);
+    if (index === -1) return;
+    const removed = list[index];
+    onChangeRef.current({ ...dataRef.current, [field]: list.filter(item => item.id !== id) });
+
+    const undo = () => {
+      const current = dataRef.current[field] as Array<{ id: string }>;
+      if (current.some(item => item.id === id)) return; // already restored
+      const next = [...current];
+      next.splice(Math.min(index, next.length), 0, removed);
+      onChangeRef.current({ ...dataRef.current, [field]: next });
+    };
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="flex items-center justify-between gap-3">
+          <span>{t('common.itemDeleted', 'Deleted')}</span>
+          <button
+            onClick={() => { undo(); closeToast?.(); }}
+            className="font-semibold underline whitespace-nowrap"
+          >
+            {t('common.undo', 'Undo')}
+          </button>
+        </div>
+      ),
+      { autoClose: 6000, closeOnClick: false }
+    );
+  };
+
   const addAnnouncement = (audience?: string) => {
     const newAnnouncement: Announcement = {
       id: generateUniqueId(),
@@ -117,7 +160,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   };
 
   const removeAnnouncement = (id: string) => {
-    updateField('announcements', data.announcements.filter(ann => ann.id !== id));
+    removeWithUndo('announcements', id);
   };
 
           const handleRecurringAnnouncementSelected = (announcement: any) => {
@@ -301,7 +344,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   };
 
   const removeMeeting = (id: string) => {
-    updateField('meetings', data.meetings.filter(meeting => meeting.id !== id));
+    removeWithUndo('meetings', id);
   };
 
   const addSpecialEvent = () => {
@@ -324,7 +367,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   };
 
   const removeSpecialEvent = (id: string) => {
-    updateField('specialEvents', data.specialEvents.filter(event => event.id !== id));
+    removeWithUndo('specialEvents', id);
   };
 
   // Add Section dropdown state and ref
@@ -1061,7 +1104,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
               </div>
             </div>
 
-            {/* Virtual meeting link (Zoom) */}
+            {/* Virtual meeting link (Zoom, Google Meet, Teams, ...) */}
             <div>
               <label htmlFor="meeting-link-input" className="block text-base font-medium text-gray-700 mb-2">{t('bulletin.meetingLinkLabel')}</label>
               <input
@@ -1579,7 +1622,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                 <div className="flex flex-row items-center space-x-2">
                   <button onClick={() => moveAgendaItem(idx, -1)} disabled={idx === 0} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↑</button>
                   <button onClick={() => moveAgendaItem(idx, 1)} disabled={idx === data.agenda.length - 1} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↓</button>
-                  <button onClick={() => updateField('agenda', data.agenda.filter(ag => ag.id !== item.id))} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-full text-sm">Remove</button>
+                  <button onClick={() => removeWithUndo('agenda', item.id)} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-full text-sm">{t('common.remove')}</button>
                 </div>
               </div>
             ))}

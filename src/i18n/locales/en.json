@@ -6,6 +6,11 @@
     "myQrCode": "My QR Code",
     "signIn": "Sign In",
     "signOut": "Sign Out",
+    "signOutUnsavedConfirm": "You have unsaved changes. Sign out anyway?",
+    "undo": "Undo",
+    "itemDeleted": "Deleted",
+    "unsavedChangesShort": "Unsaved changes",
+    "unsavedChangesTitle": "Unsaved Changes",
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
@@ -188,10 +193,12 @@
     "chorister": "Chorister",
     "organist": "Organist",
     "preludeMusic": "Prelude Music",
-    "meetingLinkLabel": "Virtual meeting link (Zoom)",
+    "meetingLinkLabel": "Virtual meeting link",
     "meetingLinkHelp": "If set, a 'Join' button appears at the top of the public program.",
-    "joinMeeting": "Join via Zoom",
-    "joinMeetingPrint": "Join online:"
+    "joinMeeting": "Join via {{platform}}",
+    "joinMeetingGeneric": "Join meeting online",
+    "joinMeetingPrint": "Join online:",
+    "draftRestored": "Restored your unsaved changes from this device"
   },
   "terminology": {
     "ward": "Ward",

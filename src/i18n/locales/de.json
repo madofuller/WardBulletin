@@ -6,6 +6,11 @@
     "myQrCode": "Mein QR-Code",
     "signIn": "Anmelden",
     "signOut": "Abmelden",
+    "signOutUnsavedConfirm": "Du hast ungespeicherte Änderungen. Trotzdem abmelden?",
+    "undo": "Rückgängig",
+    "itemDeleted": "Gelöscht",
+    "unsavedChangesShort": "Ungespeicherte Änderungen",
+    "unsavedChangesTitle": "Ungespeicherte Änderungen",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "close": "Schließen",
@@ -188,10 +193,12 @@
     "chorister": "Chorleiter",
     "organist": "Organist",
     "preludeMusic": "Vorspielmusik",
-    "meetingLinkLabel": "Link zur virtuellen Versammlung (Zoom)",
+    "meetingLinkLabel": "Link zur virtuellen Versammlung",
     "meetingLinkHelp": "Wenn angegeben, erscheint oben im öffentlichen Programm eine Schaltfläche „Teilnehmen“.",
-    "joinMeeting": "Per Zoom teilnehmen",
-    "joinMeetingPrint": "Online teilnehmen:"
+    "joinMeeting": "Per {{platform}} teilnehmen",
+    "joinMeetingGeneric": "Online an der Versammlung teilnehmen",
+    "joinMeetingPrint": "Online teilnehmen:",
+    "draftRestored": "Deine ungespeicherten Änderungen von diesem Gerät wurden wiederhergestellt"
   },
   "terminology": {
     "ward": "Gemeinde",

@@ -32,6 +32,8 @@ import ProfileSharingModal from '../components/ProfileSharingModal';
 import ChangelogModal from '../components/ChangelogModal';
 import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
+import { readDraft, writeDraft, clearDraft } from '../lib/draftStorage';
+import { upcomingSundayISO } from '../lib/dates';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -313,10 +315,9 @@ function EditorApp() {
     const currentUnitType = getCurrentUnitType();
     return {
       wardName: getDefault('wardName', ''),
-      date: (() => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      })(),
+      // Programs are for Sunday meetings — default to the upcoming Sunday,
+      // not the mid-week day the clerk happens to be working on.
+      date: upcomingSundayISO(),
       meetingType: getMeetingTypeForUnit(currentUnitType),
       theme: '',
       userTheme: '',
@@ -375,31 +376,29 @@ function EditorApp() {
     };
   }
 
+  // Merge a stored draft with defaults so required fields are never missing
+  // after a refresh or an app update that added new fields.
+  function mergeDraftWithDefaults(parsed: BulletinData): BulletinData {
+    const defaultBulletin = createBlankBulletin();
+    return {
+      ...defaultBulletin,
+      ...parsed,
+      imageId: parsed.imageId || 'none',
+      imagePosition: parsed.imagePosition || { x: 50, y: 50 },
+      wardMissionaries: parsed.wardMissionaries || [],
+      missionaries: parsed.missionaries || [],
+      wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership,
+      // Preserve date on refresh: never leave date empty when restoring from draft
+      date: parsed.date && String(parsed.date).trim() ? parsed.date : defaultBulletin.date
+    };
+  }
+
   // Use a function to initialize bulletinData from localStorage defaults
   const [bulletinData, setBulletinData] = useState<BulletinData>(() => {
     // Check for draft first during initial state creation
-    const DRAFT_KEY = 'draft_bulletin';
-    const saved = localStorage.getItem(DRAFT_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as BulletinData;
-        // Ensure all required fields exist for backward compatibility
-        const defaultBulletin = createBlankBulletin();
-        const merged = {
-          ...defaultBulletin,
-          ...parsed,
-          imageId: parsed.imageId || 'none',
-          imagePosition: parsed.imagePosition || { x: 50, y: 50 },
-          wardMissionaries: parsed.wardMissionaries || [],
-          missionaries: parsed.missionaries || [],
-          wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership,
-          // Preserve date on refresh: never leave date empty when restoring from draft
-          date: parsed.date && String(parsed.date).trim() ? parsed.date : defaultBulletin.date
-        };
-        return merged;
-      } catch (e) {
-        localStorage.removeItem(DRAFT_KEY);
-      }
+    const draft = readDraft();
+    if (draft) {
+      return mergeDraftWithDefaults(draft.data);
     }
     return createBlankBulletin();
   });
@@ -411,15 +410,20 @@ function EditorApp() {
   const previousDataRef = useRef<BulletinData | null>(null);
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDraftRef = useRef<BulletinData | null>(null);
+  const draftRestoredNoticeShownRef = useRef(false);
 
-  // Add a helper for draft key
-  const DRAFT_KEY = 'draft_bulletin';
+  // Keep the latest bulletin id readable from stable callbacks (draft writes)
+  // without forcing them to re-create on every id change.
+  const currentBulletinIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentBulletinIdRef.current = currentBulletinId;
+  }, [currentBulletinId]);
 
   // Handle template loading only if no draft was loaded during initialization
   useEffect(() => {
     const initializeApp = () => {
       // Skip if we already loaded a draft during state initialization
-      const hasDraft = !!localStorage.getItem(DRAFT_KEY);
+      const hasDraft = !!readDraft();
       if (hasDraft) {
         return;
       }
@@ -601,50 +605,7 @@ function EditorApp() {
   };
 
   const writeDraftToStorage = useCallback((data: BulletinData) => {
-    // Try to save to localStorage with error handling and quota management
-    try {
-      const dataToSave = JSON.stringify(data);
-
-      // Check if data is too large (localStorage typically has 5-10MB limit)
-      if (dataToSave.length > 3 * 1024 * 1024) { // 3MB threshold for safety
-        // Try to clear old bulletin data to make space
-        try {
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
-              localStorage.removeItem(key);
-            }
-          });
-
-          // Try again after clearing
-          if (dataToSave.length < 4 * 1024 * 1024) {
-            localStorage.setItem(DRAFT_KEY, dataToSave);
-          }
-        } catch (clearError) {
-          // Failed to clear old data
-        }
-        return;
-      }
-
-      localStorage.setItem(DRAFT_KEY, dataToSave);
-    } catch (error) {
-      // If it's a quota exceeded error, try to clear old data
-      if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
-        try {
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
-              localStorage.removeItem(key);
-            }
-          });
-
-          // Try one more time
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-        } catch (retryError) {
-          // Failed to save even after clearing
-        }
-      }
-    }
+    writeDraft(data, currentBulletinIdRef.current);
   }, []);
 
   const flushDraftSave = useCallback(() => {
@@ -657,6 +618,17 @@ function EditorApp() {
       pendingDraftRef.current = null;
     }
   }, [writeDraftToStorage]);
+
+  // Drop the local draft AND any debounced write still in flight, so a save
+  // that just succeeded can't be resurrected as a stale draft 400ms later.
+  const clearLocalDraft = useCallback(() => {
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+      draftSaveTimerRef.current = null;
+    }
+    pendingDraftRef.current = null;
+    clearDraft();
+  }, []);
 
   const handleBulletinDataChange = useCallback((newData: BulletinData) => {
     if (previousDataRef.current === newData) {
@@ -775,17 +747,6 @@ function EditorApp() {
   }, []);
 
 
-  // On app load, if user is signed in and a draft exists, offer to save it
-  React.useEffect(() => {
-    if (user) {
-      const draft = localStorage.getItem(DRAFT_KEY);
-      if (draft) {
-        // Optionally prompt the user to save the draft
-        // For now, auto-save as above
-      }
-    }
-  }, [user]);
-
   // Fetch status for current bulletin if missing, or update if activeBulletinId changes
   useEffect(() => {
     const fetchBulletinStatus = async () => {
@@ -859,48 +820,54 @@ function EditorApp() {
         return;
       }
 
+      // Apply a freshly fetched cloud bulletin — unless unsaved local work
+      // exists. A timestamped draft can only exist while work has not reached
+      // the cloud (saving clears it), so it always wins. Legacy drafts of
+      // unknown age lose to the cloud, which flushes out stale leftovers.
+      const applyCloudBulletin = (bulletin: { id: string } & Record<string, unknown>) => {
+        const draft = readDraft();
+        if (draft && draft.savedAt > 0) {
+          // State already shows the draft (loaded at mount). Point the editor
+          // at the draft's own cloud row (or none) so Save can't silently
+          // overwrite the live bulletin with unrelated work.
+          setCurrentBulletinId(draft.bulletinId);
+          setHasUnsavedChanges(true);
+          if (!draftRestoredNoticeShownRef.current) {
+            draftRestoredNoticeShownRef.current = true;
+            toast.info(t('bulletin.draftRestored'), { toastId: 'draft-restored' });
+          }
+          return;
+        }
+        const data = convertDbBulletinToData(bulletin);
+        setBulletinData(data);
+        setCurrentBulletinId(bulletin.id);
+        setHasUnsavedChanges(false);
+        clearLocalDraft();
+      };
+
       try {
         if (currentProfileSlug) {
           // If we're on a shared profile, get its active bulletin
           if (currentProfileSlug !== profile?.profile_slug) {
             const bulletin = await bulletinService.getLatestBulletinByProfileSlug(currentProfileSlug);
             if (bulletin) {
-              const data = convertDbBulletinToData(bulletin);
-              setBulletinData(data);
-              setCurrentBulletinId(bulletin.id);
-              setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY);
+              applyCloudBulletin(bulletin);
             }
           } else if (activeBulletinId) {
             // If we're on our own profile, load the active bulletin
             // This will switch to the new active bulletin even if we were viewing a different one
             const bulletin = await bulletinService.getBulletinById(activeBulletinId);
             if (bulletin) {
-              const data = convertDbBulletinToData(bulletin);
-              setBulletinData(data);
-              setCurrentBulletinId(bulletin.id);
-              setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY);
+              applyCloudBulletin(bulletin);
             }
           } else if (isInitialLoad) {
             // On initial load with no active bulletin, check for draft
             // But only if we don't have a currentBulletinId
-            const hasDraft = !!localStorage.getItem(DRAFT_KEY);
-            if (hasDraft) {
-              try {
-                const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!) as BulletinData;
-                const defaultBulletin = createBlankBulletin();
-                // Merge with defaults so date and other fields are never missing after refresh
-                const merged = {
-                  ...defaultBulletin,
-                  ...draftData,
-                  date: draftData.date && String(draftData.date).trim() ? draftData.date : defaultBulletin.date
-                };
-                setBulletinData(merged);
-                setHasUnsavedChanges(true);
-              } catch (err) {
-                localStorage.removeItem(DRAFT_KEY);
-              }
+            const draft = readDraft();
+            if (draft) {
+              setBulletinData(mergeDraftWithDefaults(draft.data));
+              setCurrentBulletinId(draft.bulletinId);
+              setHasUnsavedChanges(true);
             }
           }
         }
@@ -913,6 +880,37 @@ function EditorApp() {
     };
     fetchInitialBulletin();
   }, [user, activeBulletinId, currentProfileSlug]);
+
+  // When the user returns to a tab that has been sitting open (e.g. Sunday
+  // morning, tab from last week), re-check the server for the active bulletin
+  // so the editor catches scheduled activations and edits from other devices.
+  // Never runs while there are unsaved local changes, so it cannot clobber
+  // in-progress work. Throttled to one check per minute.
+  const lastVisibleRefreshRef = useRef(0);
+  useEffect(() => {
+    const handleVisible = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!user || hasUnsavedChanges || !currentProfileSlug) return;
+      const now = Date.now();
+      if (now - lastVisibleRefreshRef.current < 60 * 1000) return;
+      lastVisibleRefreshRef.current = now;
+      try {
+        const activeId = await getActiveBulletinForCurrentProfile(currentProfileSlug);
+        if (!activeId) return;
+        const bulletin = await bulletinService.getBulletinById(activeId);
+        if (!bulletin) return;
+        setBulletinData(convertDbBulletinToData(bulletin));
+        setCurrentBulletinId(bulletin.id);
+        setActiveBulletinId(activeId);
+        setHasUnsavedChanges(false);
+        clearLocalDraft();
+      } catch {
+        // Offline or transient failure — keep showing the current state.
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [user, hasUnsavedChanges, currentProfileSlug, clearLocalDraft]);
 
   const handleCreateProfileSlug = async () => {
     if (!newProfileSlug.trim() || !user) return;
@@ -997,6 +995,9 @@ function EditorApp() {
 
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
+      // The work just reached the cloud — the local draft is no longer the
+      // source of truth and must not shadow future cloud loads.
+      clearLocalDraft();
 
       // If the bulletin was active before saving, re-activate it with the new ID
       if (wasActive && savedBulletin.id !== activeBulletinId) {
@@ -1069,6 +1070,38 @@ function EditorApp() {
   };
 
 
+  // Signing out drops in-memory work; warn first when something is unsaved.
+  const handleSignOut = async () => {
+    if (hasUnsavedChanges) {
+      setConfirmationModal({
+        isOpen: true,
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
+        message: t('common.signOutUnsavedConfirm', 'You have unsaved changes. Sign out anyway?'),
+        variant: 'warning',
+        onConfirm: () => {
+          supabase?.auth.signOut();
+        }
+      });
+      return;
+    }
+    await supabase?.auth.signOut();
+  };
+
+  // Ctrl/Cmd+S saves instead of opening the browser's save dialog. The ref
+  // keeps the listener stable while always calling the latest handler.
+  const saveShortcutRef = useRef<() => void>(() => {});
+  saveShortcutRef.current = () => { handleSaveBulletin(); };
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveShortcutRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const handleSaveAsTemplate = async () => {
     if (!user) {
       setShowAuthModal(true);
@@ -1078,8 +1111,12 @@ function EditorApp() {
     try {
       setLoading(true);
       const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`;
-      await templateService.saveTemplate(templateName, bulletinData);
-      toast.success('Bulletin saved as template!');
+      const saved = templateService.saveTemplate(templateName, bulletinData);
+      if (saved) {
+        toast.success('Bulletin saved as template!');
+      } else {
+        toast.error('Could not save template: browser storage is full or unavailable. Try deleting old templates.');
+      }
     } catch (error) {
       toast.error('Error saving template: ' + (error as Error).message);
     } finally {
@@ -1160,6 +1197,7 @@ function EditorApp() {
         setBulletinData(loadedData);
         setCurrentBulletinId(bulletin.id);
         setHasUnsavedChanges(false);
+        clearLocalDraft();
         setShowSavedBulletins(false);
         setShowQRCode(false);
       } catch (err) {
@@ -1184,21 +1222,29 @@ function EditorApp() {
     applyLoad();
   };
 
-  const handleTemplateSelect = (template: Template | null, builtIn?: BuiltInTemplate) => {
+  const handleTemplateSelect = async (template: Template | null, builtIn?: BuiltInTemplate) => {
+    let next: BulletinData;
     if (builtIn) {
       templateService.setActiveTemplateId(null);
       const blank = createBlankBulletin();
-      setBulletinData({ ...blank, ...builtIn.data });
+      next = { ...blank, ...builtIn.data };
       toast.success(t(builtIn.nameKey) + ' ' + t('templates.applied', 'template applied'));
     } else if (template) {
       templateService.setActiveTemplateId(template.id);
-      setBulletinData(template.data);
+      next = template.data;
     } else {
       templateService.setActiveTemplateId(null);
-      setBulletinData(createBlankBulletin());
+      next = createBlankBulletin();
     }
+    // A new bulletin starts with this week's recurring announcements already
+    // in place (no-op when signed out, offline, or none are configured).
+    if (user) {
+      next = await populateWithRecurringAnnouncements(next);
+    }
+    setBulletinData(next);
     setCurrentBulletinId(null);
     setHasUnsavedChanges(false);
+    clearLocalDraft();
     setShowTemplates(false);
   };
 
@@ -1211,10 +1257,13 @@ function EditorApp() {
       navigate('/', { replace: true });
       return;
     }
-    if (hasUnsavedChanges) {
+    // hasUnsavedChanges is always false in this mount-time closure, even when
+    // a draft was restored during state init — so check the draft directly.
+    // Applying the template would overwrite that work and delete the draft.
+    if (hasUnsavedChanges || readDraft()) {
       setConfirmationModal({
         isOpen: true,
-        title: t('common.unsavedChanges', 'Unsaved Changes'),
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
         message: t('templates.deepLinkConfirm', 'You have unsaved changes. Apply this template and lose your current work?'),
         variant: 'warning' as const,
         onConfirm: () => {
@@ -1670,9 +1719,7 @@ function EditorApp() {
                 {user ? (
                   <UserMenu
                     user={user}
-                    onSignOut={async () => {
-                      await supabase?.auth.signOut();
-                    }}
+                    onSignOut={handleSignOut}
                     onSaveBulletin={handleSaveBulletin}
                     onViewSavedBulletins={handleViewSavedBulletins}
                     hasUnsavedChanges={hasUnsavedChanges}
@@ -1778,8 +1825,8 @@ function EditorApp() {
                     </button>
                       <button
                         onClick={async () => {
-                          await supabase?.auth.signOut();
                           setShowMobileMenu(false);
+                          await handleSignOut();
                         }}
                         className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                       >
@@ -1804,7 +1851,7 @@ function EditorApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <main className={`max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8${hasUnsavedChanges ? ' pb-24' : ''}`}>
         {/* Deep link onboarding banner */}
         {showDeepLinkBanner && (
           <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
@@ -1839,8 +1886,10 @@ function EditorApp() {
             </div>
           </div>
 
-          {/* Preview Section */}
-          <div className="space-y-4 sm:space-y-6">
+          {/* Preview Section — sticky and self-scrolling on desktop so the
+              live preview stays visible however far down the form you edit.
+              self-start is required: a stretched grid column never sticks. */}
+          <div className="space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-3 sm:space-y-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
@@ -2205,6 +2254,28 @@ function EditorApp() {
         </div>
       </footer>
       
+      {/* Sticky save bar (all screen sizes): the Save action stays reachable
+          no matter how long the form scroll gets, and doubles as the always-
+          visible "you have unsaved work" indicator. Signed-out users get the
+          sign-in-to-save flow from save. */}
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.10)] print:hidden">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-3">
+            <span className="text-sm text-gray-700 flex items-center gap-2 min-w-0">
+              <span aria-hidden="true" className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+              <span className="truncate">{t('common.unsavedChangesShort', 'Unsaved changes')}</span>
+            </span>
+            <button
+              onClick={handleSaveBulletin}
+              disabled={loading}
+              className="flex-shrink-0 px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            >
+              {loading ? t('common.saving') : t('bulletin.saveBulletin')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast Container */}
       <ToastContainer
         position="top-right"

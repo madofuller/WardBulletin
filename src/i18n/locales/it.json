@@ -6,6 +6,11 @@
     "myQrCode": "Il Mio Codice QR",
     "signIn": "Accedi",
     "signOut": "Esci",
+    "signOutUnsavedConfirm": "Hai modifiche non salvate. Uscire comunque?",
+    "undo": "Annulla",
+    "itemDeleted": "Eliminato",
+    "unsavedChangesShort": "Modifiche non salvate",
+    "unsavedChangesTitle": "Modifiche non salvate",
     "save": "Salva",
     "cancel": "Annulla",
     "close": "Chiudi",
@@ -188,10 +193,12 @@
     "chorister": "Direttore della Musica",
     "organist": "Organista",
     "preludeMusic": "Musica di Preludio",
-    "meetingLinkLabel": "Link alla riunione virtuale (Zoom)",
+    "meetingLinkLabel": "Link alla riunione virtuale",
     "meetingLinkHelp": "Se impostato, in cima al programma pubblico apparirà un pulsante 'Partecipa'.",
-    "joinMeeting": "Partecipa via Zoom",
-    "joinMeetingPrint": "Partecipa online:"
+    "joinMeeting": "Partecipa via {{platform}}",
+    "joinMeetingGeneric": "Partecipa alla riunione online",
+    "joinMeetingPrint": "Partecipa online:",
+    "draftRestored": "Le modifiche non salvate su questo dispositivo sono state ripristinate"
   },
   "terminology": {
     "ward": "Rione",

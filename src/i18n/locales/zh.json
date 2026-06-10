@@ -6,6 +6,11 @@
     "myQrCode": "我的QR碼",
     "signIn": "登入",
     "signOut": "登出",
+    "signOutUnsavedConfirm": "您有未儲存的變更。仍要登出嗎？",
+    "undo": "復原",
+    "itemDeleted": "已刪除",
+    "unsavedChangesShort": "未儲存的變更",
+    "unsavedChangesTitle": "未儲存的變更",
     "save": "儲存",
     "cancel": "取消",
     "close": "關閉",
@@ -188,10 +193,12 @@
     "chorister": "領唱",
     "organist": "司琴（風琴）",
     "preludeMusic": "開會前音樂",
-    "meetingLinkLabel": "視訊會議連結（Zoom）",
+    "meetingLinkLabel": "視訊會議連結",
     "meetingLinkHelp": "設定後，公開程序頂部會顯示「加入」按鈕。",
-    "joinMeeting": "透過 Zoom 加入",
-    "joinMeetingPrint": "線上加入："
+    "joinMeeting": "透過 {{platform}} 加入",
+    "joinMeetingGeneric": "線上加入會議",
+    "joinMeetingPrint": "線上加入：",
+    "draftRestored": "已恢復此裝置上未儲存的變更"
   },
   "terminology": {
     "ward": "支會",

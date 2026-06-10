@@ -1230,13 +1230,21 @@ export const bulletinService = {
   },
 
   async getBulletinById(bulletinId: string) {
-    // Try local storage first
-    const localBulletins = this.getFromLocalStorage();
-    const localBulletin = localBulletins.find(b => b.id === bulletinId);
-    if (localBulletin) {
-      return localBulletin;
+    // Network-first: the cached copy in localStorage is only updated when THIS
+    // device saves, so it goes stale as soon as the bulletin is edited anywhere
+    // else. Use it solely as an offline/error fallback.
+    try {
+      return await this.fetchBulletinById(bulletinId);
+    } catch (networkError) {
+      const localBulletin = this.getFromLocalStorage().find(b => b.id === bulletinId);
+      if (localBulletin) {
+        return localBulletin;
+      }
+      throw networkError;
     }
-    
+  },
+
+  async fetchBulletinById(bulletinId: string) {
     // Select only columns that exist and are accessible via RLS
     // Avoid select=* which can cause 406 errors if RLS blocks certain columns
     const { data, error } = await supabase
@@ -1358,9 +1366,10 @@ export const bulletinService = {
     const storedImageUrl = tokenResults[16];
     const imagePosition = tokenResults[17];
 
-    return {
+    const freshBulletin = {
       id: data.id,
       user_id: data.created_by,
+      created_by: data.created_by,
       profile_slug: data.profile_slug,
       ward_name: wardName || '',
       date: data.meeting_date,
@@ -1385,6 +1394,9 @@ export const bulletinService = {
       created_at: data.created_at,
       updated_at: data.created_at
     };
+    // Keep the offline fallback copy as fresh as the last successful fetch.
+    this.saveToLocalStorage(freshBulletin);
+    return freshBulletin;
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {

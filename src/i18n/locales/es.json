@@ -6,6 +6,11 @@
     "myQrCode": "Mi Código QR",
     "signIn": "Iniciar Sesión",
     "signOut": "Cerrar Sesión",
+    "signOutUnsavedConfirm": "Tienes cambios sin guardar. ¿Cerrar sesión de todos modos?",
+    "undo": "Deshacer",
+    "itemDeleted": "Eliminado",
+    "unsavedChangesShort": "Cambios sin guardar",
+    "unsavedChangesTitle": "Cambios sin guardar",
     "save": "Guardar",
     "cancel": "Cancelar",
     "close": "Cerrar",
@@ -188,10 +193,12 @@
     "chorister": "Director de Música",
     "organist": "Organista",
     "preludeMusic": "Música de Preludio",
-    "meetingLinkLabel": "Enlace de reunión virtual (Zoom)",
+    "meetingLinkLabel": "Enlace de reunión virtual",
     "meetingLinkHelp": "Si se establece, aparecerá un botón 'Unirse' en la parte superior del programa público.",
-    "joinMeeting": "Unirse por Zoom",
-    "joinMeetingPrint": "Únase en línea:"
+    "joinMeeting": "Unirse por {{platform}}",
+    "joinMeetingGeneric": "Unirse a la reunión en línea",
+    "joinMeetingPrint": "Únase en línea:",
+    "draftRestored": "Se restauraron tus cambios no guardados de este dispositivo"
   },
   "terminology": {
     "ward": "Barrio",

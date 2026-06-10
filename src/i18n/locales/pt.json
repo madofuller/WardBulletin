@@ -6,6 +6,11 @@
     "myQrCode": "Meu Código QR",
     "signIn": "Entrar",
     "signOut": "Sair",
+    "signOutUnsavedConfirm": "Você tem alterações não salvas. Sair mesmo assim?",
+    "undo": "Desfazer",
+    "itemDeleted": "Excluído",
+    "unsavedChangesShort": "Alterações não salvas",
+    "unsavedChangesTitle": "Alterações não salvas",
     "save": "Salvar",
     "cancel": "Cancelar",
     "close": "Fechar",
@@ -188,10 +193,12 @@
     "chorister": "Regente",
     "organist": "Organista",
     "preludeMusic": "Música de Prelúdio",
-    "meetingLinkLabel": "Link da reunião virtual (Zoom)",
+    "meetingLinkLabel": "Link da reunião virtual",
     "meetingLinkHelp": "Se definido, um botão 'Participar' aparecerá no topo do programa público.",
-    "joinMeeting": "Participar via Zoom",
-    "joinMeetingPrint": "Participe on-line:"
+    "joinMeeting": "Participar via {{platform}}",
+    "joinMeetingGeneric": "Participar da reunião on-line",
+    "joinMeetingPrint": "Participe on-line:",
+    "draftRestored": "Suas alterações não salvas neste dispositivo foram restauradas"
   },
   "terminology": {
     "ward": "Ala",

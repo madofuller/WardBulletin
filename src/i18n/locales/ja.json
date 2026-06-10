@@ -6,6 +6,11 @@
     "myQrCode": "マイQRコード",
     "signIn": "サインイン",
     "signOut": "サインアウト",
+    "signOutUnsavedConfirm": "未保存の変更があります。サインアウトしますか？",
+    "undo": "元に戻す",
+    "itemDeleted": "削除しました",
+    "unsavedChangesShort": "未保存の変更",
+    "unsavedChangesTitle": "未保存の変更",
     "save": "保存",
     "cancel": "キャンセル",
     "close": "閉じる",
@@ -188,10 +193,12 @@
     "chorister": "聖歌隊指揮者",
     "organist": "オルガニスト",
     "preludeMusic": "前奏",
-    "meetingLinkLabel": "オンライン参加リンク（Zoom）",
+    "meetingLinkLabel": "オンライン参加リンク",
     "meetingLinkHelp": "設定すると、公開プログラムの上部に「参加」ボタンが表示されます。",
-    "joinMeeting": "Zoomで参加",
-    "joinMeetingPrint": "オンライン参加："
+    "joinMeeting": "{{platform}}で参加",
+    "joinMeetingGeneric": "オンラインで参加",
+    "joinMeetingPrint": "オンライン参加：",
+    "draftRestored": "この端末の未保存の変更を復元しました"
   },
   "terminology": {
     "ward": "ワード",

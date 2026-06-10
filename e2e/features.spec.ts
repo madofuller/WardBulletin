@@ -34,6 +34,25 @@ test.describe('new features', () => {
     errors.assertClean();
   });
 
+  test('Join button label adapts to the meeting platform', async ({ page }) => {
+    const errors = watchErrors(page);
+    await gotoEditor(page);
+
+    const input = page.locator('#meeting-link-input');
+    const panel = page.locator('#tab-panel-program');
+
+    await input.fill('https://meet.google.com/abc-defg-hij');
+    await expect(panel.getByRole('link', { name: 'Join via Google Meet' })).toBeVisible();
+
+    await input.fill('https://teams.microsoft.com/l/meetup-join/xyz');
+    await expect(panel.getByRole('link', { name: 'Join via Microsoft Teams' })).toBeVisible();
+
+    // Unknown service falls back to a generic label.
+    await input.fill('https://example.com/our-meeting-room');
+    await expect(panel.getByRole('link', { name: 'Join meeting online' })).toBeVisible();
+    errors.assertClean();
+  });
+
   test('Zoom link without protocol is normalized to https', async ({ page }) => {
     const errors = watchErrors(page);
     await gotoEditor(page);

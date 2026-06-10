@@ -40,7 +40,9 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
 
   const handleDelete = (id: string) => {
     if (!confirm(t('modals.confirmDelete'))) return;
-    templateService.deleteTemplate(id);
+    if (!templateService.deleteTemplate(id)) {
+      alert(t('templates.storageError', 'Browser storage is unavailable — the template could not be deleted.'));
+    }
     setTemplates(templateService.listTemplates());
   };
 
@@ -51,7 +53,9 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
 
   const commitRename = () => {
     if (renameId) {
-      templateService.renameTemplate(renameId, newName);
+      if (!templateService.renameTemplate(renameId, newName)) {
+        alert(t('templates.storageError', 'Browser storage is unavailable — the template could not be renamed.'));
+      }
       setTemplates(templateService.listTemplates());
       setRenameId(null);
     }
