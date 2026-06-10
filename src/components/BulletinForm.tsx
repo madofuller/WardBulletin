@@ -33,7 +33,7 @@ interface BulletinFormProps {
   onImagesRefresh?: () => void;
 }
 
-export default function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
+function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   useEffect(() => { preloadSongData(currentLang); }, [currentLang]);
@@ -2971,3 +2971,4 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     </div>
   );
 }
+export default React.memo(BulletinForm);

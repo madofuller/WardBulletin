@@ -77,12 +77,12 @@ function EditorApp() {
     loadAllImages();
   }, [user]);
 
-  const loadAllImages = async () => {
+  const loadAllImages = useCallback(async () => {
     // Always load images - LDS_IMAGES are available to everyone
     // Custom images are only loaded if user is logged in
     const images = await getAllImages(user?.id);
     setAllImages(images);
-  };
+  }, [user?.id]);
 
   // Get the current profile slug (from URL or user's profile)
   // If user has shared profiles and no slug is specified, default to first shared profile
@@ -675,6 +675,39 @@ function EditorApp() {
     }
     draftSaveTimerRef.current = setTimeout(flushDraftSave, 400);
   }, [flushDraftSave]);
+
+  // Stable handlers for BulletinPreview so unrelated state changes (modals,
+  // loading flags, toasts) don't hand it new function identities every render.
+  // They depend on bulletinData, so they only change when the data itself does.
+  const handleImagePositionChange = useCallback((position: { x: number; y: number }) => {
+    // Only update if the position actually changed and is different from current
+    const currentPosition = bulletinData.imagePosition || { x: 50, y: 50 };
+    if (position.x !== currentPosition.x || position.y !== currentPosition.y) {
+      handleBulletinDataChange({
+        ...bulletinData,
+        imagePosition: position
+      });
+    }
+  }, [bulletinData, handleBulletinDataChange]);
+
+  const handleImageOpacityChange = useCallback((opacity: number) => {
+    handleBulletinDataChange({
+      ...bulletinData,
+      imageOpacity: opacity
+    });
+  }, [bulletinData, handleBulletinDataChange]);
+
+  // Stable props for the always-mounted hidden print portal so it only
+  // re-renders when the bulletin data (or profile slug) actually changes.
+  const printLayoutData = useMemo(() => ({
+    ...bulletinData,
+    profileSlug: currentProfileSlug || 'your-profile-slug'
+  }), [bulletinData, currentProfileSlug]);
+
+  const printLayoutRefs = useMemo(() => ({
+    page1: printPage1Ref,
+    page2: printPage2Ref
+  }), [printPage1Ref, printPage2Ref]);
 
   // Sync ref when bulletinData changes externally (e.g., loading a bulletin)
   useEffect(() => {
@@ -1857,22 +1890,8 @@ function EditorApp() {
                 <BulletinPreview
                   data={bulletinData}
                   allImages={allImages}
-                  onImagePositionChange={(position) => {
-                    // Only update if the position actually changed and is different from current
-                    const currentPosition = bulletinData.imagePosition || { x: 50, y: 50 };
-                    if (position.x !== currentPosition.x || position.y !== currentPosition.y) {
-                      handleBulletinDataChange({
-                        ...bulletinData,
-                        imagePosition: position
-                      });
-                    }
-                  }}
-                  onImageOpacityChange={(opacity) => {
-                    handleBulletinDataChange({
-                      ...bulletinData,
-                      imageOpacity: opacity
-                    });
-                  }}
+                  onImagePositionChange={handleImagePositionChange}
+                  onImageOpacityChange={handleImageOpacityChange}
                 />
               </div>
 
@@ -2118,11 +2137,8 @@ function EditorApp() {
         {createPortal(
           <div className="print-source-portal" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
             <BulletinPrintLayout
-              data={{
-                ...bulletinData,
-                profileSlug: currentProfileSlug || 'your-profile-slug'
-              }}
-              refs={{ page1: printPage1Ref, page2: printPage2Ref }}
+              data={printLayoutData}
+              refs={printLayoutRefs}
             />
           </div>,
           document.body

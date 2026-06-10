@@ -376,7 +376,7 @@ function AnnouncementItem({
 
 /* ------------------------------- Main export ------------------------------- */
 
-export default function BulletinPreview({
+function BulletinPreview({
   data,
   hideTabs = false,
   hideImageControls = false,
@@ -1207,3 +1207,5 @@ export default function BulletinPreview({
     </div>
   );
 }
+
+export default React.memo(BulletinPreview);

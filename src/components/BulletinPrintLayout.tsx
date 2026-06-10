@@ -998,7 +998,7 @@ function PrintQRCode({ profileSlug, size = 128 }: { profileSlug: string; size?: 
   );
 }
 
-export default BulletinPrintLayout;
+export default React.memo(BulletinPrintLayout);
 
 function ProgramTableRow({ label, value, extra }: { label: string, value?: string, extra?: string }) {
   return (
