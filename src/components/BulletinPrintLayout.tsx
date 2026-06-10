@@ -320,7 +320,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   const announcementCount = (data.announcements || []).length;
   const announcementTotalChars = (data.announcements || []).reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
-  const announcementsContentKey = announcementCount + ':' + announcementTotalChars;
+  const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
+  // Debounce the content key so the auto-fit measure/shrink loop (forced
+  // reflows of two full off-screen print pages) runs once per typing pause
+  // instead of on every keystroke.
+  const [announcementsContentKey, setAnnouncementsContentKey] = useState(announcementsContentKeyRaw);
+  useEffect(() => {
+    if (announcementsContentKeyRaw === announcementsContentKey) return;
+    const timer = setTimeout(() => setAnnouncementsContentKey(announcementsContentKeyRaw), 500);
+    return () => clearTimeout(timer);
+  }, [announcementsContentKeyRaw, announcementsContentKey]);
   const isHeavyContent = announcementTotalChars > 2000;
   const isLightContent = announcementTotalChars < 800;
 

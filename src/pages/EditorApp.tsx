@@ -408,7 +408,9 @@ function EditorApp() {
   const bulletinRef = useRef<HTMLDivElement>(null);
   const printPage1Ref = useRef<HTMLDivElement>(null);
   const printPage2Ref = useRef<HTMLDivElement>(null);
-  const previousDataRef = useRef<string | null>(null);
+  const previousDataRef = useRef<BulletinData | null>(null);
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDraftRef = useRef<BulletinData | null>(null);
 
   // Add a helper for draft key
   const DRAFT_KEY = 'draft_bulletin';
@@ -598,20 +600,11 @@ function EditorApp() {
   };
   };
 
-  const handleBulletinDataChange = useCallback((newData: BulletinData) => {
-    // Prevent infinite loops by checking if data actually changed
-    const newDataString = JSON.stringify(newData);
-    if (previousDataRef.current === newDataString) {
-      return; // Data hasn't changed, skip update
-    }
-    previousDataRef.current = newDataString;
-    
-    setBulletinData(newData);
-    
+  const writeDraftToStorage = useCallback((data: BulletinData) => {
     // Try to save to localStorage with error handling and quota management
     try {
-      const dataToSave = newDataString;
-      
+      const dataToSave = JSON.stringify(data);
+
       // Check if data is too large (localStorage typically has 5-10MB limit)
       if (dataToSave.length > 3 * 1024 * 1024) { // 3MB threshold for safety
         // Try to clear old bulletin data to make space
@@ -626,19 +619,14 @@ function EditorApp() {
           // Try again after clearing
           if (dataToSave.length < 4 * 1024 * 1024) {
             localStorage.setItem(DRAFT_KEY, dataToSave);
-            setHasUnsavedChanges(true);
-            return;
           }
         } catch (clearError) {
           // Failed to clear old data
         }
-
-        setHasUnsavedChanges(true);
         return;
       }
 
       localStorage.setItem(DRAFT_KEY, dataToSave);
-      setHasUnsavedChanges(true);
     } catch (error) {
       // If it's a quota exceeded error, try to clear old data
       if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
@@ -651,23 +639,69 @@ function EditorApp() {
           });
 
           // Try one more time
-          localStorage.setItem(DRAFT_KEY, newDataString);
-          setHasUnsavedChanges(true);
-          return;
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
         } catch (retryError) {
           // Failed to save even after clearing
         }
       }
-
-      // Still mark as having changes, but don't save to localStorage
-      setHasUnsavedChanges(true);
     }
   }, []);
 
+  const flushDraftSave = useCallback(() => {
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+      draftSaveTimerRef.current = null;
+    }
+    if (pendingDraftRef.current) {
+      writeDraftToStorage(pendingDraftRef.current);
+      pendingDraftRef.current = null;
+    }
+  }, [writeDraftToStorage]);
+
+  const handleBulletinDataChange = useCallback((newData: BulletinData) => {
+    if (previousDataRef.current === newData) {
+      return; // Same object reference, nothing changed
+    }
+    previousDataRef.current = newData;
+
+    setBulletinData(newData);
+    setHasUnsavedChanges(true);
+
+    // Debounce the multi-MB serialization + synchronous localStorage write
+    // so typing stays responsive on large bulletins.
+    pendingDraftRef.current = newData;
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+    }
+    draftSaveTimerRef.current = setTimeout(flushDraftSave, 400);
+  }, [flushDraftSave]);
+
   // Sync ref when bulletinData changes externally (e.g., loading a bulletin)
   useEffect(() => {
-    previousDataRef.current = JSON.stringify(bulletinData);
+    previousDataRef.current = bulletinData;
   }, [bulletinData]);
+
+  // Flush pending draft writes when the tab is hidden or closing, and warn
+  // about unsaved changes before the page unloads.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushDraftSave();
+    };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      flushDraftSave();
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      flushDraftSave();
+    };
+  }, [flushDraftSave, hasUnsavedChanges]);
 
 
 
@@ -690,9 +724,16 @@ function EditorApp() {
       const now = Date.now();
       const msLeft = exp - now;
       if (msLeft < 2 * 60 * 1000) { // less than 2 minutes left
-        toast.warning('Session expired or about to expire. Please sign in again.');
-        await supabase.auth.signOut();
-        window.location.reload();
+        // Try to refresh first - supabase-js auto-refresh may simply not have
+        // fired yet. Only force a sign-out when refresh fails AND the token
+        // is actually expired, otherwise an idle-but-valid session gets
+        // destroyed mid-edit.
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError && msLeft <= 0) {
+          toast.warning('Session expired. Please sign in again.');
+          await supabase.auth.signOut();
+          window.location.reload();
+        }
       }
     }
     checkJwtExpiration();
@@ -973,7 +1014,8 @@ function EditorApp() {
         const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
           bulletinData,
           user.id,
-          undefined
+          undefined,
+          currentProfileSlug || undefined
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);
@@ -1192,7 +1234,8 @@ function EditorApp() {
         const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
           bulletinData,
           user.id,
-          undefined
+          undefined,
+          currentProfileSlug || undefined
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);

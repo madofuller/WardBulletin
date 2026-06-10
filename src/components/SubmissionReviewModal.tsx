@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { decodeHtml } from '../lib/decodeHtml';
 import { toast } from 'react-toastify';
 import { SkeletonList } from './SkeletonLoader';
 
@@ -371,7 +373,7 @@ export default function SubmissionReviewModal({
                                 </div>
                                 <div 
                                   className="text-gray-600 text-sm mb-2"
-                                  dangerouslySetInnerHTML={{ __html: submission.content }}
+                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(decodeHtml(submission.content)) }}
                                 />
                                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                                   <span>{t('submissions.from')}: {submission.submitter_name}</span>

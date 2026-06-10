@@ -516,7 +516,7 @@ export default function BulletinPreview({
                   role="tab"
                   aria-selected={activeTab === tab}
                   aria-controls={`tab-panel-${tab}`}
-                  className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base sm:text-base
+                  className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border-2 transition-all duration-200 text-base sm:text-base
                     ${activeTab === tab
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
