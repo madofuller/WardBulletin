@@ -187,7 +187,11 @@
     "conducting": "Direzione",
     "chorister": "Direttore della Musica",
     "organist": "Organista",
-    "preludeMusic": "Musica di Preludio"
+    "preludeMusic": "Musica di Preludio",
+    "meetingLinkLabel": "Link alla riunione virtuale (Zoom)",
+    "meetingLinkHelp": "Se impostato, in cima al programma pubblico apparirà un pulsante 'Partecipa'.",
+    "joinMeeting": "Partecipa via Zoom",
+    "joinMeetingPrint": "Partecipa online:"
   },
   "terminology": {
     "ward": "Rione",

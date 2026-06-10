@@ -187,7 +187,11 @@
     "conducting": "사회",
     "chorister": "찬송 인도자",
     "organist": "오르간 반주자",
-    "preludeMusic": "전주곡"
+    "preludeMusic": "전주곡",
+    "meetingLinkLabel": "화상 모임 링크 (Zoom)",
+    "meetingLinkHelp": "설정하면 공개 프로그램 상단에 '참여' 버튼이 표시됩니다.",
+    "joinMeeting": "Zoom으로 참여",
+    "joinMeetingPrint": "온라인 참여:"
   },
   "terminology": {
     "ward": "와드",

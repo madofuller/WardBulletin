@@ -187,7 +187,11 @@
     "conducting": "Conducting",
     "chorister": "Chorister",
     "organist": "Organist",
-    "preludeMusic": "Prelude Music"
+    "preludeMusic": "Prelude Music",
+    "meetingLinkLabel": "Virtual meeting link (Zoom)",
+    "meetingLinkHelp": "If set, a 'Join' button appears at the top of the public program.",
+    "joinMeeting": "Join via Zoom",
+    "joinMeetingPrint": "Join online:"
   },
   "terminology": {
     "ward": "Ward",

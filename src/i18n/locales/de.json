@@ -187,7 +187,11 @@
     "conducting": "Leitung",
     "chorister": "Chorleiter",
     "organist": "Organist",
-    "preludeMusic": "Vorspielmusik"
+    "preludeMusic": "Vorspielmusik",
+    "meetingLinkLabel": "Link zur virtuellen Versammlung (Zoom)",
+    "meetingLinkHelp": "Wenn angegeben, erscheint oben im öffentlichen Programm eine Schaltfläche „Teilnehmen“.",
+    "joinMeeting": "Per Zoom teilnehmen",
+    "joinMeetingPrint": "Online teilnehmen:"
   },
   "terminology": {
     "ward": "Gemeinde",

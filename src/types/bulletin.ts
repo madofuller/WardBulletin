@@ -68,6 +68,8 @@ export interface Leadership {
   organist: string;
   organistLabel?: 'Organist' | 'Pianist';
   preludeMusic?: string;
+  /** Optional video-meeting URL (e.g. Zoom) shown at the top of the program */
+  meetingLink?: string;
 }
 
 export interface Speaker {

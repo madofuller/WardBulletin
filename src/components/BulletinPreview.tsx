@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
@@ -558,6 +559,23 @@ export default function BulletinPreview({
               />
             )}
           </div>
+
+          {/* Virtual meeting link (e.g. Zoom) */}
+          {typeof data?.leadership?.meetingLink === 'string' && data.leadership.meetingLink.trim() !== '' && (
+            <div className="flex justify-center print:hidden">
+              <a
+                href={/^https?:\/\//i.test(data.leadership.meetingLink.trim())
+                  ? data.leadership.meetingLink.trim()
+                  : `https://${data.leadership.meetingLink.trim()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors"
+              >
+                <Video className="w-4 h-4" aria-hidden="true" />
+                {t('bulletin.joinMeeting')}
+              </a>
+            </div>
+          )}
 
           {/* Leadership */}
           <div className="space-y-1">

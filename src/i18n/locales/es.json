@@ -187,7 +187,11 @@
     "conducting": "Dirigiendo",
     "chorister": "Director de Música",
     "organist": "Organista",
-    "preludeMusic": "Música de Preludio"
+    "preludeMusic": "Música de Preludio",
+    "meetingLinkLabel": "Enlace de reunión virtual (Zoom)",
+    "meetingLinkHelp": "Si se establece, aparecerá un botón 'Unirse' en la parte superior del programa público.",
+    "joinMeeting": "Unirse por Zoom",
+    "joinMeetingPrint": "Únase en línea:"
   },
   "terminology": {
     "ward": "Barrio",

@@ -834,6 +834,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </>
           )}
 
+          {data.leadership?.meetingLink && data.leadership.meetingLink.trim() !== '' && (
+            <p className="text-xs text-gray-600 mb-2 print:!text-sm">
+              {t('bulletin.joinMeetingPrint')} {data.leadership.meetingLink.trim()}
+            </p>
+          )}
+
           <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
             <tbody>
               <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />

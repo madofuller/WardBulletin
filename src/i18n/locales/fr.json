@@ -187,7 +187,11 @@
     "conducting": "Direction",
     "chorister": "Choriste",
     "organist": "Organiste",
-    "preludeMusic": "Musique de prélude"
+    "preludeMusic": "Musique de prélude",
+    "meetingLinkLabel": "Lien de réunion virtuelle (Zoom)",
+    "meetingLinkHelp": "Si renseigné, un bouton « Rejoindre » apparaît en haut du programme public.",
+    "joinMeeting": "Rejoindre via Zoom",
+    "joinMeetingPrint": "Rejoindre en ligne :"
   },
   "terminology": {
     "ward": "Paroisse",

@@ -187,7 +187,11 @@
     "conducting": "Dirigindo",
     "chorister": "Regente",
     "organist": "Organista",
-    "preludeMusic": "Música de Prelúdio"
+    "preludeMusic": "Música de Prelúdio",
+    "meetingLinkLabel": "Link da reunião virtual (Zoom)",
+    "meetingLinkHelp": "Se definido, um botão 'Participar' aparecerá no topo do programa público.",
+    "joinMeeting": "Participar via Zoom",
+    "joinMeetingPrint": "Participe on-line:"
   },
   "terminology": {
     "ward": "Ala",

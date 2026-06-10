@@ -1046,6 +1046,20 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 </div>
               </div>
             </div>
+
+            {/* Virtual meeting link (Zoom) */}
+            <div>
+              <label htmlFor="meeting-link-input" className="block text-base font-medium text-gray-700 mb-2">{t('bulletin.meetingLinkLabel')}</label>
+              <input
+                id="meeting-link-input"
+                type="url"
+                value={data.leadership.meetingLink || ''}
+                onChange={(e) => updateField('leadership', { ...data.leadership, meetingLink: e.target.value })}
+                placeholder="https://zoom.us/j/..."
+                className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="mt-1 text-sm text-gray-500">{t('bulletin.meetingLinkHelp')}</p>
+            </div>
           </section>
 
           {/* Music Program */}

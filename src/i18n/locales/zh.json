@@ -187,7 +187,11 @@
     "conducting": "主持",
     "chorister": "領唱",
     "organist": "司琴（風琴）",
-    "preludeMusic": "開會前音樂"
+    "preludeMusic": "開會前音樂",
+    "meetingLinkLabel": "視訊會議連結（Zoom）",
+    "meetingLinkHelp": "設定後，公開程序頂部會顯示「加入」按鈕。",
+    "joinMeeting": "透過 Zoom 加入",
+    "joinMeetingPrint": "線上加入："
   },
   "terminology": {
     "ward": "支會",

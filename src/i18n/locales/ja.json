@@ -187,7 +187,11 @@
     "conducting": "進行",
     "chorister": "聖歌隊指揮者",
     "organist": "オルガニスト",
-    "preludeMusic": "前奏"
+    "preludeMusic": "前奏",
+    "meetingLinkLabel": "オンライン参加リンク（Zoom）",
+    "meetingLinkHelp": "設定すると、公開プログラムの上部に「参加」ボタンが表示されます。",
+    "joinMeeting": "Zoomで参加",
+    "joinMeetingPrint": "オンライン参加："
   },
   "terminology": {
     "ward": "ワード",
