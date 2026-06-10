@@ -153,14 +153,58 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   };
 
   const updateAnnouncement = (id: string, field: keyof Announcement, value: any) => {
-    const updated = data.announcements.map(ann => 
+    const updated = data.announcements.map(ann =>
       ann.id === id ? { ...ann, [field]: value } : ann
     );
     updateField('announcements', updated);
   };
 
+  // Stable per-announcement content handlers so the memoized HtmlEditor's
+  // props don't change identity on every parent render — that stability is
+  // what lets the other 24 Quill instances skip re-rendering per keystroke.
+  const updateAnnouncementRef = useRef(updateAnnouncement);
+  updateAnnouncementRef.current = updateAnnouncement;
+  const contentHandlersRef = useRef<Record<string, (value: string) => void>>({});
+  const getAnnouncementContentHandler = (id: string) => {
+    if (!contentHandlersRef.current[id]) {
+      contentHandlersRef.current[id] = (value: string) =>
+        updateAnnouncementRef.current(id, 'content', value || '');
+    }
+    return contentHandlersRef.current[id];
+  };
+
   const removeAnnouncement = (id: string) => {
     removeWithUndo('announcements', id);
+  };
+
+  // The announcements UI is grouped by audience, but the data is one flat
+  // array. Reorder must swap with the nearest SAME-audience neighbor:
+  // swapping with a flat-array neighbor from another group is invisible in
+  // the grouped UI and can even flip whole sections (group order is
+  // first-occurrence order). Swapping two same-audience positions provably
+  // leaves every other group's order and all section order untouched.
+  const moveAnnouncementInGroup = (id: string, direction: -1 | 1) => {
+    const list = data.announcements;
+    const index = list.findIndex(a => a.id === id);
+    if (index === -1) return;
+    const audience = list[index].audience;
+    let neighbor = -1;
+    for (let i = index + direction; i >= 0 && i < list.length; i += direction) {
+      if (list[i].audience === audience) { neighbor = i; break; }
+    }
+    if (neighbor === -1) return;
+    const updated = [...list];
+    [updated[index], updated[neighbor]] = [updated[neighbor], updated[index]];
+    updateField('announcements', updated);
+  };
+
+  const announcementGroupPosition = (id: string): { first: boolean; last: boolean } => {
+    const list = data.announcements;
+    const item = list.find(a => a.id === id);
+    if (!item) return { first: true, last: true };
+    const group = list.filter(a => a.audience === item.audience);
+    const gi = group.findIndex(a => a.id === id);
+    return { first: gi === 0, last: gi === group.length - 1 };
   };
 
           const handleRecurringAnnouncementSelected = (announcement: any) => {
@@ -619,15 +663,6 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   // Helper to check if an audience is standalone (not grouped)
   const isStandaloneAudience = (audience: string) => {
     return audience.startsWith('standalone_');
-  };
-
-  // Add the moveAnnouncement function near the other move functions:
-  const moveAnnouncement = (idx: number, direction: -1 | 1) => {
-    const newAnnouncements = [...data.announcements];
-    const targetIdx = idx + direction;
-    if (targetIdx < 0 || targetIdx >= newAnnouncements.length) return;
-    [newAnnouncements[idx], newAnnouncements[targetIdx]] = [newAnnouncements[targetIdx], newAnnouncements[idx]];
-    updateField('announcements', newAnnouncements);
   };
 
   const moveImage = (announcementId: string, imageIndex: number, direction: -1 | 1) => {
@@ -1843,32 +1878,18 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               </div>
                               {/* Action buttons row */}
                               <div className="flex items-center gap-2 flex-wrap">
-                                {/* Up/Down buttons - move announcement globally in the list */}
+                                {/* Up/Down buttons - move announcement within its audience group */}
                                 <button
-                                  onClick={() => {
-                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                    if (currentIndex > 0) {
-                                      const updated = [...data.announcements];
-                                      [updated[currentIndex - 1], updated[currentIndex]] = [updated[currentIndex], updated[currentIndex - 1]];
-                                      updateField('announcements', updated);
-                                    }
-                                  }}
-                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === 0}
+                                  onClick={() => moveAnnouncementInGroup(announcement.id, -1)}
+                                  disabled={announcementGroupPosition(announcement.id).first}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                                   title={t('form.moveUp')}
                                 >
                                   ↑ {t('form.up')}
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                    if (currentIndex < data.announcements.length - 1) {
-                                      const updated = [...data.announcements];
-                                      [updated[currentIndex], updated[currentIndex + 1]] = [updated[currentIndex + 1], updated[currentIndex]];
-                                      updateField('announcements', updated);
-                                    }
-                                  }}
-                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === data.announcements.length - 1}
+                                  onClick={() => moveAnnouncementInGroup(announcement.id, 1)}
+                                  disabled={announcementGroupPosition(announcement.id).last}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                                   title={t('form.moveDown')}
                                 >
@@ -1919,7 +1940,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               </div>
                               <HtmlEditor
                                 value={announcement.content}
-                                onChange={(value) => updateAnnouncement(announcement.id, 'content', value || '')}
+                                onChange={getAnnouncementContentHandler(announcement.id)}
                                 placeholder={t('form.announcementContentPlaceholder')}
                               />
                   

@@ -6,6 +6,7 @@ import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { linkifyHtml } from '../lib/linkifyHtml';
 import { decodeHtml } from '../lib/decodeHtml';
 import { detectMeetingPlatform, normalizeMeetingUrl } from '../lib/meetingPlatform';
+import { sanitizedAnnouncementHtml } from '../lib/sanitizeCache';
 import { getSongUrl, getSongTitle } from '../lib/songService';
 import { getImageByIdSync, LDS_IMAGES, ImageData } from '../data/images';
 
@@ -487,7 +488,7 @@ function BulletinPreview({
       return {
         ...a,
         audienceLabel: label,
-        html: linkifyHtml(sanitizeHtml(decodeHtml(a.content ?? ""))),
+        html: sanitizedAnnouncementHtml(a.content ?? ""),
       };
     });
   }, [data?.announcements, unitTypeOverride]);

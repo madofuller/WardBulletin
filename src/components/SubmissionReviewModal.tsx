@@ -52,7 +52,15 @@ export default function SubmissionReviewModal({
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-  const [notes, setNotes] = useState('');
+  // Notes are per submission: a single shared string would mirror into every
+  // pending submission's textarea and attach one note to unrelated records.
+  const [notesById, setNotesById] = useState<Record<string, string>>({});
+  const getNotes = (id: string) => notesById[id] || '';
+  const clearNotes = (id: string) => setNotesById(prev => {
+    const next = { ...prev };
+    delete next[id];
+    return next;
+  });
   const [processing, setProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
@@ -106,22 +114,22 @@ export default function SubmissionReviewModal({
     try {
       const { error } = await supabase
         .from('announcement_submissions')
-        .update({ 
+        .update({
           status: 'approved',
-          notes: notes.trim() || null
+          notes: getNotes(submission.id).trim() || null
         })
         .eq('id', submission.id);
 
       if (error) throw error;
 
-      
+
 
       // Add to bulletin
       onSubmissionApproved(submission);
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
+      clearNotes(submission.id);
       
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
@@ -140,19 +148,19 @@ export default function SubmissionReviewModal({
     try {
       const { error } = await supabase
         .from('announcement_submissions')
-        .update({ 
+        .update({
           status: 'rejected',
-          notes: notes.trim() || null
+          notes: getNotes(submission.id).trim() || null
         })
         .eq('id', submission.id);
 
       if (error) throw error;
 
-      
+
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
+      clearNotes(submission.id);
       
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
@@ -200,9 +208,9 @@ export default function SubmissionReviewModal({
         
         const { error } = await supabase
           .from('announcement_submissions')
-          .update({ 
+          .update({
             status: 'approved',
-            notes: notes.trim() || null
+            notes: getNotes(submission.id).trim() || null
           })
           .eq('id', submission.id);
 
@@ -250,11 +258,11 @@ export default function SubmissionReviewModal({
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
-      
+      groupSubmissions.forEach(s => clearNotes(s.id));
+
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
-      
+
       toast.success(t('submissions.groupApprovedAndConsolidated', { audience: audience.replace('_', ' ') }));
 
     } catch (error) {
@@ -407,8 +415,8 @@ export default function SubmissionReviewModal({
                                     {t('submissions.notesOptional')}
                                   </label>
                                   <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
+                                    value={getNotes(submission.id)}
+                                    onChange={(e) => setNotesById(prev => ({ ...prev, [submission.id]: e.target.value }))}
                                     placeholder={t('submissions.addFeedbackPlaceholder')}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                                     rows={2}

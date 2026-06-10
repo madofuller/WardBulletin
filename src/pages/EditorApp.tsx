@@ -694,7 +694,11 @@ function EditorApp() {
     };
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       flushDraftSave();
-      if (hasUnsavedChanges) {
+      // Warn only when a cloud save is actually pending (signed in). For
+      // signed-out users the flushed local draft fully preserves the work
+      // and restores on return, so the browser dialog would be a false
+      // alarm on every single tab close.
+      if (hasUnsavedChanges && user) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -706,7 +710,7 @@ function EditorApp() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       flushDraftSave();
     };
-  }, [flushDraftSave, hasUnsavedChanges]);
+  }, [flushDraftSave, hasUnsavedChanges, user]);
 
 
 
@@ -1292,7 +1296,7 @@ function EditorApp() {
     }
   };
 
-  const handleScheduleBulletin = async (scheduledDate: string) => {
+  const handleScheduleBulletin = async (scheduledDate: string, autoActivate: boolean = true) => {
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -1327,7 +1331,7 @@ function EditorApp() {
       await bulletinService.updateBulletinSchedule(bulletinId, user.id, {
         scheduledDate,
         status: 'scheduled',
-        autoActivate: true
+        autoActivate
       });
 
       toast.success(`Bulletin scheduled for ${new Date(scheduledDate).toLocaleDateString()}`);

@@ -1,6 +1,6 @@
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { useRef, useCallback } from 'react';
+import { memo, useRef, useCallback } from 'react';
 
 interface HtmlEditorProps {
   value: string;
@@ -25,7 +25,10 @@ const formats = [
   'link'
 ];
 
-export default function HtmlEditor({ value, onChange, placeholder = 'Enter content...' }: HtmlEditorProps) {
+// Memoized: a form with 25 announcements mounts 25 Quill instances, and
+// without memo every keystroke in ANY field re-renders all of them. Callers
+// must pass a stable onChange for the memo to hold.
+function HtmlEditor({ value, onChange, placeholder = 'Enter content...' }: HtmlEditorProps) {
   // Track the last value to prevent infinite loops
   const lastValueRef = useRef(value);
 
@@ -74,3 +77,5 @@ export default function HtmlEditor({ value, onChange, placeholder = 'Enter conte
     </div>
   );
 }
+
+export default memo(HtmlEditor);
