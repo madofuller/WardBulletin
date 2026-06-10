@@ -62,6 +62,20 @@ export default function SubmissionReviewModal({
     }
   }, [isOpen, profileSlug]);
 
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
   const fetchSubmissions = async () => {
     if (!supabase) return;
     
@@ -254,10 +268,10 @@ export default function SubmissionReviewModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-labelledby="submission-review-modal-title" className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">{t('submissions.reviewAnnouncementSubmissions')}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 id="submission-review-modal-title" className="text-xl font-semibold">{t('submissions.reviewAnnouncementSubmissions')}</h2>
+          <button autoFocus onClick={onClose} aria-label={t('common.close')} className="text-gray-400 hover:text-gray-600">
             ✕
           </button>
         </div>

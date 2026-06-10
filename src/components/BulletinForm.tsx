@@ -702,14 +702,25 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     <div className="space-y-8 font-sans">
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-4" aria-label="Main tabs">
-        <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
-          {['program', 'announcements', 'unitinfo'].map(tab => (
+        <ul role="tablist" className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+          {(['program', 'announcements', 'unitinfo'] as const).map(tab => (
             <li key={tab} role="presentation" className="w-full sm:w-auto">
               <button
                 type="button"
                 role="tab"
+                id={`form-tab-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
                 aria-selected={activeTab === tab}
-                aria-controls={`tab-panel-${tab}`}
+                aria-controls={`form-tab-panel-${tab}`}
+                onKeyDown={(e) => {
+                  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                  e.preventDefault();
+                  const tabs = ['program', 'announcements', 'unitinfo'] as const;
+                  const idx = tabs.indexOf(tab);
+                  const next = tabs[(idx + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                  setActiveTab(next);
+                  document.getElementById(`form-tab-${next}`)?.focus();
+                }}
                 className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 rounded-full font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border-2 transition-all duration-200 text-base sm:text-lg
                   ${activeTab === tab
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -725,7 +736,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       </nav>
       {/* Tab Content */}
       {activeTab === 'program' && (
-        <>
+        <div id="form-tab-panel-program" role="tabpanel" aria-labelledby="form-tab-program" className="space-y-8">
           {/* Basic Information */}
           <section className="space-y-4">
             <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
@@ -734,9 +745,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.wardName', { unit: getTranslatedUnitLabel(t) })}</label>
+                <label htmlFor="form-ward-name" className="block text-base font-medium text-gray-700 mb-2">{t('form.wardName', { unit: getTranslatedUnitLabel(t) })}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
+                    id="form-ward-name"
                     type="text"
                     value={data.wardName || ''}
                     onChange={(e) => updateField('wardName', e.target.value)}
@@ -754,8 +766,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.date')}</label>
+                <label htmlFor="form-date" className="block text-base font-medium text-gray-700 mb-2">{t('form.date')}</label>
                 <input
+                  id="form-date"
                   type="date"
                   value={data.date || ''}
                   onChange={(e) => updateField('date', e.target.value)}
@@ -765,8 +778,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             </div>
             <div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.themeScripture')}</label>
+                <label htmlFor="form-theme" className="block text-base font-medium text-gray-700 mb-2">{t('form.themeScripture')}</label>
                 <input
+                  id="form-theme"
                   type="text"
                   value={data.theme || ''}
                   onChange={(e) => updateField('theme', e.target.value)}
@@ -1622,10 +1636,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </button>
             </div>
           </section>
-        </>
+        </div>
       )}
       {activeTab === 'announcements' && (
-        <>
+        <div id="form-tab-panel-announcements" role="tabpanel" aria-labelledby="form-tab-announcements" className="space-y-8">
           {/* Announcements Section */}
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
@@ -2136,10 +2150,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </button>
             </div>
           </section>
-        </>
+        </div>
       )}
       {activeTab === 'unitinfo' && (
-        <>
+        <div id="form-tab-panel-unitinfo" role="tabpanel" aria-labelledby="form-tab-unitinfo" className="space-y-8">
           {/* Ward Leadership Section */}
           <section className="space-y-4">
             <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t) })}
@@ -2901,7 +2915,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               {t('form.addServiceMissionary')}
             </button>
           </section>
-        </>
+        </div>
       )}
 
       {/* Recurring Announcements Modal */}

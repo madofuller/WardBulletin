@@ -510,14 +510,25 @@ export default function BulletinPreview({
       {/* Tabs */}
       {!hideTabs && (
         <nav className="flex justify-center print:hidden mb-4 mt-4" aria-label="Main tabs">
-          <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+          <ul role="tablist" className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
             {(['program', 'announcements', 'unitinfo'] as const).map(tab => (
               <li key={tab} role="presentation" className={`w-full sm:w-auto ${tab === 'unitinfo' && !hasWardInfo(data) ? 'hidden sm:block' : ''}`}>
                 <button
                   type="button"
                   role="tab"
+                  id={`tab-${tab}`}
+                  tabIndex={activeTab === tab ? 0 : -1}
                   aria-selected={activeTab === tab}
                   aria-controls={`tab-panel-${tab}`}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                    e.preventDefault();
+                    const tabs = ['program', 'announcements', 'unitinfo'] as const;
+                    const idx = tabs.indexOf(tab);
+                    const next = tabs[(idx + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                    setActiveTab(next);
+                    document.getElementById(`tab-${next}`)?.focus();
+                  }}
                   className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border-2 transition-all duration-200 text-base sm:text-base
                     ${activeTab === tab
                       ? 'bg-blue-600 text-white border-blue-600'
@@ -535,7 +546,7 @@ export default function BulletinPreview({
 
       {/* ------------------------------- Program ------------------------------ */}
       {activeTab === 'program' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-program" role="tabpanel" aria-labelledby="tab-program" className="p-6 space-y-4 text-sm leading-relaxed">
           <div className="relative">
             <BulletinHeader
               wardName={data?.meetingType === 'baptism' ? undefined : data?.wardName}
@@ -814,7 +825,7 @@ export default function BulletinPreview({
 
       {/* ---------------------------- Announcements --------------------------- */}
       {activeTab === 'announcements' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-announcements" role="tabpanel" aria-labelledby="tab-announcements" className="p-6 space-y-4 text-sm leading-relaxed">
           <div className="relative">
             <BulletinHeader
               wardName={data?.wardName}
@@ -1011,7 +1022,7 @@ export default function BulletinPreview({
 
       {/* ------------------------------- Ward Info ---------------------------- */}
       {activeTab === 'unitinfo' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-unitinfo" role="tabpanel" aria-labelledby="tab-unitinfo" className="p-6 space-y-4 text-sm leading-relaxed">
           {/* Ward Leadership Section */}
           {Array.isArray(data.wardLeadership) && data.wardLeadership.some(e => e && (e.title || e.name || e.phone)) && (
             <>

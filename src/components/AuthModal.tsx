@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, Lock, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
@@ -20,6 +20,28 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
+  // Move focus into the modal when it opens
+  useEffect(() => {
+    if (isOpen) {
+      emailInputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -170,9 +192,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
       style={{ display: isOpen ? 'flex' : 'none' }}
     >
-      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-md w-full mx-2 sm:mx-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 max-w-md w-full mx-2 sm:mx-4">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">
+          <h3 id="auth-modal-title" className="text-2xl font-bold text-gray-900">
             {isForgotPassword ? t('auth.resetPassword') : (isSignUp ? t('auth.createAccount') : t('common.signIn'))}
           </h3>
           <button
@@ -209,12 +231,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
         {isForgotPassword ? (
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auth-reset-email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.emailAddress')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
+                  id="auth-reset-email"
+                  ref={emailInputRef}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -236,12 +260,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
         ) : (
           <form onSubmit={handleAuth} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auth-email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.emailAddress')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
+                  id="auth-email"
+                  ref={emailInputRef}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -253,12 +279,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, mode, prefil
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="auth-password" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
+                  id="auth-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
