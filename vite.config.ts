@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   test: {
-    exclude: ['node_modules', '.claude', 'dist'],
+    exclude: ['node_modules', '.claude', 'dist', 'e2e/**'],
   },
   optimizeDeps: {
     exclude: ['lucide-react'],

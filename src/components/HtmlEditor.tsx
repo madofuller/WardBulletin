@@ -21,7 +21,7 @@ const modules = {
 const formats = [
   'bold', 'italic', 'underline',
   'header',
-  'list', 'bullet',
+  'list',
   'link'
 ];
 
