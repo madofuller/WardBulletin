@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { linkifyHtml } from "../lib/linkifyHtml";
 import { decodeHtml } from '../lib/decodeHtml';
 import { LDS_IMAGES, getImageByIdSync } from '../data/images';
 import { useSession } from '../lib/SessionContext';
@@ -703,7 +704,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       <div key={audienceLabel} style={{ marginBottom: groupIdx < Object.keys(grouped).length - 1 ? (isLightContent ? '1rem' : tight ? '0.125rem' : '0.25rem') : 0 }}>
                         <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
                           {(announcements as any[]).map((a: any, idx: number) => {
-                            const decodedContent = sanitizeHtml(decodeHtml(a.content));
+                            const decodedContent = linkifyHtml(sanitizeHtml(decodeHtml(a.content)));
                             const showHeader = idx === 0 && audienceLabel;
                             return (
                               <li key={idx} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
@@ -730,7 +731,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                   </span>
                                 )}
                                 <div
-                                  className="print:!text-black leading-tight"
+                                  className="print:!text-black leading-tight [&_a]:underline [&_a]:break-all"
                                   style={{
                                     fontSize: contentFontSize,
                                     wordWrap: 'break-word',

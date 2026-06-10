@@ -3,6 +3,7 @@ import { Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { linkifyHtml } from '../lib/linkifyHtml';
 import { decodeHtml } from '../lib/decodeHtml';
 import { getSongUrl, getSongTitle } from '../lib/songService';
 import { getImageByIdSync, LDS_IMAGES, ImageData } from '../data/images';
@@ -294,7 +295,7 @@ function AnnouncementItem({
 
       <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
         <div
-          className="mt-1 break-words"
+          className="mt-1 break-words [&_a]:text-blue-600 [&_a]:underline [&_a]:break-all hover:[&_a]:text-blue-800"
           style={{
             '--tw-prose-bullets': 'disc',
             '--tw-prose-list-style': 'disc',
@@ -485,7 +486,7 @@ export default function BulletinPreview({
       return {
         ...a,
         audienceLabel: label,
-        html: sanitizeHtml(decodeHtml(a.content ?? "")),
+        html: linkifyHtml(sanitizeHtml(decodeHtml(a.content ?? ""))),
       };
     });
   }, [data?.announcements, unitTypeOverride]);
@@ -869,7 +870,7 @@ export default function BulletinPreview({
                           )}
                           <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
                             <div
-                              className="mt-1 break-words"
+                              className="mt-1 break-words [&_a]:text-blue-600 [&_a]:underline [&_a]:break-all hover:[&_a]:text-blue-800"
                               style={{
                                 '--tw-prose-bullets': 'disc',
                                 '--tw-prose-list-style': 'disc',
