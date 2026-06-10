@@ -409,6 +409,7 @@
     "addYourFirstAnnouncement": "Ajoutez votre première annonce",
     "makeStandalone": "Rendre indépendant",
     "saveAsRecurring": "Enregistrer comme récurrent",
+    "recurringNeedsProfile": "Créez d'abord un profil pour utiliser les annonces récurrentes (connectez-vous et définissez un nom de profil).",
     "recurringAnnouncements": "Annonces Récurrentes",
     "announcementTitle": "Titre de l'Annonce",
     "announcementImages": "Images de l'Annonce (optionnel)",

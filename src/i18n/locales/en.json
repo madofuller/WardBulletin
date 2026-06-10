@@ -383,6 +383,7 @@
     "addYourFirstAnnouncement": "Add your first announcement",
     "makeStandalone": "Make Standalone",
     "saveAsRecurring": "Save as Recurring",
+    "recurringNeedsProfile": "Create a profile first to use recurring announcements (sign in and set a profile name).",
     "recurringAnnouncements": "Recurring Announcements",
     "announcementTitle": "Announcement title",
     "announcementImages": "Announcement Images (Optional)",

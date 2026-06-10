@@ -409,6 +409,7 @@
     "addYourFirstAnnouncement": "Fügen Sie Ihre erste Ankündigung hinzu",
     "makeStandalone": "Eigenständig machen",
     "saveAsRecurring": "Als wiederkehrend speichern",
+    "recurringNeedsProfile": "Erstelle zuerst ein Profil, um wiederkehrende Ankündigungen zu nutzen (anmelden und Profilnamen festlegen).",
     "recurringAnnouncements": "Wiederkehrende Ankündigungen",
     "announcementTitle": "Titel der Ankündigung",
     "announcementImages": "Bilder der Ankündigung (optional)",

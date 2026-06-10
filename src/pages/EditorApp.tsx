@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
-import { getCurrentUnitType } from '../lib/config';
-import { getUnitLabel } from '../lib/terminology';
+import { getCurrentUnitType, isUnloadWarningSuppressed } from '../lib/config';
+import { getUnitLabel, getDefaultLeadershipRoster } from '../lib/terminology';
 // Lazy-loaded at PDF export time to reduce initial bundle
 const loadPdfDeps = () => Promise.all([
   import('jspdf'),
@@ -353,21 +353,7 @@ function EditorApp() {
         organistLabel: 'Organist',
         choristerLabel: 'Chorister'
       },
-      wardLeadership: getDefault('wardLeadership', [
-        { title: 'Bishop', name: '', phone: '' },
-        { title: '1st Counselor', name: '', phone: '' },
-        { title: '2nd Counselor', name: '', phone: '' },
-        { title: 'Executive Secretary', name: '', phone: '' },
-        { title: 'Ward Clerk', name: '', phone: '' },
-        { title: 'Elders Quorum President', name: '', phone: '' },
-        { title: 'Relief Society President', name: '', phone: '' },
-        { title: "Young Women's President", name: '', phone: '' },
-        { title: 'Primary President', name: '', phone: '' },
-        { title: 'Sunday School President', name: '', phone: '' },
-        { title: 'Ward Mission Leader', name: '', phone: '' },
-        { title: 'Building Representative', name: '', phone: '' },
-        { title: 'Temple & Family History', name: '', phone: '' }
-      ]),
+      wardLeadership: getDefault('wardLeadership', getDefaultLeadershipRoster()),
       missionaries: getDefault('missionaries', []),
       wardMissionaries: getDefault('wardMissionaries', []),
       serviceMissionaries: [],
@@ -579,21 +565,7 @@ function EditorApp() {
       organistLabel: bulletin.leadership?.organistLabel || 'Organist',
       choristerLabel: bulletin.leadership?.choristerLabel || 'Chorister'
     },
-    wardLeadership: bulletin.wardLeadership || [
-      { title: 'Bishop', name: '', phone: '' },
-      { title: '1st Counselor', name: '', phone: '' },
-      { title: '2nd Counselor', name: '', phone: '' },
-      { title: 'Executive Secretary', name: '', phone: '' },
-      { title: 'Ward Clerk', name: '', phone: '' },
-      { title: 'Elders Quorum President', name: '', phone: '' },
-      { title: 'Relief Society President', name: '', phone: '' },
-      { title: "Young Women's President", name: '', phone: '' },
-      { title: 'Primary President', name: '', phone: '' },
-      { title: 'Sunday School President', name: '', phone: '' },
-      { title: 'Ward Mission Leader', name: '', phone: '' },
-      { title: 'Building Representative', name: '', phone: '' },
-      { title: 'Temple & Family History', name: '', phone: '' }
-    ],
+    wardLeadership: bulletin.wardLeadership || getDefaultLeadershipRoster(),
     missionaries: bulletin.missionaries || [],
     wardMissionaries: bulletin.wardMissionaries || [],
     serviceMissionaries: bulletin.serviceMissionaries || [],
@@ -697,8 +669,9 @@ function EditorApp() {
       // Warn only when a cloud save is actually pending (signed in). For
       // signed-out users the flushed local draft fully preserves the work
       // and restores on return, so the browser dialog would be a false
-      // alarm on every single tab close.
-      if (hasUnsavedChanges && user) {
+      // alarm on every single tab close. App-initiated reloads (unit-type
+      // switch) suppress the warning the same way — the draft survives.
+      if (hasUnsavedChanges && user && !isUnloadWarningSuppressed()) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -1133,21 +1106,7 @@ function EditorApp() {
   };
 
   const handleLoadSavedBulletin = (bulletin: any) => {
-    const defaultWardLeadership = [
-      { title: 'Bishop', name: '', phone: '' },
-      { title: '1st Counselor', name: '', phone: '' },
-      { title: '2nd Counselor', name: '', phone: '' },
-      { title: 'Executive Secretary', name: '', phone: '' },
-      { title: 'Ward Clerk', name: '', phone: '' },
-      { title: 'Elders Quorum President', name: '', phone: '' },
-      { title: 'Relief Society President', name: '', phone: '' },
-      { title: 'Young Women\'s President', name: '', phone: '' },
-      { title: 'Primary President', name: '', phone: '' },
-      { title: 'Sunday School President', name: '', phone: '' },
-      { title: 'Ward Mission Leader', name: '', phone: '' },
-      { title: 'Building Representative', name: '', phone: '' },
-      { title: 'Temple & Family History', name: '', phone: '' }
-    ];
+    const defaultWardLeadership = getDefaultLeadershipRoster();
     const asArray = (v: unknown) => (Array.isArray(v) ? v : []);
     const asObject = <T extends object>(v: unknown, fallback: T): T =>
       v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback;

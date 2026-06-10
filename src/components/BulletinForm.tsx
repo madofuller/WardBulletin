@@ -227,9 +227,15 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
         };
 
   const convertToRecurring = async (announcement: Announcement) => {
+    // Recurring announcements are stored and fetched by profile slug; saving
+    // under the 'default' fallback strands them somewhere no UI can ever
+    // list. Without a profile this feature simply isn't available yet.
+    if (!profileSlug) {
+      toast.info(t('form.recurringNeedsProfile', 'Create a profile first to use recurring announcements (sign in and set a profile name).'));
+      return;
+    }
     try {
-      const actualProfileSlug = profileSlug || 'default';
-      const result = await recurringAnnouncementsService.convertToRecurring(announcement, actualProfileSlug);
+      const result = await recurringAnnouncementsService.convertToRecurring(announcement, profileSlug);
 
       if (result) {
         toast.success(`"${announcement.title}" converted to recurring announcement`);
@@ -1814,6 +1820,13 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               }}
                               className="text-lg font-semibold text-gray-900 border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                             >
+                              {/* Stored values are terminology-dependent ('ward' vs 'branch',
+                                  'stake' vs 'district/stake'), so a bulletin saved under the
+                                  other unit type can hold a value not in today's options —
+                                  include it so the select never renders blank. */}
+                              {!audienceOptions.some(opt => opt.value === audience) && (
+                                <option value={audience}>{getAudienceDisplayName(audience)}</option>
+                              )}
                               {audienceOptions.filter(opt => opt.value !== 'standalone').map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                               ))}
