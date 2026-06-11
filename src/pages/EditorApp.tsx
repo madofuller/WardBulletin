@@ -791,10 +791,22 @@ function EditorApp() {
     fetchBulletinStatus();
   }, [user, currentBulletinId, activeBulletinId]); // Removed bulletinData.status from dependencies
 
-  // Load active bulletin on startup or when active bulletin changes
+  // Load active bulletin on startup or when active bulletin changes.
+  // initialCloudLoadDoneRef distinguishes "fresh page load" from "user
+  // clicked New Bulletin": both leave currentBulletinId null, but this
+  // effect also re-runs whenever the auth token refreshes (the user object
+  // gets a new identity ~hourly and on tab focus), and without the ref it
+  // would replace a deliberately fresh bulletin with the active one.
+  const initialCloudLoadDoneRef = useRef(false);
   useEffect(() => {
     const fetchInitialBulletin = async () => {
       if (!user) return;
+
+      // After the initial cloud load, a null currentBulletinId means the
+      // user intentionally started a new bulletin — leave it alone.
+      if (!currentBulletinId && initialCloudLoadDoneRef.current) {
+        return;
+      }
 
       // CRITICAL: On refresh, prioritize loading saved bulletins over drafts
       // Only skip if user is actively editing (hasUnsavedChanges is true AND we're not on initial load)
@@ -815,6 +827,9 @@ function EditorApp() {
       // the cloud (saving clears it), so it always wins. Legacy drafts of
       // unknown age lose to the cloud, which flushes out stale leftovers.
       const applyCloudBulletin = (bulletin: { id: string } & Record<string, unknown>) => {
+        // The initial-load decision has been made (cloud applied or draft
+        // kept) — later effect re-runs must not hijack a new bulletin.
+        initialCloudLoadDoneRef.current = true;
         const draft = readDraft();
         if (draft && draft.savedAt > 0) {
           // State already shows the draft (loaded at mount). Point the editor
@@ -874,13 +889,17 @@ function EditorApp() {
   // When the user returns to a tab that has been sitting open (e.g. Sunday
   // morning, tab from last week), re-check the server for the active bulletin
   // so the editor catches scheduled activations and edits from other devices.
-  // Never runs while there are unsaved local changes, so it cannot clobber
-  // in-progress work. Throttled to one check per minute.
+  // Two guards keep it from clobbering work: it never runs with unsaved local
+  // changes, and it only runs while the editor is FOLLOWING the active
+  // bulletin — a freshly created bulletin (currentBulletinId null) or a
+  // deliberately opened other bulletin must not get swapped back to the
+  // active one just because the user switched tabs for a while.
   const lastVisibleRefreshRef = useRef(0);
   useEffect(() => {
     const handleVisible = async () => {
       if (document.visibilityState !== 'visible') return;
       if (!user || hasUnsavedChanges || !currentProfileSlug) return;
+      if (!currentBulletinId || currentBulletinId !== activeBulletinId) return;
       const now = Date.now();
       if (now - lastVisibleRefreshRef.current < 60 * 1000) return;
       lastVisibleRefreshRef.current = now;
@@ -900,7 +919,7 @@ function EditorApp() {
     };
     document.addEventListener('visibilitychange', handleVisible);
     return () => document.removeEventListener('visibilitychange', handleVisible);
-  }, [user, hasUnsavedChanges, currentProfileSlug, clearLocalDraft]);
+  }, [user, hasUnsavedChanges, currentProfileSlug, currentBulletinId, activeBulletinId, clearLocalDraft]);
 
   const handleCreateProfileSlug = async () => {
     if (!newProfileSlug.trim() || !user) return;
