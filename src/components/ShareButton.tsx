@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Share2, MessageCircle, Copy, Check } from 'lucide-react';
 
+// Map i18n language codes to proper locale codes (same pattern as BulletinPreview)
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 interface ShareButtonProps {
   url: string;
   title?: string;
@@ -23,13 +36,14 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = ({
   url,
   title = 'WardBulletin',
-  description = 'Check out our ward bulletin!',
+  description,
   className = '',
   variant = 'primary',
   size = 'md',
   bulletinData = null
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const resolvedLocale = localeMap[i18n.language] || i18n.language;
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -47,18 +61,21 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
   const getDynamicContent = () => {
     if (!bulletinData) {
-      return { title, description };
+      return {
+        title,
+        description: description || t('qrCode.checkOutOurWardBulletin', 'Check out our ward bulletin!')
+      };
     }
 
-    const wardName = bulletinData.wardName || 'Ward';
-    
+    const wardName = bulletinData.wardName || t('terminology.ward', 'Ward');
+
     // Fix date parsing - ensure we're using the exact date from the bulletin in local timezone
     let date;
     try {
       // Parse the date string and create a date in local timezone
       const [year, month, day] = bulletinData.date.split('-');
       const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      date = localDate.toLocaleDateString('en-US', {
+      date = localDate.toLocaleDateString(resolvedLocale, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -68,29 +85,29 @@ const ShareButton: React.FC<ShareButtonProps> = ({
       // Fallback to original date string if parsing fails
       date = bulletinData.date;
     }
-    
-    const meetingType = bulletinData.meetingType || 'Sacrament Meeting';
-    
-    let dynamicTitle = `${wardName} Bulletin - ${date}`;
+
+    const meetingType = bulletinData.meetingType || t('bulletin.sacramentMeeting', 'Sacrament Meeting');
+
+    let dynamicTitle = t('qrCode.shareBulletinTitle', '{{wardName}} Bulletin - {{date}}', { wardName, date });
     let dynamicDescription = `${wardName} - ${date} ${meetingType}`;
-    
+
     if (bulletinData.theme) {
-      dynamicDescription += ` | Theme: ${bulletinData.theme}`;
+      dynamicDescription += ` | ${t('scheduler.theme', 'Theme')}: ${bulletinData.theme}`;
     }
-    
+
     if (bulletinData.bishopricMessage) {
-      const shortMessage = bulletinData.bishopricMessage.length > 100 
+      const shortMessage = bulletinData.bishopricMessage.length > 100
         ? bulletinData.bishopricMessage.substring(0, 100) + '...'
         : bulletinData.bishopricMessage;
       dynamicDescription += ` | ${shortMessage}`;
     }
-    
+
     if (bulletinData.announcements && bulletinData.announcements.length > 0) {
-      dynamicDescription += ` | ${bulletinData.announcements.length} announcement${bulletinData.announcements.length > 1 ? 's' : ''}`;
+      dynamicDescription += ` | ${bulletinData.announcements.length} ${bulletinData.announcements.length > 1 ? t('form.announcements', 'announcements') : t('form.announcement', 'announcement')}`;
     }
-    
+
     if (bulletinData.specialEvents && bulletinData.specialEvents.length > 0) {
-      dynamicDescription += ` | ${bulletinData.specialEvents.length} special event${bulletinData.specialEvents.length > 1 ? 's' : ''}`;
+      dynamicDescription += ` | ${bulletinData.specialEvents.length} ${bulletinData.specialEvents.length > 1 ? t('form.specialEventsLowercase', 'special events') : t('form.specialEventLowercase', 'special event')}`;
     }
 
     return { title: dynamicTitle, description: dynamicDescription };

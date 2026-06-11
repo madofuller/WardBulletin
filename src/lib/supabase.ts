@@ -572,16 +572,18 @@ export const bulletinService = {
     // and RLS policies can verify the bulletin exists with that slug.
     // Only generate a new slug for brand-new bulletins.
     let tokenOwnerId = userId;
+    let existingStatus: string | null = null;
     if (bulletinId) {
       const { data: existingRow, error: existingError } = await supabase
         .from('bulletins')
-        .select('id, created_by, slug')
+        .select('id, created_by, slug, status')
         .eq('id', bulletinId)
         .maybeSingle();
       if (existingError) throw existingError;
       if (!existingRow) throw new Error('Bulletin not found. Cannot update non-existent bulletin.');
       if (existingRow.created_by) tokenOwnerId = existingRow.created_by;
       slug = existingRow.slug;
+      existingStatus = existingRow.status;
     } else {
       slug = generateUniqueBulletinSlug(userId, bulletinData.date);
     }
@@ -661,9 +663,13 @@ export const bulletinService = {
       );
     }
 
-    // Don't update status to 'active' via saveBulletin - that should be done via updateBulletinStatus
-    // Only allow saving draft, scheduled, or archived status
-    const statusToSave = bulletinData.status === 'active' ? 'draft' : (bulletinData.status || 'draft');
+    // Don't promote a bulletin to 'active' via saveBulletin - that should be
+    // done via updateBulletinStatus. But if the bulletin is ALREADY active in
+    // the database, preserve that status: saving the live bulletin must not
+    // silently demote it to 'draft' and take it off the ward's public page.
+    const statusToSave = existingStatus === 'active'
+      ? 'active'
+      : (bulletinData.status === 'active' ? 'draft' : (bulletinData.status || 'draft'));
     
     const dbBulletinRecord: Record<string, any> = {
       slug,
@@ -1224,13 +1230,21 @@ export const bulletinService = {
   },
 
   async getBulletinById(bulletinId: string) {
-    // Try local storage first
-    const localBulletins = this.getFromLocalStorage();
-    const localBulletin = localBulletins.find(b => b.id === bulletinId);
-    if (localBulletin) {
-      return localBulletin;
+    // Network-first: the cached copy in localStorage is only updated when THIS
+    // device saves, so it goes stale as soon as the bulletin is edited anywhere
+    // else. Use it solely as an offline/error fallback.
+    try {
+      return await this.fetchBulletinById(bulletinId);
+    } catch (networkError) {
+      const localBulletin = this.getFromLocalStorage().find(b => b.id === bulletinId);
+      if (localBulletin) {
+        return localBulletin;
+      }
+      throw networkError;
     }
-    
+  },
+
+  async fetchBulletinById(bulletinId: string) {
     // Select only columns that exist and are accessible via RLS
     // Avoid select=* which can cause 406 errors if RLS blocks certain columns
     const { data, error } = await supabase
@@ -1352,9 +1366,10 @@ export const bulletinService = {
     const storedImageUrl = tokenResults[16];
     const imagePosition = tokenResults[17];
 
-    return {
+    const freshBulletin = {
       id: data.id,
       user_id: data.created_by,
+      created_by: data.created_by,
       profile_slug: data.profile_slug,
       ward_name: wardName || '',
       date: data.meeting_date,
@@ -1379,6 +1394,9 @@ export const bulletinService = {
       created_at: data.created_at,
       updated_at: data.created_at
     };
+    // Keep the offline fallback copy as fresh as the last successful fetch.
+    this.saveToLocalStorage(freshBulletin);
+    return freshBulletin;
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {
@@ -1583,22 +1601,28 @@ export const bulletinService = {
         throw new Error('You do not have permission to delete this bulletin');
       }
       
-      if (bulletin.data) {
-        // Delete associated tokens
-        await supabase
-          .from('tokens')
-          .delete()
-          .eq('created_by', bulletin.data.created_by)
-          .like('key', `bulletin-${bulletin.data.slug}-%`);
-      }
-
-      const { error } = await supabase
+      // Delete the bulletin row FIRST and verify a row was actually removed.
+      // Do not filter by created_by here - shared-profile editors are allowed
+      // to delete bulletins they didn't create, and RLS authorizes the delete.
+      // Deleting tokens before confirming the row delete can destroy all
+      // bulletin content while leaving an empty bulletin shell behind.
+      const { data: deletedRows, error } = await supabase
         .from('bulletins')
         .delete()
         .eq('id', bulletinId)
-        .eq('created_by', userId);
-      
+        .select('id');
+
       if (error) throw error;
+      if (!deletedRows || deletedRows.length === 0) {
+        throw new Error('Bulletin could not be deleted. You may not have permission to delete it.');
+      }
+
+      // Only after the row is confirmed gone, delete the associated tokens
+      await supabase
+        .from('tokens')
+        .delete()
+        .eq('created_by', bulletin.data.created_by)
+        .like('key', `bulletin-${bulletin.data.slug}-%`);
     } catch (error: any) {
       // If it's a UUID error, the bulletin might only exist in local storage
       if (error.message && error.message.includes('invalid input syntax for type uuid')) {

@@ -35,7 +35,7 @@ describe('BUILT_IN_TEMPLATES', () => {
   });
 
   it('agenda items have valid types', () => {
-    const validTypes = ['speaker', 'musical', 'testimony', 'sacrament', 'baby_blessing'];
+    const validTypes = ['speaker', 'musical', 'testimony', 'sacrament', 'baby_blessing', 'baptism_ordinance', 'confirmation'];
     for (const template of BUILT_IN_TEMPLATES) {
       for (const item of template.data.agenda!) {
         expect(validTypes).toContain(item.type);

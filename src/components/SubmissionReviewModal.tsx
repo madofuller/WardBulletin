@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { linkifyHtml } from '../lib/linkifyHtml';
+import { decodeHtml } from '../lib/decodeHtml';
 import { toast } from 'react-toastify';
 import { SkeletonList } from './SkeletonLoader';
 
@@ -49,7 +52,15 @@ export default function SubmissionReviewModal({
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-  const [notes, setNotes] = useState('');
+  // Notes are per submission: a single shared string would mirror into every
+  // pending submission's textarea and attach one note to unrelated records.
+  const [notesById, setNotesById] = useState<Record<string, string>>({});
+  const getNotes = (id: string) => notesById[id] || '';
+  const clearNotes = (id: string) => setNotesById(prev => {
+    const next = { ...prev };
+    delete next[id];
+    return next;
+  });
   const [processing, setProcessing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
@@ -58,6 +69,20 @@ export default function SubmissionReviewModal({
       fetchSubmissions();
     }
   }, [isOpen, profileSlug]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
 
   const fetchSubmissions = async () => {
     if (!supabase) return;
@@ -89,22 +114,22 @@ export default function SubmissionReviewModal({
     try {
       const { error } = await supabase
         .from('announcement_submissions')
-        .update({ 
+        .update({
           status: 'approved',
-          notes: notes.trim() || null
+          notes: getNotes(submission.id).trim() || null
         })
         .eq('id', submission.id);
 
       if (error) throw error;
 
-      
+
 
       // Add to bulletin
       onSubmissionApproved(submission);
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
+      clearNotes(submission.id);
       
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
@@ -123,19 +148,19 @@ export default function SubmissionReviewModal({
     try {
       const { error } = await supabase
         .from('announcement_submissions')
-        .update({ 
+        .update({
           status: 'rejected',
-          notes: notes.trim() || null
+          notes: getNotes(submission.id).trim() || null
         })
         .eq('id', submission.id);
 
       if (error) throw error;
 
-      
+
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
+      clearNotes(submission.id);
       
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
@@ -177,22 +202,30 @@ export default function SubmissionReviewModal({
     
     setProcessing('group-' + audience);
     try {
-      // Update all submissions in database
-      for (const submission of groupSubmissions) {
-        if (!supabase) continue;
-        
-        const { error } = await supabase
-          .from('announcement_submissions')
-          .update({ 
-            status: 'approved',
-            notes: notes.trim() || null
-          })
-          .eq('id', submission.id);
+      if (!supabase) return;
 
-        if (error) throw error;
+      // One batched update instead of N sequential queries. A single query
+      // can't partially succeed, so we can no longer end up with half the
+      // submissions approved in the DB and no announcement on the bulletin.
+      const ids = groupSubmissions.map(s => s.id);
+      const { error } = await supabase
+        .from('announcement_submissions')
+        .update({ status: 'approved' })
+        .in('id', ids);
 
+      if (error) throw error;
 
-      }
+      // Per-submission notes are best-effort after the status flip.
+      await Promise.all(
+        groupSubmissions
+          .filter(s => getNotes(s.id).trim())
+          .map(s =>
+            supabase
+              .from('announcement_submissions')
+              .update({ notes: getNotes(s.id).trim() })
+              .eq('id', s.id)
+          )
+      );
 
       // Create consolidated announcement
       const titles = groupSubmissions.map(s => s.title).filter(t => t.trim());
@@ -233,11 +266,11 @@ export default function SubmissionReviewModal({
 
       // Refresh submissions
       await fetchSubmissions();
-      setNotes('');
-      
+      groupSubmissions.forEach(s => clearNotes(s.id));
+
       // Notify parent component that submissions have changed
       onSubmissionsChanged?.();
-      
+
       toast.success(t('submissions.groupApprovedAndConsolidated', { audience: audience.replace('_', ' ') }));
 
     } catch (error) {
@@ -251,10 +284,10 @@ export default function SubmissionReviewModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-labelledby="submission-review-modal-title" className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">{t('submissions.reviewAnnouncementSubmissions')}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 id="submission-review-modal-title" className="text-xl font-semibold">{t('submissions.reviewAnnouncementSubmissions')}</h2>
+          <button autoFocus onClick={onClose} aria-label={t('common.close')} className="text-gray-400 hover:text-gray-600">
             ✕
           </button>
         </div>
@@ -370,8 +403,8 @@ export default function SubmissionReviewModal({
                                   </span>
                                 </div>
                                 <div 
-                                  className="text-gray-600 text-sm mb-2"
-                                  dangerouslySetInnerHTML={{ __html: submission.content }}
+                                  className="text-gray-600 text-sm mb-2 [&_a]:text-blue-600 [&_a]:underline [&_a]:break-all hover:[&_a]:text-blue-800"
+                                  dangerouslySetInnerHTML={{ __html: linkifyHtml(sanitizeHtml(decodeHtml(submission.content))) }}
                                 />
                                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                                   <span>{t('submissions.from')}: {submission.submitter_name}</span>
@@ -390,8 +423,8 @@ export default function SubmissionReviewModal({
                                     {t('submissions.notesOptional')}
                                   </label>
                                   <textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
+                                    value={getNotes(submission.id)}
+                                    onChange={(e) => setNotesById(prev => ({ ...prev, [submission.id]: e.target.value }))}
                                     placeholder={t('submissions.addFeedbackPlaceholder')}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                                     rows={2}
@@ -401,7 +434,7 @@ export default function SubmissionReviewModal({
                                   <button
                                     onClick={() => handleApprove(submission)}
                                     disabled={processing === submission.id}
-                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                                   >
                                     {processing === submission.id ? (
                                       <Loader2 className="w-3 h-3 mr-1 animate-spin" />

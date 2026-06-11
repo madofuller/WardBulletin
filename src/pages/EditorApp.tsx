@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
-import { getCurrentUnitType } from '../lib/config';
-import { getUnitLabel } from '../lib/terminology';
+import { getCurrentUnitType, isUnloadWarningSuppressed } from '../lib/config';
+import { getUnitLabel, getDefaultLeadershipRoster } from '../lib/terminology';
 // Lazy-loaded at PDF export time to reduce initial bundle
 const loadPdfDeps = () => Promise.all([
   import('jspdf'),
@@ -32,6 +32,8 @@ import ProfileSharingModal from '../components/ProfileSharingModal';
 import ChangelogModal from '../components/ChangelogModal';
 import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
+import { readDraft, writeDraft, clearDraft } from '../lib/draftStorage';
+import { upcomingSundayISO } from '../lib/dates';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -55,8 +57,21 @@ function decodeJwtExp(token: string) {
   }
 }
 
+// Map i18n language codes to proper locale codes for date formatting
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 function EditorApp() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentView, setCurrentView] = useState<'editor' | 'public'>('editor');
   const [publicBulletinData, setPublicBulletinData] = useState<any>(null);
   const [publicError, setPublicError] = useState('');
@@ -77,12 +92,12 @@ function EditorApp() {
     loadAllImages();
   }, [user]);
 
-  const loadAllImages = async () => {
+  const loadAllImages = useCallback(async () => {
     // Always load images - LDS_IMAGES are available to everyone
     // Custom images are only loaded if user is logged in
     const images = await getAllImages(user?.id);
     setAllImages(images);
-  };
+  }, [user?.id]);
 
   // Get the current profile slug (from URL or user's profile)
   // If user has shared profiles and no slug is specified, default to first shared profile
@@ -313,10 +328,9 @@ function EditorApp() {
     const currentUnitType = getCurrentUnitType();
     return {
       wardName: getDefault('wardName', ''),
-      date: (() => {
-        const today = new Date();
-        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      })(),
+      // Programs are for Sunday meetings — default to the upcoming Sunday,
+      // not the mid-week day the clerk happens to be working on.
+      date: upcomingSundayISO(),
       meetingType: getMeetingTypeForUnit(currentUnitType),
       theme: '',
       userTheme: '',
@@ -352,21 +366,7 @@ function EditorApp() {
         organistLabel: 'Organist',
         choristerLabel: 'Chorister'
       },
-      wardLeadership: getDefault('wardLeadership', [
-        { title: 'Bishop', name: '', phone: '' },
-        { title: '1st Counselor', name: '', phone: '' },
-        { title: '2nd Counselor', name: '', phone: '' },
-        { title: 'Executive Secretary', name: '', phone: '' },
-        { title: 'Ward Clerk', name: '', phone: '' },
-        { title: 'Elders Quorum President', name: '', phone: '' },
-        { title: 'Relief Society President', name: '', phone: '' },
-        { title: "Young Women's President", name: '', phone: '' },
-        { title: 'Primary President', name: '', phone: '' },
-        { title: 'Sunday School President', name: '', phone: '' },
-        { title: 'Ward Mission Leader', name: '', phone: '' },
-        { title: 'Building Representative', name: '', phone: '' },
-        { title: 'Temple & Family History', name: '', phone: '' }
-      ]),
+      wardLeadership: getDefault('wardLeadership', getDefaultLeadershipRoster()),
       missionaries: getDefault('missionaries', []),
       wardMissionaries: getDefault('wardMissionaries', []),
       serviceMissionaries: [],
@@ -375,31 +375,29 @@ function EditorApp() {
     };
   }
 
+  // Merge a stored draft with defaults so required fields are never missing
+  // after a refresh or an app update that added new fields.
+  function mergeDraftWithDefaults(parsed: BulletinData): BulletinData {
+    const defaultBulletin = createBlankBulletin();
+    return {
+      ...defaultBulletin,
+      ...parsed,
+      imageId: parsed.imageId || 'none',
+      imagePosition: parsed.imagePosition || { x: 50, y: 50 },
+      wardMissionaries: parsed.wardMissionaries || [],
+      missionaries: parsed.missionaries || [],
+      wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership,
+      // Preserve date on refresh: never leave date empty when restoring from draft
+      date: parsed.date && String(parsed.date).trim() ? parsed.date : defaultBulletin.date
+    };
+  }
+
   // Use a function to initialize bulletinData from localStorage defaults
   const [bulletinData, setBulletinData] = useState<BulletinData>(() => {
     // Check for draft first during initial state creation
-    const DRAFT_KEY = 'draft_bulletin';
-    const saved = localStorage.getItem(DRAFT_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as BulletinData;
-        // Ensure all required fields exist for backward compatibility
-        const defaultBulletin = createBlankBulletin();
-        const merged = {
-          ...defaultBulletin,
-          ...parsed,
-          imageId: parsed.imageId || 'none',
-          imagePosition: parsed.imagePosition || { x: 50, y: 50 },
-          wardMissionaries: parsed.wardMissionaries || [],
-          missionaries: parsed.missionaries || [],
-          wardLeadership: parsed.wardLeadership || defaultBulletin.wardLeadership,
-          // Preserve date on refresh: never leave date empty when restoring from draft
-          date: parsed.date && String(parsed.date).trim() ? parsed.date : defaultBulletin.date
-        };
-        return merged;
-      } catch (e) {
-        localStorage.removeItem(DRAFT_KEY);
-      }
+    const draft = readDraft();
+    if (draft) {
+      return mergeDraftWithDefaults(draft.data);
     }
     return createBlankBulletin();
   });
@@ -408,16 +406,23 @@ function EditorApp() {
   const bulletinRef = useRef<HTMLDivElement>(null);
   const printPage1Ref = useRef<HTMLDivElement>(null);
   const printPage2Ref = useRef<HTMLDivElement>(null);
-  const previousDataRef = useRef<string | null>(null);
+  const previousDataRef = useRef<BulletinData | null>(null);
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDraftRef = useRef<BulletinData | null>(null);
+  const draftRestoredNoticeShownRef = useRef(false);
 
-  // Add a helper for draft key
-  const DRAFT_KEY = 'draft_bulletin';
+  // Keep the latest bulletin id readable from stable callbacks (draft writes)
+  // without forcing them to re-create on every id change.
+  const currentBulletinIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentBulletinIdRef.current = currentBulletinId;
+  }, [currentBulletinId]);
 
   // Handle template loading only if no draft was loaded during initialization
   useEffect(() => {
     const initializeApp = () => {
       // Skip if we already loaded a draft during state initialization
-      const hasDraft = !!localStorage.getItem(DRAFT_KEY);
+      const hasDraft = !!readDraft();
       if (hasDraft) {
         return;
       }
@@ -573,21 +578,7 @@ function EditorApp() {
       organistLabel: bulletin.leadership?.organistLabel || 'Organist',
       choristerLabel: bulletin.leadership?.choristerLabel || 'Chorister'
     },
-    wardLeadership: bulletin.wardLeadership || [
-      { title: 'Bishop', name: '', phone: '' },
-      { title: '1st Counselor', name: '', phone: '' },
-      { title: '2nd Counselor', name: '', phone: '' },
-      { title: 'Executive Secretary', name: '', phone: '' },
-      { title: 'Ward Clerk', name: '', phone: '' },
-      { title: 'Elders Quorum President', name: '', phone: '' },
-      { title: 'Relief Society President', name: '', phone: '' },
-      { title: "Young Women's President", name: '', phone: '' },
-      { title: 'Primary President', name: '', phone: '' },
-      { title: 'Sunday School President', name: '', phone: '' },
-      { title: 'Ward Mission Leader', name: '', phone: '' },
-      { title: 'Building Representative', name: '', phone: '' },
-      { title: 'Temple & Family History', name: '', phone: '' }
-    ],
+    wardLeadership: bulletin.wardLeadership || getDefaultLeadershipRoster(),
     missionaries: bulletin.missionaries || [],
     wardMissionaries: bulletin.wardMissionaries || [],
     serviceMissionaries: bulletin.serviceMissionaries || [],
@@ -598,76 +589,114 @@ function EditorApp() {
   };
   };
 
-  const handleBulletinDataChange = useCallback((newData: BulletinData) => {
-    // Prevent infinite loops by checking if data actually changed
-    const newDataString = JSON.stringify(newData);
-    if (previousDataRef.current === newDataString) {
-      return; // Data hasn't changed, skip update
-    }
-    previousDataRef.current = newDataString;
-    
-    setBulletinData(newData);
-    
-    // Try to save to localStorage with error handling and quota management
-    try {
-      const dataToSave = newDataString;
-      
-      // Check if data is too large (localStorage typically has 5-10MB limit)
-      if (dataToSave.length > 3 * 1024 * 1024) { // 3MB threshold for safety
-        // Try to clear old bulletin data to make space
-        try {
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
-              localStorage.removeItem(key);
-            }
-          });
-
-          // Try again after clearing
-          if (dataToSave.length < 4 * 1024 * 1024) {
-            localStorage.setItem(DRAFT_KEY, dataToSave);
-            setHasUnsavedChanges(true);
-            return;
-          }
-        } catch (clearError) {
-          // Failed to clear old data
-        }
-
-        setHasUnsavedChanges(true);
-        return;
-      }
-
-      localStorage.setItem(DRAFT_KEY, dataToSave);
-      setHasUnsavedChanges(true);
-    } catch (error) {
-      // If it's a quota exceeded error, try to clear old data
-      if (error instanceof DOMException && error.code === DOMException.QUOTA_EXCEEDED_ERR) {
-        try {
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('wardbulletin_') && key !== DRAFT_KEY) {
-              localStorage.removeItem(key);
-            }
-          });
-
-          // Try one more time
-          localStorage.setItem(DRAFT_KEY, newDataString);
-          setHasUnsavedChanges(true);
-          return;
-        } catch (retryError) {
-          // Failed to save even after clearing
-        }
-      }
-
-      // Still mark as having changes, but don't save to localStorage
-      setHasUnsavedChanges(true);
-    }
+  const writeDraftToStorage = useCallback((data: BulletinData) => {
+    writeDraft(data, currentBulletinIdRef.current);
   }, []);
+
+  const flushDraftSave = useCallback(() => {
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+      draftSaveTimerRef.current = null;
+    }
+    if (pendingDraftRef.current) {
+      writeDraftToStorage(pendingDraftRef.current);
+      pendingDraftRef.current = null;
+    }
+  }, [writeDraftToStorage]);
+
+  // Drop the local draft AND any debounced write still in flight, so a save
+  // that just succeeded can't be resurrected as a stale draft 400ms later.
+  const clearLocalDraft = useCallback(() => {
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+      draftSaveTimerRef.current = null;
+    }
+    pendingDraftRef.current = null;
+    clearDraft();
+  }, []);
+
+  const handleBulletinDataChange = useCallback((newData: BulletinData) => {
+    if (previousDataRef.current === newData) {
+      return; // Same object reference, nothing changed
+    }
+    previousDataRef.current = newData;
+
+    setBulletinData(newData);
+    setHasUnsavedChanges(true);
+
+    // Debounce the multi-MB serialization + synchronous localStorage write
+    // so typing stays responsive on large bulletins.
+    pendingDraftRef.current = newData;
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+    }
+    draftSaveTimerRef.current = setTimeout(flushDraftSave, 400);
+  }, [flushDraftSave]);
+
+  // Stable handlers for BulletinPreview so unrelated state changes (modals,
+  // loading flags, toasts) don't hand it new function identities every render.
+  // They depend on bulletinData, so they only change when the data itself does.
+  const handleImagePositionChange = useCallback((position: { x: number; y: number }) => {
+    // Only update if the position actually changed and is different from current
+    const currentPosition = bulletinData.imagePosition || { x: 50, y: 50 };
+    if (position.x !== currentPosition.x || position.y !== currentPosition.y) {
+      handleBulletinDataChange({
+        ...bulletinData,
+        imagePosition: position
+      });
+    }
+  }, [bulletinData, handleBulletinDataChange]);
+
+  const handleImageOpacityChange = useCallback((opacity: number) => {
+    handleBulletinDataChange({
+      ...bulletinData,
+      imageOpacity: opacity
+    });
+  }, [bulletinData, handleBulletinDataChange]);
+
+  // Stable props for the always-mounted hidden print portal so it only
+  // re-renders when the bulletin data (or profile slug) actually changes.
+  const printLayoutData = useMemo(() => ({
+    ...bulletinData,
+    profileSlug: currentProfileSlug || 'your-profile-slug'
+  }), [bulletinData, currentProfileSlug]);
+
+  const printLayoutRefs = useMemo(() => ({
+    page1: printPage1Ref,
+    page2: printPage2Ref
+  }), [printPage1Ref, printPage2Ref]);
 
   // Sync ref when bulletinData changes externally (e.g., loading a bulletin)
   useEffect(() => {
-    previousDataRef.current = JSON.stringify(bulletinData);
+    previousDataRef.current = bulletinData;
   }, [bulletinData]);
+
+  // Flush pending draft writes when the tab is hidden or closing, and warn
+  // about unsaved changes before the page unloads.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushDraftSave();
+    };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      flushDraftSave();
+      // Warn only when a cloud save is actually pending (signed in). For
+      // signed-out users the flushed local draft fully preserves the work
+      // and restores on return, so the browser dialog would be a false
+      // alarm on every single tab close. App-initiated reloads (unit-type
+      // switch) suppress the warning the same way — the draft survives.
+      if (hasUnsavedChanges && user && !isUnloadWarningSuppressed()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      flushDraftSave();
+    };
+  }, [flushDraftSave, hasUnsavedChanges, user]);
 
 
 
@@ -690,9 +719,16 @@ function EditorApp() {
       const now = Date.now();
       const msLeft = exp - now;
       if (msLeft < 2 * 60 * 1000) { // less than 2 minutes left
-        toast.warning('Session expired or about to expire. Please sign in again.');
-        await supabase.auth.signOut();
-        window.location.reload();
+        // Try to refresh first - supabase-js auto-refresh may simply not have
+        // fired yet. Only force a sign-out when refresh fails AND the token
+        // is actually expired, otherwise an idle-but-valid session gets
+        // destroyed mid-edit.
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError && msLeft <= 0) {
+          toast.warning(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
+          await supabase.auth.signOut();
+          window.location.reload();
+        }
       }
     }
     checkJwtExpiration();
@@ -700,17 +736,6 @@ function EditorApp() {
     return () => clearInterval(intervalId);
   }, []);
 
-
-  // On app load, if user is signed in and a draft exists, offer to save it
-  React.useEffect(() => {
-    if (user) {
-      const draft = localStorage.getItem(DRAFT_KEY);
-      if (draft) {
-        // Optionally prompt the user to save the draft
-        // For now, auto-save as above
-      }
-    }
-  }, [user]);
 
   // Fetch status for current bulletin if missing, or update if activeBulletinId changes
   useEffect(() => {
@@ -785,48 +810,54 @@ function EditorApp() {
         return;
       }
 
+      // Apply a freshly fetched cloud bulletin — unless unsaved local work
+      // exists. A timestamped draft can only exist while work has not reached
+      // the cloud (saving clears it), so it always wins. Legacy drafts of
+      // unknown age lose to the cloud, which flushes out stale leftovers.
+      const applyCloudBulletin = (bulletin: { id: string } & Record<string, unknown>) => {
+        const draft = readDraft();
+        if (draft && draft.savedAt > 0) {
+          // State already shows the draft (loaded at mount). Point the editor
+          // at the draft's own cloud row (or none) so Save can't silently
+          // overwrite the live bulletin with unrelated work.
+          setCurrentBulletinId(draft.bulletinId);
+          setHasUnsavedChanges(true);
+          if (!draftRestoredNoticeShownRef.current) {
+            draftRestoredNoticeShownRef.current = true;
+            toast.info(t('bulletin.draftRestored'), { toastId: 'draft-restored' });
+          }
+          return;
+        }
+        const data = convertDbBulletinToData(bulletin);
+        setBulletinData(data);
+        setCurrentBulletinId(bulletin.id);
+        setHasUnsavedChanges(false);
+        clearLocalDraft();
+      };
+
       try {
         if (currentProfileSlug) {
           // If we're on a shared profile, get its active bulletin
           if (currentProfileSlug !== profile?.profile_slug) {
             const bulletin = await bulletinService.getLatestBulletinByProfileSlug(currentProfileSlug);
             if (bulletin) {
-              const data = convertDbBulletinToData(bulletin);
-              setBulletinData(data);
-              setCurrentBulletinId(bulletin.id);
-              setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY);
+              applyCloudBulletin(bulletin);
             }
           } else if (activeBulletinId) {
             // If we're on our own profile, load the active bulletin
             // This will switch to the new active bulletin even if we were viewing a different one
             const bulletin = await bulletinService.getBulletinById(activeBulletinId);
             if (bulletin) {
-              const data = convertDbBulletinToData(bulletin);
-              setBulletinData(data);
-              setCurrentBulletinId(bulletin.id);
-              setHasUnsavedChanges(false);
-              localStorage.removeItem(DRAFT_KEY);
+              applyCloudBulletin(bulletin);
             }
           } else if (isInitialLoad) {
             // On initial load with no active bulletin, check for draft
             // But only if we don't have a currentBulletinId
-            const hasDraft = !!localStorage.getItem(DRAFT_KEY);
-            if (hasDraft) {
-              try {
-                const draftData = JSON.parse(localStorage.getItem(DRAFT_KEY)!) as BulletinData;
-                const defaultBulletin = createBlankBulletin();
-                // Merge with defaults so date and other fields are never missing after refresh
-                const merged = {
-                  ...defaultBulletin,
-                  ...draftData,
-                  date: draftData.date && String(draftData.date).trim() ? draftData.date : defaultBulletin.date
-                };
-                setBulletinData(merged);
-                setHasUnsavedChanges(true);
-              } catch (err) {
-                localStorage.removeItem(DRAFT_KEY);
-              }
+            const draft = readDraft();
+            if (draft) {
+              setBulletinData(mergeDraftWithDefaults(draft.data));
+              setCurrentBulletinId(draft.bulletinId);
+              setHasUnsavedChanges(true);
             }
           }
         }
@@ -840,18 +871,49 @@ function EditorApp() {
     fetchInitialBulletin();
   }, [user, activeBulletinId, currentProfileSlug]);
 
+  // When the user returns to a tab that has been sitting open (e.g. Sunday
+  // morning, tab from last week), re-check the server for the active bulletin
+  // so the editor catches scheduled activations and edits from other devices.
+  // Never runs while there are unsaved local changes, so it cannot clobber
+  // in-progress work. Throttled to one check per minute.
+  const lastVisibleRefreshRef = useRef(0);
+  useEffect(() => {
+    const handleVisible = async () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!user || hasUnsavedChanges || !currentProfileSlug) return;
+      const now = Date.now();
+      if (now - lastVisibleRefreshRef.current < 60 * 1000) return;
+      lastVisibleRefreshRef.current = now;
+      try {
+        const activeId = await getActiveBulletinForCurrentProfile(currentProfileSlug);
+        if (!activeId) return;
+        const bulletin = await bulletinService.getBulletinById(activeId);
+        if (!bulletin) return;
+        setBulletinData(convertDbBulletinToData(bulletin));
+        setCurrentBulletinId(bulletin.id);
+        setActiveBulletinId(activeId);
+        setHasUnsavedChanges(false);
+        clearLocalDraft();
+      } catch {
+        // Offline or transient failure — keep showing the current state.
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisible);
+    return () => document.removeEventListener('visibilitychange', handleVisible);
+  }, [user, hasUnsavedChanges, currentProfileSlug, clearLocalDraft]);
+
   const handleCreateProfileSlug = async () => {
     if (!newProfileSlug.trim() || !user) return;
     
     try {
       await userService.updateProfileSlug(user.id, newProfileSlug.trim());
-      toast.success('Profile slug created successfully!');
+      toast.success(t('success.profileSlugCreatedSuccessfully', 'Profile slug created successfully!'));
       setShowCreateProfileSlug(false);
       setNewProfileSlug('');
       // Refresh the page to load the new profile
       window.location.reload();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create profile slug');
+      toast.error(error.message || t('qrCode.failedToCreateProfileSlug', 'Failed to create profile slug'));
     }
   };
 
@@ -873,7 +935,7 @@ function EditorApp() {
 
     // Check if there are actually changes to save
     if (!hasUnsavedChanges) {
-      toast.info('No changes to save', {
+      toast.info(t('common.noChangesToSave', 'No changes to save'), {
         toastId: 'no-changes-to-save'
       });
       return;
@@ -882,12 +944,12 @@ function EditorApp() {
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
-        toast.error('Session expired. Please sign in again.');
+        toast.error(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
         setShowAuthModal(true);
         return;
       }
     } catch (err) {
-      toast.error('Session expired. Please sign in again.');
+      toast.error(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
       setShowAuthModal(true);
       return;
     }
@@ -923,6 +985,9 @@ function EditorApp() {
 
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
+      // The work just reached the cloud — the local draft is no longer the
+      // source of truth and must not shadow future cloud loads.
+      clearLocalDraft();
 
       // If the bulletin was active before saving, re-activate it with the new ID
       if (wasActive && savedBulletin.id !== activeBulletinId) {
@@ -932,15 +997,15 @@ function EditorApp() {
       // Invalidate query cache to refresh saved bulletins modal
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
 
-      toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
+      toast.success(currentBulletinId ? t('success.bulletinUpdated', 'Bulletin updated successfully!') : t('success.bulletinSaved', 'Bulletin saved successfully!'), {
         toastId: 'bulletin-save-success'
       });
     } catch (error) {
       if (timeoutHandle) clearTimeout(timeoutHandle);
       if (didTimeout) {
-        toast.error('Saving took too long. Please check your connection or try again.');
+        toast.error(t('errors.saveTimedOut', 'Saving took too long. Please check your connection or try again.'));
       } else {
-        toast.error('Error saving bulletin: ' + (error as Error).message);
+        toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
       }
       // Try to save to localStorage as fallback
       try {
@@ -950,9 +1015,9 @@ function EditorApp() {
           created_by: user.id,
           created_at: new Date().toISOString()
         });
-        toast.warning('Bulletin saved locally due to connection issues. It will sync when connection is restored.');
+        toast.warning(t('errors.savedLocallyWillSync', 'Bulletin saved locally due to connection issues. It will sync when connection is restored.'));
       } catch (localError) {
-        toast.error('Error saving bulletin: ' + (error as Error).message);
+        toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
       }
     } finally {
       setLoading(false);
@@ -973,7 +1038,8 @@ function EditorApp() {
         const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
           bulletinData,
           user.id,
-          undefined
+          undefined,
+          currentProfileSlug || undefined
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);
@@ -985,14 +1051,46 @@ function EditorApp() {
         await handleActiveBulletinSelect(currentBulletinId);
       }
 
-      toast.success('Bulletin is now active on your QR code!');
+      toast.success(t('success.bulletinNowActive', 'Bulletin is now active on your QR code!'));
     } catch (error) {
-      toast.error('Error making bulletin active: ' + (error as Error).message);
+      toast.error(t('errors.makingBulletinActive', 'Error making bulletin active: {{message}}', { message: (error as Error).message }));
     } finally {
       setLoading(false);
     }
   };
 
+
+  // Signing out drops in-memory work; warn first when something is unsaved.
+  const handleSignOut = async () => {
+    if (hasUnsavedChanges) {
+      setConfirmationModal({
+        isOpen: true,
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
+        message: t('common.signOutUnsavedConfirm', 'You have unsaved changes. Sign out anyway?'),
+        variant: 'warning',
+        onConfirm: () => {
+          supabase?.auth.signOut();
+        }
+      });
+      return;
+    }
+    await supabase?.auth.signOut();
+  };
+
+  // Ctrl/Cmd+S saves instead of opening the browser's save dialog. The ref
+  // keeps the listener stable while always calling the latest handler.
+  const saveShortcutRef = useRef<() => void>(() => {});
+  saveShortcutRef.current = () => { handleSaveBulletin(); };
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveShortcutRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const handleSaveAsTemplate = async () => {
     if (!user) {
@@ -1002,11 +1100,15 @@ function EditorApp() {
 
     try {
       setLoading(true);
-      const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`;
-      await templateService.saveTemplate(templateName, bulletinData);
-      toast.success('Bulletin saved as template!');
+      const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString(localeMap[i18n.language] || i18n.language)}`;
+      const saved = templateService.saveTemplate(templateName, bulletinData);
+      if (saved) {
+        toast.success(t('success.bulletinSavedAsTemplate', 'Bulletin saved as template!'));
+      } else {
+        toast.error(t('errors.templateStorageFull', 'Could not save template: browser storage is full or unavailable. Try deleting old templates.'));
+      }
     } catch (error) {
-      toast.error('Error saving template: ' + (error as Error).message);
+      toast.error(t('errors.savingTemplate', 'Error saving template: {{message}}', { message: (error as Error).message }));
     } finally {
       setLoading(false);
     }
@@ -1017,21 +1119,7 @@ function EditorApp() {
   };
 
   const handleLoadSavedBulletin = (bulletin: any) => {
-    const defaultWardLeadership = [
-      { title: 'Bishop', name: '', phone: '' },
-      { title: '1st Counselor', name: '', phone: '' },
-      { title: '2nd Counselor', name: '', phone: '' },
-      { title: 'Executive Secretary', name: '', phone: '' },
-      { title: 'Ward Clerk', name: '', phone: '' },
-      { title: 'Elders Quorum President', name: '', phone: '' },
-      { title: 'Relief Society President', name: '', phone: '' },
-      { title: 'Young Women\'s President', name: '', phone: '' },
-      { title: 'Primary President', name: '', phone: '' },
-      { title: 'Sunday School President', name: '', phone: '' },
-      { title: 'Ward Mission Leader', name: '', phone: '' },
-      { title: 'Building Representative', name: '', phone: '' },
-      { title: 'Temple & Family History', name: '', phone: '' }
-    ];
+    const defaultWardLeadership = getDefaultLeadershipRoster();
     const asArray = (v: unknown) => (Array.isArray(v) ? v : []);
     const asObject = <T extends object>(v: unknown, fallback: T): T =>
       v && typeof v === 'object' && !Array.isArray(v) ? (v as T) : fallback;
@@ -1085,12 +1173,13 @@ function EditorApp() {
         setBulletinData(loadedData);
         setCurrentBulletinId(bulletin.id);
         setHasUnsavedChanges(false);
+        clearLocalDraft();
         setShowSavedBulletins(false);
         setShowQRCode(false);
       } catch (err) {
         console.error('Failed to load bulletin', { id: bulletin?.id, bulletin, error: err });
         toast.error(
-          `Couldn't load this bulletin (id: ${bulletin?.id ?? 'unknown'}). Please contact support with this ID.`
+          t('errors.couldNotLoadBulletin', "Couldn't load this bulletin (id: {{id}}). Please contact support with this ID.", { id: bulletin?.id ?? 'unknown' })
         );
       }
     };
@@ -1098,8 +1187,8 @@ function EditorApp() {
     if (hasUnsavedChanges) {
       setConfirmationModal({
         isOpen: true,
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes. Loading this bulletin will discard them. Continue?',
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
+        message: t('common.loadBulletinDiscardConfirm', 'You have unsaved changes. Loading this bulletin will discard them. Continue?'),
         onConfirm: applyLoad,
         variant: 'warning'
       });
@@ -1109,21 +1198,29 @@ function EditorApp() {
     applyLoad();
   };
 
-  const handleTemplateSelect = (template: Template | null, builtIn?: BuiltInTemplate) => {
+  const handleTemplateSelect = async (template: Template | null, builtIn?: BuiltInTemplate) => {
+    let next: BulletinData;
     if (builtIn) {
       templateService.setActiveTemplateId(null);
       const blank = createBlankBulletin();
-      setBulletinData({ ...blank, ...builtIn.data });
+      next = { ...blank, ...builtIn.data };
       toast.success(t(builtIn.nameKey) + ' ' + t('templates.applied', 'template applied'));
     } else if (template) {
       templateService.setActiveTemplateId(template.id);
-      setBulletinData(template.data);
+      next = template.data;
     } else {
       templateService.setActiveTemplateId(null);
-      setBulletinData(createBlankBulletin());
+      next = createBlankBulletin();
     }
+    // A new bulletin starts with this week's recurring announcements already
+    // in place (no-op when signed out, offline, or none are configured).
+    if (user) {
+      next = await populateWithRecurringAnnouncements(next);
+    }
+    setBulletinData(next);
     setCurrentBulletinId(null);
     setHasUnsavedChanges(false);
+    clearLocalDraft();
     setShowTemplates(false);
   };
 
@@ -1136,10 +1233,13 @@ function EditorApp() {
       navigate('/', { replace: true });
       return;
     }
-    if (hasUnsavedChanges) {
+    // hasUnsavedChanges is always false in this mount-time closure, even when
+    // a draft was restored during state init — so check the draft directly.
+    // Applying the template would overwrite that work and delete the draft.
+    if (hasUnsavedChanges || readDraft()) {
       setConfirmationModal({
         isOpen: true,
-        title: t('common.unsavedChanges', 'Unsaved Changes'),
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
         message: t('templates.deepLinkConfirm', 'You have unsaved changes. Apply this template and lose your current work?'),
         variant: 'warning' as const,
         onConfirm: () => {
@@ -1168,7 +1268,7 @@ function EditorApp() {
     }
   };
 
-  const handleScheduleBulletin = async (scheduledDate: string) => {
+  const handleScheduleBulletin = async (scheduledDate: string, autoActivate: boolean = true) => {
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -1179,7 +1279,7 @@ function EditorApp() {
     const now = new Date();
     
     if (scheduledDateTime < now) {
-      toast.error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
+      toast.error(t('bulletin.pastDateError', 'Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.'));
       return;
     }
 
@@ -1192,7 +1292,8 @@ function EditorApp() {
         const savedBulletin = await retryOperation(() => bulletinService.saveBulletin(
           bulletinData,
           user.id,
-          undefined
+          undefined,
+          currentProfileSlug || undefined
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);
@@ -1202,13 +1303,13 @@ function EditorApp() {
       await bulletinService.updateBulletinSchedule(bulletinId, user.id, {
         scheduledDate,
         status: 'scheduled',
-        autoActivate: true
+        autoActivate
       });
 
-      toast.success(`Bulletin scheduled for ${new Date(scheduledDate).toLocaleDateString()}`);
+      toast.success(t('success.bulletinScheduledFor', 'Bulletin scheduled for {{date}}', { date: new Date(scheduledDate).toLocaleDateString(localeMap[i18n.language] || i18n.language) }));
       setShowScheduler(false);
     } catch (error: any) {
-      toast.error('Error scheduling bulletin: ' + error.message);
+      toast.error(t('errors.schedulingBulletin', 'Error scheduling bulletin: {{message}}', { message: error.message }));
     } finally {
       setLoading(false);
     }
@@ -1321,7 +1422,7 @@ function EditorApp() {
         queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
       }
     } catch (error) {
-      toast.error('Error updating active bulletin: ' + (error as Error).message);
+      toast.error(t('errors.updatingActiveBulletin', 'Error updating active bulletin: {{message}}', { message: (error as Error).message }));
     }
   };
 
@@ -1493,22 +1594,22 @@ function EditorApp() {
         pdf.autoPrint();
         pdf.save('Ward-Bulletin.pdf');
       } catch (error) {
-        toast.error('There was an error generating the PDF. Please try again.');
+        toast.error(t('errors.pdfGenerationFailed', 'There was an error generating the PDF. Please try again.'));
       }
     } else {
-      toast.error('PDF export failed: Missing page references. Please try again.');
+      toast.error(t('errors.pdfMissingPageReferences', 'PDF export failed: Missing page references. Please try again.'));
     }
   };
 
   // Add a Clear Local Data button for troubleshooting
   const handleClearLocalData = () => {
-    if (confirm('This will clear all local data and drafts. Continue?')) {
+    if (window.confirm(t('common.clearLocalDataConfirm', 'This will clear all local data and drafts. Continue?'))) {
       try {
         localStorage.clear();
         sessionStorage.clear();
         window.location.reload();
       } catch (error) {
-        toast.error('Failed to clear local data. Please try refreshing the page.');
+        toast.error(t('errors.clearLocalDataFailed', 'Failed to clear local data. Please try refreshing the page.'));
       }
     }
   };
@@ -1594,9 +1695,7 @@ function EditorApp() {
                 {user ? (
                   <UserMenu
                     user={user}
-                    onSignOut={async () => {
-                      await supabase?.auth.signOut();
-                    }}
+                    onSignOut={handleSignOut}
                     onSaveBulletin={handleSaveBulletin}
                     onViewSavedBulletins={handleViewSavedBulletins}
                     hasUnsavedChanges={hasUnsavedChanges}
@@ -1702,8 +1801,8 @@ function EditorApp() {
                     </button>
                       <button
                         onClick={async () => {
-                          await supabase?.auth.signOut();
                           setShowMobileMenu(false);
+                          await handleSignOut();
                         }}
                         className="w-full flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
                       >
@@ -1728,7 +1827,7 @@ function EditorApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+      <main className={`max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8${hasUnsavedChanges ? ' pb-24' : ''}`}>
         {/* Deep link onboarding banner */}
         {showDeepLinkBanner && (
           <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
@@ -1763,8 +1862,10 @@ function EditorApp() {
             </div>
           </div>
 
-          {/* Preview Section */}
-          <div className="space-y-4 sm:space-y-6">
+          {/* Preview Section — sticky and self-scrolling on desktop so the
+              live preview stays visible however far down the form you edit.
+              self-start is required: a stretched grid column never sticks. */}
+          <div className="space-y-4 sm:space-y-6 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-3 sm:space-y-0">
                 <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
@@ -1814,22 +1915,8 @@ function EditorApp() {
                 <BulletinPreview
                   data={bulletinData}
                   allImages={allImages}
-                  onImagePositionChange={(position) => {
-                    // Only update if the position actually changed and is different from current
-                    const currentPosition = bulletinData.imagePosition || { x: 50, y: 50 };
-                    if (position.x !== currentPosition.x || position.y !== currentPosition.y) {
-                      handleBulletinDataChange({
-                        ...bulletinData,
-                        imagePosition: position
-                      });
-                    }
-                  }}
-                  onImageOpacityChange={(opacity) => {
-                    handleBulletinDataChange({
-                      ...bulletinData,
-                      imageOpacity: opacity
-                    });
-                  }}
+                  onImagePositionChange={handleImagePositionChange}
+                  onImageOpacityChange={handleImageOpacityChange}
                 />
               </div>
 
@@ -2027,7 +2114,7 @@ function EditorApp() {
               );
               
               if (existingAnnouncement) {
-                toast.info(`"${submission.title}" already exists in the bulletin`);
+                toast.info(t('submissions.alreadyExistsInBulletin', '"{{title}}" already exists in the bulletin', { title: submission.title }));
                 return prev;
               }
 
@@ -2040,15 +2127,15 @@ function EditorApp() {
 
             // Show success toast
             if (submission.title.trim()) {
-              toast.success(`"${submission.title}" has been approved and added to the ${submission.audience.replace('_', ' ')} section!`);
+              toast.success(t('submissions.approvedAndAddedToSection', '"{{title}}" has been approved and added to the {{audience}} section!', { title: submission.title, audience: submission.audience.replace('_', ' ') }));
             } else {
               // This is a consolidated announcement
-              toast.success(`${submission.audience.replace('_', ' ')} announcements have been consolidated and added to the bulletin!`);
+              toast.success(t('submissions.groupApprovedAndConsolidated', '{{audience}} announcements have been consolidated and added to the bulletin!', { audience: submission.audience.replace('_', ' ') }));
             }
           }}
           onSubmissionRejected={(submission) => {
             // Show rejection toast
-            toast.success(`"${submission.title}" has been rejected`);
+            toast.success(t('submissions.hasBeenRejected', '"{{title}}" has been rejected', { title: submission.title }));
           }}
           onSubmissionsChanged={checkPendingSubmissions}
         />
@@ -2075,11 +2162,8 @@ function EditorApp() {
         {createPortal(
           <div className="print-source-portal" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
             <BulletinPrintLayout
-              data={{
-                ...bulletinData,
-                profileSlug: currentProfileSlug || 'your-profile-slug'
-              }}
-              refs={{ page1: printPage1Ref, page2: printPage2Ref }}
+              data={printLayoutData}
+              refs={printLayoutRefs}
             />
           </div>,
           document.body
@@ -2097,7 +2181,7 @@ function EditorApp() {
                 type="text"
                 value={newProfileSlug}
                 onChange={(e) => setNewProfileSlug(e.target.value)}
-                placeholder="Enter profile slug (e.g., sunset-hills-ward)"
+                placeholder={t('form.enterProfileSlugPlaceholder', 'Enter profile slug (e.g., sunset-hills-ward)')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
               />
               <div className="flex space-x-3">
@@ -2132,20 +2216,42 @@ function EditorApp() {
             </p>
 
             <nav className="mt-4 space-x-4">
-              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
-              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+              <a href="/about" className="text-gray-600 hover:text-gray-900">{t('footer.about', 'About')}</a>
+              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">{t('footer.howToUse', 'How To Use')}</a>
+              <a href="/contact" className="text-gray-600 hover:text-gray-900">{t('footer.contact', 'Contact')}</a>
             </nav>
             <nav className="mt-3 space-x-4">
-              <span className="text-gray-400 text-sm">Guides:</span>
-              <a href="/guide/create-ward-bulletin" className="text-sm text-gray-500 hover:text-gray-900">Create a Bulletin</a>
-              <a href="/guide/bulletin-templates" className="text-sm text-gray-500 hover:text-gray-900">Templates & Ideas</a>
-              <a href="/guide/sacrament-meeting-program" className="text-sm text-gray-500 hover:text-gray-900">Program Guide</a>
+              <span className="text-gray-400 text-sm">{t('footer.guides', 'Guides:')}</span>
+              <a href="/guide/create-ward-bulletin" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.createBulletinGuide', 'Create a Bulletin')}</a>
+              <a href="/guide/bulletin-templates" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.templatesAndIdeas', 'Templates & Ideas')}</a>
+              <a href="/guide/sacrament-meeting-program" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.programGuide', 'Program Guide')}</a>
             </nav>
           </div>
         </div>
       </footer>
       
+      {/* Sticky save bar (all screen sizes): the Save action stays reachable
+          no matter how long the form scroll gets, and doubles as the always-
+          visible "you have unsaved work" indicator. Signed-out users get the
+          sign-in-to-save flow from save. */}
+      {hasUnsavedChanges && (
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.10)] print:hidden">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-3">
+            <span className="text-sm text-gray-700 flex items-center gap-2 min-w-0">
+              <span aria-hidden="true" className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+              <span className="truncate">{t('common.unsavedChangesShort', 'Unsaved changes')}</span>
+            </span>
+            <button
+              onClick={handleSaveBulletin}
+              disabled={loading}
+              className="flex-shrink-0 px-5 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            >
+              {loading ? t('common.saving') : t('bulletin.saveBulletin')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast Container */}
       <ToastContainer
         position="top-right"

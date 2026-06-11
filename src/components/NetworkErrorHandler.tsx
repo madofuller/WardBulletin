@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 interface NetworkErrorHandlerProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export default function NetworkErrorHandler({
   showOfflineIndicator = true,
   showStatusIndicator = false
 }: NetworkErrorHandlerProps) {
+  const { t } = useTranslation();
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     isOnline: navigator.onLine,
     isConnecting: false,
@@ -42,7 +44,7 @@ export default function NetworkErrorHandler({
       
       if (showOfflineBanner) {
         setShowOfflineBanner(false);
-        toast.success('Connection restored!', {
+        toast.success(t('success.connectionRestored', 'Connection restored!'), {
           icon: <CheckCircle className="w-5 h-5 text-green-600" />
         });
       }
@@ -57,7 +59,7 @@ export default function NetworkErrorHandler({
       
       if (showOfflineIndicator) {
         setShowOfflineBanner(true);
-        toast.error('You are currently offline. Some features may be limited.', {
+        toast.error(t('errors.currentlyOffline', 'You are currently offline. Some features may be limited.'), {
           icon: <WifiOff className="w-5 h-5 text-red-600" />
         });
       }
@@ -254,13 +256,14 @@ export const NetworkAwareLoader: React.FC<{
   onRetry?: () => void;
   children: React.ReactNode;
 }> = ({ isLoading, error, onRetry, children }) => {
+  const { t } = useTranslation();
   const { isOnline } = useNetworkStatus();
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
-        <span className="text-gray-600">Loading...</span>
+        <span className="text-gray-600">{t('common.loading', 'Loading...')}</span>
       </div>
     );
   }

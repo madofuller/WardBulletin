@@ -32,7 +32,7 @@ export default function SavedBulletinsModal({
   onActiveBulletinChange,
   currentActiveBulletinId
 }: SavedBulletinsModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
@@ -107,7 +107,7 @@ export default function SavedBulletinsModal({
 
   const confirmDelete = async () => {
     if (!confirmationModal.bulletinId || !user) {
-      toast.error('User not authenticated');
+      toast.error(t('errors.userNotAuthenticated', 'User not authenticated'));
       return;
     }
 
@@ -130,9 +130,9 @@ export default function SavedBulletinsModal({
     try {
       // Delete on server in background
       await bulletinService.deleteBulletin(bulletinId, user.id);
-      toast.success('Bulletin deleted successfully');
+      toast.success(t('success.bulletinDeletedSuccessfully', 'Bulletin deleted successfully'));
     } catch (error: any) {
-      toast.error('Failed to delete bulletin: ' + error.message);
+      toast.error(t('errors.deleteBulletinFailed', 'Failed to delete bulletin') + ': ' + error.message);
       // Revert optimistic update on error
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
     }
@@ -141,7 +141,7 @@ export default function SavedBulletinsModal({
 
   const handleBulkSchedule = async (schedules: Array<{bulletinId: string; scheduledDate: string}>) => {
     if (!user) {
-      toast.error('User not authenticated');
+      toast.error(t('errors.userNotAuthenticated', 'User not authenticated'));
       return;
     }
 
@@ -165,15 +165,15 @@ export default function SavedBulletinsModal({
           // Show the first unique error message
           toast.error(uniqueErrors[0]);
         } else {
-          toast.warning(`${successes} bulletins scheduled successfully, ${failures} failed`);
+          toast.warning(t('success.allBulletinsScheduledSuccessfully', '{{count}} bulletins scheduled successfully, {{failures}} failed', { count: successes, failures }));
         }
       } else {
-        toast.success(`${successes} bulletins scheduled successfully`);
+        toast.success(t('success.bulletinsScheduledSuccessfully', '{{count}} bulletins scheduled successfully', { count: successes }));
       }
 
       // If we scheduled the currently active bulletin, it's no longer active
       if (schedulingCurrentActive) {
-        toast.info('Note: Your currently active bulletin has been scheduled. Select a new active bulletin for your QR code.');
+        toast.info(t('bulletin.activeBulletinScheduledNote', 'Note: Your currently active bulletin has been scheduled. Select a new active bulletin for your QR code.'));
       }
 
       // Invalidate the correct query key based on whether we're on a shared profile
@@ -191,13 +191,13 @@ export default function SavedBulletinsModal({
       // Refetch immediately to update the UI
       queryClient.refetchQueries({ queryKey });
     } catch (error: any) {
-      toast.error('Failed to schedule bulletins: ' + error.message);
+      toast.error(t('errors.scheduleBulletinsFailed', 'Failed to schedule bulletins: {{message}}', { message: error.message }));
     }
   };
 
   const handleStatusChange = async (bulletinId: string, newStatus: BulletinStatus) => {
     if (!user) {
-      toast.error('User not authenticated');
+      toast.error(t('errors.userNotAuthenticated', 'User not authenticated'));
       return;
     }
 
@@ -253,13 +253,13 @@ export default function SavedBulletinsModal({
       setLocalBulletins(freshData);
 
       const statusLabels = {
-        draft: 'Saved',
-        scheduled: 'Scheduled',
-        active: 'QR Active',
-        archived: 'Archived'
+        draft: t('success.saved', 'Saved'),
+        scheduled: t('bulletin.scheduledStatus', 'Scheduled'),
+        active: t('bulletin.qrActive', 'QR Active'),
+        archived: t('bulletin.archivedStatus', 'Archived')
       };
 
-      toast.success(`Bulletin set to ${statusLabels[newStatus]}`);
+      toast.success(`${t('bulletin.bulletinSetTo', 'Bulletin set to')} ${statusLabels[newStatus]}`);
       
       // Don't notify parent component - let background refetch handle synchronization
       // This prevents parent from invalidating queries and clearing our data
@@ -267,7 +267,7 @@ export default function SavedBulletinsModal({
       // Revert optimistic update on error by refetching
       const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
       queryClient.refetchQueries({ queryKey });
-      toast.error('Failed to update bulletin status: ' + error.message);
+      toast.error(t('errors.updateBulletinStatusFailed', 'Failed to update bulletin status: {{message}}', { message: error.message }));
     }
   };
 
@@ -276,7 +276,7 @@ export default function SavedBulletinsModal({
     if (!dateString) return '';
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString(i18n.language, {
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
@@ -285,7 +285,7 @@ export default function SavedBulletinsModal({
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString(i18n.language, {
       year: 'numeric', 
       month: 'short', 
       day: 'numeric',
@@ -358,12 +358,12 @@ export default function SavedBulletinsModal({
             <div className="space-y-4">
               {/* Info Section */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">How Bulletin Status Works</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-2">{t('bulletin.howBulletinStatusWorks', 'How Bulletin Status Works')}</h4>
                 <div className="text-xs text-blue-800 space-y-1">
-                  <p><strong>Active:</strong> This bulletin appears when people scan your QR code</p>
-                  <p><strong>Scheduled:</strong> Will automatically become active at the scheduled date/time</p>
-                  <p><strong>Draft:</strong> Work in progress - not visible to QR code scans</p>
-                  <p><strong>Archived:</strong> Previously used - stored for reference</p>
+                  <p><strong>{t('bulletin.activeStatus', 'Active')}:</strong> {t('bulletin.statusActiveDescription', 'This bulletin appears when people scan your QR code')}</p>
+                  <p><strong>{t('bulletin.scheduledStatus', 'Scheduled')}:</strong> {t('bulletin.statusScheduledDescription', 'Will automatically become active at the scheduled date/time')}</p>
+                  <p><strong>{t('bulletin.draftStatus', 'Draft')}:</strong> {t('bulletin.statusDraftDescription', 'Work in progress - not visible to QR code scans')}</p>
+                  <p><strong>{t('bulletin.archivedStatus', 'Archived')}:</strong> {t('bulletin.statusArchivedDescription', 'Previously used - stored for reference')}</p>
                 </div>
               </div>
               
@@ -397,8 +397,8 @@ export default function SavedBulletinsModal({
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-1" />
                           <span>
-                            {bulletin.status === 'scheduled' && bulletin.scheduled_date 
-                              ? `Scheduled: ${formatDate(bulletin.scheduled_date.split('T')[0])}` 
+                            {bulletin.status === 'scheduled' && bulletin.scheduled_date
+                              ? t('bulletin.scheduledDateLabel', 'Scheduled: {{date}}', { date: formatDate(bulletin.scheduled_date.split('T')[0]) })
                               : `Meeting: ${formatDate(bulletin.date)}`
                             }
                           </span>
@@ -407,11 +407,11 @@ export default function SavedBulletinsModal({
                         {(bulletin.status === 'draft' || !bulletin.status) && bulletin.scheduled_date && (
                           <div className="flex items-center text-blue-600">
                             <Clock className="w-4 h-4 mr-1" />
-                            <span>Scheduled: {formatDate(bulletin.scheduled_date.split('T')[0])}</span>
+                            <span>{t('bulletin.scheduledDateLabel', 'Scheduled: {{date}}', { date: formatDate(bulletin.scheduled_date.split('T')[0]) })}</span>
                           </div>
                         )}
                         <div>
-                          <span>Updated: {formatDateTime(bulletin.updated_at)}</span>
+                          <span>{t('bulletin.updatedDateLabel', 'Updated: {{date}}', { date: formatDateTime(bulletin.updated_at) })}</span>
                         </div>
                       </div>
 
@@ -453,7 +453,7 @@ export default function SavedBulletinsModal({
                         className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                       >
                         <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Load</span>
+                        <span className="hidden sm:inline">{t('bulletin.load', 'Load')}</span>
                       </button>
 
                       <button
@@ -466,7 +466,7 @@ export default function SavedBulletinsModal({
                         ) : (
                           <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
                         )}
-                        <span className="hidden sm:inline">Delete</span>
+                        <span className="hidden sm:inline">{t('common.delete', 'Delete')}</span>
                       </button>
                     </div>
                   </div>

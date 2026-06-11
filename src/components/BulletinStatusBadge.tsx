@@ -3,6 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, CheckCircle, Archive, FileText } from 'lucide-react';
 import { BulletinStatus } from '../types/bulletin';
 
+// Map i18n language codes to proper locale codes (same pattern as BulletinPreview)
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 interface BulletinStatusBadgeProps {
   status: BulletinStatus;
   scheduledDate?: string;
@@ -14,7 +27,8 @@ export default function BulletinStatusBadge({
   scheduledDate,
   className = ''
 }: BulletinStatusBadgeProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const resolvedLocale = localeMap[i18n.language] || i18n.language;
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
@@ -22,7 +36,7 @@ export default function BulletinStatusBadge({
       // Parse as local date (not UTC) - same method as other components
       const [year, month, day] = dateString.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString(resolvedLocale, {
         year: 'numeric',
         month: 'numeric', 
         day: 'numeric' 

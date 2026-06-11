@@ -195,10 +195,11 @@ export default function AnnouncementSubmissionPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('announcementForm.yourInformation')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="submitter-name" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('announcementForm.yourName')}
                   </label>
                   <input
+                    id="submitter-name"
                     type="text"
                     value={formData.submitterName}
                     onChange={(e) => handleInputChange("submitterName", e.target.value)}
@@ -208,10 +209,11 @@ export default function AnnouncementSubmissionPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="submitter-email" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('announcementForm.emailOptional')}
                   </label>
                   <input
+                    id="submitter-email"
                     type="email"
                     value={formData.submitterEmail}
                     onChange={(e) => handleInputChange("submitterEmail", e.target.value)}
@@ -252,10 +254,11 @@ export default function AnnouncementSubmissionPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor={`announcement-title-${announcement.id}`} className="block text-sm font-medium text-gray-700 mb-1">
                       {t('announcementForm.announcementTitle')}
                     </label>
                     <input
+                      id={`announcement-title-${announcement.id}`}
                       type="text"
                       value={announcement.title}
                       onChange={(e) => updateAnnouncement(announcement.id, "title", e.target.value)}
@@ -278,10 +281,11 @@ export default function AnnouncementSubmissionPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor={`announcement-audience-${announcement.id}`} className="block text-sm font-medium text-gray-700 mb-1">
                         {t('announcementForm.targetAudience')}
                       </label>
                       <select
+                        id={`announcement-audience-${announcement.id}`}
                         value={announcement.audience}
                         onChange={(e) => updateAnnouncement(announcement.id, "audience", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QrCode, Type, Maximize2, Printer, Download, X } from 'lucide-react';
 import BulletinPrintLayout from './BulletinPrintLayout';
@@ -21,6 +21,20 @@ interface PrintPreviewModalProps {
 export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpdateData, onExportPDF }: PrintPreviewModalProps) {
   const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -59,13 +73,13 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-2 sm:mx-4 h-full max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="print-preview-modal-title" className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-2 sm:mx-4 h-full max-h-[95vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
 
         {/* Header toolbar */}
         <div className="flex flex-col gap-3 p-4 sm:p-5 border-b border-gray-200 flex-shrink-0">
           {/* Top row: title + action buttons */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-900">{t('printPreview.printPreview')}</h3>
+            <h3 id="print-preview-modal-title" className="text-lg sm:text-xl font-bold text-gray-900">{t('printPreview.printPreview')}</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrint}
@@ -87,6 +101,7 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
                 </button>
               )}
               <button
+                autoFocus
                 onClick={onClose}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label={t('common.close')}

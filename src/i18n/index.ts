@@ -28,4 +28,16 @@ i18n
     },
   });
 
+// Keep the document language in sync so screen readers and browser
+// translation use the right pronunciation rules (WCAG 3.1.1) - public
+// bulletins render in the ward's language, not necessarily English.
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng;
+  }
+});
+if (typeof document !== 'undefined' && i18n.language) {
+  document.documentElement.lang = i18n.language;
+}
+
 export default i18n;

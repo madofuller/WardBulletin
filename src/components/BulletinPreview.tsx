@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BulletinData } from "../types/bulletin";
 import { sanitizeHtml } from '../lib/sanitizeHtml';
+import { linkifyHtml } from '../lib/linkifyHtml';
 import { decodeHtml } from '../lib/decodeHtml';
+import { detectMeetingPlatform, normalizeMeetingUrl } from '../lib/meetingPlatform';
+import { sanitizedAnnouncementHtml } from '../lib/sanitizeCache';
 import { getSongUrl, getSongTitle } from '../lib/songService';
 import { getImageByIdSync, LDS_IMAGES, ImageData } from '../data/images';
 
@@ -250,6 +254,7 @@ function AnnouncementItem({
   html, // sanitized html string
   imageId,
   hideImageOnPrint = false,
+  hideOnPrint = false,
   images
 }: {
   audience: string;
@@ -258,6 +263,7 @@ function AnnouncementItem({
   html: string;
   imageId?: string;
   hideImageOnPrint?: boolean;
+  hideOnPrint?: boolean;
   images?: Array<{ imageId: string; hideImageOnPrint?: boolean; size?: 'small' | 'medium' | 'large' | 'xlarge' }>;
 }) {
   // H1 audience, H2 title, content styled as "H3-ish"
@@ -278,7 +284,7 @@ function AnnouncementItem({
   };
   
   return (
-    <article className="border-l-4 border-[#edf4ff] pl-4">
+    <article className={`border-l-4 border-[#edf4ff] pl-4${hideOnPrint ? ' print:hidden' : ''}`}>
       <h3 className="text-xl sm:text-2xl text-gray-900">{audience}</h3>
 
       {category && category !== 'general' && (
@@ -293,7 +299,7 @@ function AnnouncementItem({
 
       <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
         <div
-          className="mt-1 break-words"
+          className="mt-1 break-words [&_a]:text-blue-600 [&_a]:underline [&_a]:break-all hover:[&_a]:text-blue-800"
           style={{
             '--tw-prose-bullets': 'disc',
             '--tw-prose-list-style': 'disc',
@@ -374,7 +380,7 @@ function AnnouncementItem({
 
 /* ------------------------------- Main export ------------------------------- */
 
-export default function BulletinPreview({
+function BulletinPreview({
   data,
   hideTabs = false,
   hideImageControls = false,
@@ -484,7 +490,7 @@ export default function BulletinPreview({
       return {
         ...a,
         audienceLabel: label,
-        html: sanitizeHtml(decodeHtml(a.content ?? "")),
+        html: sanitizedAnnouncementHtml(a.content ?? ""),
       };
     });
   }, [data?.announcements, unitTypeOverride]);
@@ -501,6 +507,9 @@ export default function BulletinPreview({
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.href)}`;
   }, []);
 
+  const meetingLink = typeof data?.leadership?.meetingLink === 'string' ? data.leadership.meetingLink.trim() : '';
+  const meetingPlatform = useMemo(() => (meetingLink ? detectMeetingPlatform(meetingLink) : null), [meetingLink]);
+
   /* --------------------------------- Render -------------------------------- */
 
   return (
@@ -508,15 +517,26 @@ export default function BulletinPreview({
       {/* Tabs */}
       {!hideTabs && (
         <nav className="flex justify-center print:hidden mb-4 mt-4" aria-label="Main tabs">
-          <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+          <ul role="tablist" className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
             {(['program', 'announcements', 'unitinfo'] as const).map(tab => (
               <li key={tab} role="presentation" className={`w-full sm:w-auto ${tab === 'unitinfo' && !hasWardInfo(data) ? 'hidden sm:block' : ''}`}>
                 <button
                   type="button"
                   role="tab"
+                  id={`tab-${tab}`}
+                  tabIndex={activeTab === tab ? 0 : -1}
                   aria-selected={activeTab === tab}
                   aria-controls={`tab-panel-${tab}`}
-                  className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base sm:text-base
+                  onKeyDown={(e) => {
+                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                    e.preventDefault();
+                    const tabs = ['program', 'announcements', 'unitinfo'] as const;
+                    const idx = tabs.indexOf(tab);
+                    const next = tabs[(idx + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                    setActiveTab(next);
+                    document.getElementById(`tab-${next}`)?.focus();
+                  }}
+                  className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-3 rounded-full font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border-2 transition-all duration-200 text-base sm:text-base
                     ${activeTab === tab
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
@@ -533,7 +553,7 @@ export default function BulletinPreview({
 
       {/* ------------------------------- Program ------------------------------ */}
       {activeTab === 'program' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-program" role="tabpanel" aria-labelledby="tab-program" className="p-6 space-y-4 text-sm leading-relaxed">
           <div className="relative">
             <BulletinHeader
               wardName={data?.meetingType === 'baptism' ? undefined : data?.wardName}
@@ -558,6 +578,23 @@ export default function BulletinPreview({
               />
             )}
           </div>
+
+          {/* Virtual meeting link (Zoom, Google Meet, Teams, ...) */}
+          {meetingLink !== '' && (
+            <div className="flex justify-center print:hidden">
+              <a
+                href={normalizeMeetingUrl(meetingLink)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors"
+              >
+                <Video className="w-4 h-4" aria-hidden="true" />
+                {meetingPlatform
+                  ? t('bulletin.joinMeeting', { platform: meetingPlatform })
+                  : t('bulletin.joinMeetingGeneric')}
+              </a>
+            </div>
+          )}
 
           {/* Leadership */}
           <div className="space-y-1">
@@ -795,7 +832,7 @@ export default function BulletinPreview({
 
       {/* ---------------------------- Announcements --------------------------- */}
       {activeTab === 'announcements' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-announcements" role="tabpanel" aria-labelledby="tab-announcements" className="p-6 space-y-4 text-sm leading-relaxed">
           <div className="relative">
             <BulletinHeader
               wardName={data?.wardName}
@@ -838,7 +875,7 @@ export default function BulletinPreview({
                     <h3 className="text-xl sm:text-2xl text-gray-900 mb-4">{audience}</h3>
                     <div className="space-y-6">
                       {announcements.map((a, i) => (
-                        <div key={i}>
+                        <div key={i} className={a.hideOnPrint ? 'print:hidden' : undefined}>
                           {a.title && (
                             <h2 className="text-xl sm:text-xl text-gray-900 mb-2 font-semibold">{a.title}</h2>
                           )}
@@ -851,7 +888,7 @@ export default function BulletinPreview({
                           )}
                           <div className="mt-2 text-gray-800 text-base leading-relaxed overflow-hidden">
                             <div
-                              className="mt-1 break-words"
+                              className="mt-1 break-words [&_a]:text-blue-600 [&_a]:underline [&_a]:break-all hover:[&_a]:text-blue-800"
                               style={{
                                 '--tw-prose-bullets': 'disc',
                                 '--tw-prose-list-style': 'disc',
@@ -992,7 +1029,7 @@ export default function BulletinPreview({
 
       {/* ------------------------------- Ward Info ---------------------------- */}
       {activeTab === 'unitinfo' && (
-        <div className="p-6 space-y-4 text-sm leading-relaxed">
+        <div id="tab-panel-unitinfo" role="tabpanel" aria-labelledby="tab-unitinfo" className="p-6 space-y-4 text-sm leading-relaxed">
           {/* Ward Leadership Section */}
           {Array.isArray(data.wardLeadership) && data.wardLeadership.some(e => e && (e.title || e.name || e.phone)) && (
             <>
@@ -1177,3 +1214,5 @@ export default function BulletinPreview({
     </div>
   );
 }
+
+export default React.memo(BulletinPreview);

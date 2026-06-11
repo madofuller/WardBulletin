@@ -24,9 +24,25 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
     }
   }, [isOpen]);
 
+  // Close on Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
   const handleDelete = (id: string) => {
     if (!confirm(t('modals.confirmDelete'))) return;
-    templateService.deleteTemplate(id);
+    if (!templateService.deleteTemplate(id)) {
+      alert(t('templates.storageError', 'Browser storage is unavailable — the template could not be deleted.'));
+    }
     setTemplates(templateService.listTemplates());
   };
 
@@ -37,7 +53,9 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
 
   const commitRename = () => {
     if (renameId) {
-      templateService.renameTemplate(renameId, newName);
+      if (!templateService.renameTemplate(renameId, newName)) {
+        alert(t('templates.storageError', 'Browser storage is unavailable — the template could not be renamed.'));
+      }
       setTemplates(templateService.listTemplates());
       setRenameId(null);
     }
@@ -47,10 +65,10 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="templates-modal-title" className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4">
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold">{t('bulletin.bulletinTemplates')}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h3 id="templates-modal-title" className="text-xl font-semibold">{t('bulletin.bulletinTemplates')}</h3>
+          <button autoFocus onClick={onClose} aria-label={t('common.close')} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
