@@ -440,7 +440,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   const [showAddSection, setShowAddSection] = useState(false);
   const addSectionRef = useRef<HTMLDivElement>(null);
 
-  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing' | 'baptism_ordinance' | 'confirmation') => {
+  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing' | 'confirmation') => {
     if (type === 'speaker') {
       updateField('agenda', [
         ...data.agenda,
@@ -457,8 +457,6 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'sacrament' }]);
     } else if (type === 'baby_blessing') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baby_blessing', childName: '' }]);
-    } else if (type === 'baptism_ordinance') {
-      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baptism_ordinance', candidateName: '', performedBy: '' }]);
     } else if (type === 'confirmation') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'confirmation', candidateName: '', performedBy: '' }]);
     }
@@ -1720,13 +1718,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
               >
                 {t('form.addBabyBlessing')}
               </button>
-              <button
-                type="button"
-                onClick={() => handleAddSection('baptism_ordinance')}
-                className="px-4 py-3 bg-cyan-600 text-white rounded-lg text-base font-medium hover:bg-cyan-700 transition-colors"
-              >
-                {t('form.addBaptism')}
-              </button>
+              {/* No "Add Baptism" here: baptisms are their own service with a
+                  dedicated editor at /baptism, not a sacrament meeting item.
+                  Existing bulletins containing one still render and edit. */}
               <button
                 type="button"
                 onClick={() => handleAddSection('confirmation')}

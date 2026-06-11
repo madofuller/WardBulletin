@@ -37,25 +37,10 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
       ],
     },
   },
-  {
-    id: 'builtin-baptism',
-    nameKey: 'templates.baptismProgram',
-    descriptionKey: 'templates.baptismProgramDesc',
-    icon: '💧',
-    data: {
-      meetingType: 'baptism',
-      agenda: [
-        { type: 'speaker', id: 'sp-1', name: '', speakerType: 'adult', customLabel: 'Opening Remarks' },
-        { type: 'speaker', id: 'sp-2', name: '', speakerType: 'adult', customLabel: 'Talk on Baptism' },
-        { type: 'baptism_ordinance', id: 'bap-1', candidateName: '', performedBy: '' },
-        { type: 'speaker', id: 'sp-3', name: '', speakerType: 'adult', customLabel: 'Talk on the Holy Ghost' },
-        { type: 'musical', id: 'mus-1', label: 'Musical Number', songName: '' },
-        { type: 'confirmation', id: 'conf-1', candidateName: '', performedBy: '' },
-        { type: 'speaker', id: 'sp-4', name: '', speakerType: 'adult', customLabel: 'Welcome to Primary' },
-        { type: 'speaker', id: 'sp-5', name: '', speakerType: 'adult', customLabel: 'Closing Remarks' },
-      ],
-    },
-  },
+  // Baptism programs live in the dedicated /baptism editor — they are a
+  // separate service, not a ward sacrament meeting. The TemplatesModal shows
+  // a hand-rolled card linking there, and the old ?template=builtin-baptism
+  // deep link redirects to /baptism.
   {
     id: 'builtin-ward-conference',
     nameKey: 'templates.wardConference',

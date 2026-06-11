@@ -1247,6 +1247,11 @@ function EditorApp() {
   useEffect(() => {
     const templateParam = searchParams.get('template');
     if (!templateParam) return;
+    // The baptism template moved to its own editor; keep old links working.
+    if (templateParam === 'builtin-baptism') {
+      navigate('/baptism', { replace: true });
+      return;
+    }
     const matched = BUILT_IN_TEMPLATES.find(t => t.id === templateParam);
     if (!matched) {
       navigate('/', { replace: true });

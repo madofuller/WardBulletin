@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { BUILT_IN_TEMPLATES } from './builtInTemplates';
 
 describe('BUILT_IN_TEMPLATES', () => {
-  it('has exactly 6 templates', () => {
-    expect(BUILT_IN_TEMPLATES).toHaveLength(6);
+  it('has exactly 5 templates (baptism lives in the dedicated /baptism editor)', () => {
+    expect(BUILT_IN_TEMPLATES).toHaveLength(5);
+  });
+
+  it('does not include a baptism template', () => {
+    expect(BUILT_IN_TEMPLATES.some(t => t.id === 'builtin-baptism')).toBe(false);
   });
 
   it('each template has required fields: id, nameKey, descriptionKey, icon, data', () => {
