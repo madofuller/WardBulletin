@@ -320,8 +320,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, 3/4 = forced column count
 
-  const announcementCount = (data.announcements || []).length;
-  const announcementTotalChars = (data.announcements || []).reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
+  // Announcements marked web-only never reach paper; everything below
+  // (column auto-fit, grouping, the section header) works off this list.
+  const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
+  const announcementCount = printableAnnouncements.length;
+  const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
   const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
   // Debounce the content key so the auto-fit measure/shrink loop (forced
   // reflows of two full off-screen print pages) runs once per typing pause
@@ -674,10 +677,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           <div className="w-1/2" />
         ) : (
         <div className={`w-1/2 text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
+              {/* No header over an empty panel: a minimal program without
+                  announcements shouldn't print an "Announcements & Events"
+                  title with nothing under it. */}
+              {announcementCount > 0 && (
+                <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
+              )}
               <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               {(() => {
-                const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
+                const grouped = printableAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
                   const isStandalone = announcement.audience?.startsWith('standalone_');
                   const audienceLabel = isStandalone
                     ? (announcement.customAudienceLabel || '')

@@ -410,6 +410,8 @@
     "makeStandalone": "独立させる",
     "saveAsRecurring": "繰り返しとして保存",
     "recurringNeedsProfile": "繰り返しのお知らせを使うには、まずプロフィールを作成してください（サインインしてプロフィール名を設定）。",
+    "webOnly": "ウェブのみ",
+    "webOnlyHelp": "オンラインには表示されますが、印刷プログラムには含まれません",
     "recurringAnnouncements": "繰り返しのお知らせ",
     "announcementTitle": "お知らせのタイトル",
     "announcementImages": "お知らせの画像（任意）",

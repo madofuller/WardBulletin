@@ -1908,6 +1908,15 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 >
                                   ↓ {t('form.down')}
                                 </button>
+                                <label className="px-2 py-1 flex items-center gap-1.5 text-sm text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer" title={t('form.webOnlyHelp', 'Shown online but left off the printed program')}>
+                                  <input
+                                    type="checkbox"
+                                    checked={announcement.hideOnPrint || false}
+                                    onChange={(e) => updateAnnouncement(announcement.id, 'hideOnPrint', e.target.checked)}
+                                    className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  />
+                                  {t('form.webOnly', 'Web only')}
+                                </label>
                                 {/* Make Standalone button - only show for grouped announcements */}
                                 {!isStandalone && (
                                   <button

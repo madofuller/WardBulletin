@@ -383,6 +383,8 @@
     "makeStandalone": "設為獨立",
     "saveAsRecurring": "儲存為週期性",
     "recurringNeedsProfile": "請先建立個人檔案才能使用週期性公告（登入並設定檔案名稱）。",
+    "webOnly": "僅限網頁",
+    "webOnlyHelp": "在線上顯示，但不列入印刷程序",
     "recurringAnnouncements": "週期性公告",
     "announcementTitle": "公告標題",
     "announcementImages": "公告圖片（選填）",

@@ -410,6 +410,8 @@
     "makeStandalone": "Eigenständig machen",
     "saveAsRecurring": "Als wiederkehrend speichern",
     "recurringNeedsProfile": "Erstelle zuerst ein Profil, um wiederkehrende Ankündigungen zu nutzen (anmelden und Profilnamen festlegen).",
+    "webOnly": "Nur online",
+    "webOnlyHelp": "Online sichtbar, aber nicht im gedruckten Programm",
     "recurringAnnouncements": "Wiederkehrende Ankündigungen",
     "announcementTitle": "Titel der Ankündigung",
     "announcementImages": "Bilder der Ankündigung (optional)",

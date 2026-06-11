@@ -410,6 +410,8 @@
     "makeStandalone": "독립으로 설정",
     "saveAsRecurring": "반복으로 저장",
     "recurringNeedsProfile": "반복 공지를 사용하려면 먼저 프로필을 만드세요 (로그인 후 프로필 이름 설정).",
+    "webOnly": "웹 전용",
+    "webOnlyHelp": "온라인에는 표시되지만 인쇄 프로그램에서는 제외됩니다",
     "recurringAnnouncements": "반복 공지사항",
     "announcementTitle": "공지사항 제목",
     "announcementImages": "공지사항 이미지 (선택 사항)",

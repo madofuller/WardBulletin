@@ -17,6 +17,7 @@ export interface Announcement {
   customAudienceLabel?: string; // Free-text label for standalone announcements
   imageId?: string; // Optional image for flyers/announcements (legacy support)
   hideImageOnPrint?: boolean; // Hide image when printing (legacy support)
+  hideOnPrint?: boolean; // Web-only announcement: shown online, excluded from the printed program
   images?: AnnouncementImage[]; // Multiple images support
 }
 

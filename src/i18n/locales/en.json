@@ -384,6 +384,8 @@
     "makeStandalone": "Make Standalone",
     "saveAsRecurring": "Save as Recurring",
     "recurringNeedsProfile": "Create a profile first to use recurring announcements (sign in and set a profile name).",
+    "webOnly": "Web only",
+    "webOnlyHelp": "Shown online but left off the printed program",
     "recurringAnnouncements": "Recurring Announcements",
     "announcementTitle": "Announcement title",
     "announcementImages": "Announcement Images (Optional)",

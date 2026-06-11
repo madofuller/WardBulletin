@@ -202,22 +202,30 @@ export default function SubmissionReviewModal({
     
     setProcessing('group-' + audience);
     try {
-      // Update all submissions in database
-      for (const submission of groupSubmissions) {
-        if (!supabase) continue;
-        
-        const { error } = await supabase
-          .from('announcement_submissions')
-          .update({
-            status: 'approved',
-            notes: getNotes(submission.id).trim() || null
-          })
-          .eq('id', submission.id);
+      if (!supabase) return;
 
-        if (error) throw error;
+      // One batched update instead of N sequential queries. A single query
+      // can't partially succeed, so we can no longer end up with half the
+      // submissions approved in the DB and no announcement on the bulletin.
+      const ids = groupSubmissions.map(s => s.id);
+      const { error } = await supabase
+        .from('announcement_submissions')
+        .update({ status: 'approved' })
+        .in('id', ids);
 
+      if (error) throw error;
 
-      }
+      // Per-submission notes are best-effort after the status flip.
+      await Promise.all(
+        groupSubmissions
+          .filter(s => getNotes(s.id).trim())
+          .map(s =>
+            supabase
+              .from('announcement_submissions')
+              .update({ notes: getNotes(s.id).trim() })
+              .eq('id', s.id)
+          )
+      );
 
       // Create consolidated announcement
       const titles = groupSubmissions.map(s => s.title).filter(t => t.trim());
@@ -426,7 +434,7 @@ export default function SubmissionReviewModal({
                                   <button
                                     onClick={() => handleApprove(submission)}
                                     disabled={processing === submission.id}
-                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                                    className="flex items-center px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                                   >
                                     {processing === submission.id ? (
                                       <Loader2 className="w-3 h-3 mr-1 animate-spin" />

@@ -254,6 +254,7 @@ function AnnouncementItem({
   html, // sanitized html string
   imageId,
   hideImageOnPrint = false,
+  hideOnPrint = false,
   images
 }: {
   audience: string;
@@ -262,6 +263,7 @@ function AnnouncementItem({
   html: string;
   imageId?: string;
   hideImageOnPrint?: boolean;
+  hideOnPrint?: boolean;
   images?: Array<{ imageId: string; hideImageOnPrint?: boolean; size?: 'small' | 'medium' | 'large' | 'xlarge' }>;
 }) {
   // H1 audience, H2 title, content styled as "H3-ish"
@@ -282,7 +284,7 @@ function AnnouncementItem({
   };
   
   return (
-    <article className="border-l-4 border-[#edf4ff] pl-4">
+    <article className={`border-l-4 border-[#edf4ff] pl-4${hideOnPrint ? ' print:hidden' : ''}`}>
       <h3 className="text-xl sm:text-2xl text-gray-900">{audience}</h3>
 
       {category && category !== 'general' && (
@@ -873,7 +875,7 @@ function BulletinPreview({
                     <h3 className="text-xl sm:text-2xl text-gray-900 mb-4">{audience}</h3>
                     <div className="space-y-6">
                       {announcements.map((a, i) => (
-                        <div key={i}>
+                        <div key={i} className={a.hideOnPrint ? 'print:hidden' : undefined}>
                           {a.title && (
                             <h2 className="text-xl sm:text-xl text-gray-900 mb-2 font-semibold">{a.title}</h2>
                           )}

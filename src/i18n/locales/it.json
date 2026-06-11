@@ -410,6 +410,8 @@
     "makeStandalone": "Rendi indipendente",
     "saveAsRecurring": "Salva come ricorrente",
     "recurringNeedsProfile": "Crea prima un profilo per usare gli annunci ricorrenti (accedi e imposta un nome profilo).",
+    "webOnly": "Solo web",
+    "webOnlyHelp": "Visibile online ma escluso dal programma stampato",
     "recurringAnnouncements": "Annunci Ricorrenti",
     "announcementTitle": "Titolo dell'Annuncio",
     "announcementImages": "Immagini dell'Annuncio (opzionale)",
