@@ -25,6 +25,23 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const { t } = useTranslation();
 
+  // Handle escape key. This hook MUST come before the early return below:
+  // hooks have to run on every render, and an early return that skips a
+  // later useEffect crashes React with "Rendered more hooks than during
+  // the previous render" the first time the modal opens.
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const finalConfirmText = confirmText || t('common.confirm');
@@ -74,20 +91,6 @@ export default function ConfirmationModal({
   const handleCancel = () => {
     onClose();
   };
-
-  // Handle escape key
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
