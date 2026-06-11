@@ -140,13 +140,19 @@ export const recurringAnnouncementsService = {
     try {
       console.log('Converting announcement to recurring - input:', announcement);
       
-      // Convert legacy imageId to images array format
-      let images = announcement.images || [];
-      if (announcement.imageId && announcement.imageId !== 'none') {
-        images = [{
+      // Convert legacy imageId to images array format. Merge rather than
+      // overwrite: an announcement can carry both the legacy single imageId
+      // and the newer images array, and replacing the array dropped images.
+      const images = [...(announcement.images || [])];
+      if (
+        announcement.imageId &&
+        announcement.imageId !== 'none' &&
+        !images.some((img: any) => img.imageId === announcement.imageId)
+      ) {
+        images.push({
           imageId: announcement.imageId,
           hideImageOnPrint: announcement.hideImageOnPrint || false
-        }];
+        });
       }
 
       console.log('Processed images for recurring announcement:', images);

@@ -117,11 +117,11 @@ export default function BaptismEditor() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file.');
+      toast.error(t('form.pleaseSelectImageFile', 'Please select an image file.'));
       return;
     }
     if (file.size > 3 * 1024 * 1024) {
-      toast.error('Image must be under 3MB.');
+      toast.error(t('form.imageMustBeUnder3Mb', 'Image must be under 3MB.'));
       return;
     }
     const reader = new FileReader();
@@ -132,18 +132,18 @@ export default function BaptismEditor() {
         imageId: `custom-${Date.now()}`,
         imageUrl: base64,
       }));
-      toast.success('Image uploaded');
+      toast.success(t('form.imageUploadedSuccessfully', 'Image uploaded successfully!'));
     };
-    reader.onerror = () => toast.error('Failed to read file.');
+    reader.onerror = () => toast.error(t('errors.failedToReadFile', 'Failed to read file.'));
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
   const handleClearData = () => {
-    if (window.confirm('Clear this baptism program and start fresh?')) {
+    if (window.confirm(t('bulletin.clearBaptismProgramConfirm', 'Clear this baptism program and start fresh?'))) {
       localStorage.removeItem(storageKey);
       setData(createBlankBaptismData());
-      toast.success('Program cleared');
+      toast.success(t('success.programCleared', 'Program cleared'));
     }
   };
 
@@ -249,7 +249,7 @@ export default function BaptismEditor() {
   // PDF export
   const handleExportPDF = async () => {
     if (!printPage1Ref.current || !printPage2Ref.current) {
-      toast.error('PDF export failed. Please try again.');
+      toast.error(t('errors.pdfExportFailed', 'PDF export failed. Please try again.'));
       return;
     }
     try {
@@ -286,7 +286,7 @@ export default function BaptismEditor() {
       pdf.autoPrint();
       pdf.save(`Baptism-Program-${candidateName.replace(/\s+/g, '-')}.pdf`);
     } catch {
-      toast.error('There was an error generating the PDF. Please try again.');
+      toast.error(t('errors.pdfGenerationFailed', 'There was an error generating the PDF. Please try again.'));
     }
   };
 
@@ -346,7 +346,7 @@ export default function BaptismEditor() {
           <div className="space-y-6">
             {/* Date & Leadership */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Program Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('bulletin.programDetails', 'Program Details')}</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.date')}</label>
@@ -396,17 +396,17 @@ export default function BaptismEditor() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.presiding')} & {t('bulletin.conducting')}</label>
                     <input type="text" value={data.leadership.presiding} onChange={e => updateLeadership('presiding', e.target.value)}
-                      placeholder="e.g. Bishop Tyner" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                      placeholder={t('form.presidingPlaceholder', 'e.g., Bishop Dave Smith')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.pianist')}</label>
                     <input type="text" value={data.leadership.organist} onChange={e => updateLeadership('organist', e.target.value)}
-                      placeholder="Pianist name" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                      placeholder={t('form.pianistNamePlaceholder', 'Pianist name')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">{t('form.chorister')}</label>
                     <input type="text" value={data.leadership.chorister} onChange={e => updateLeadership('chorister', e.target.value)}
-                      placeholder="Chorister name" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                      placeholder={t('form.choristerNamePlaceholder', 'Chorister name')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                   </div>
                 </div>
               </div>
@@ -426,7 +426,7 @@ export default function BaptismEditor() {
                       <input type="text" value={data.musicProgram.openingHymnTitle}
                         onChange={e => { updateMusic('openingHymnTitle', e.target.value); handleHymnTitleSearch('openingHymn', e.target.value); }}
                         onFocus={() => { if (data.musicProgram.openingHymnTitle?.length >= 2) handleHymnTitleSearch('openingHymn', data.musicProgram.openingHymnTitle); }}
-                        placeholder="Search hymn title..." readOnly={!!data.musicProgram.openingHymnNumber}
+                        placeholder={t('form.searchHymnTitle', 'Search hymn title...')} readOnly={!!data.musicProgram.openingHymnNumber}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                       {activeHymnSearch === 'openingHymn' && hymnSearchResults.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -445,7 +445,7 @@ export default function BaptismEditor() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.invocation')}</label>
                   <input type="text" value={data.prayers.opening} onChange={e => updatePrayer('opening', e.target.value)}
-                    placeholder="Opening prayer" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                    placeholder={t('form.openingPrayerPlaceholder', 'Opening prayer')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                 </div>
                 {/* Closing Song */}
                 <div>
@@ -457,7 +457,7 @@ export default function BaptismEditor() {
                       <input type="text" value={data.musicProgram.closingHymnTitle}
                         onChange={e => { updateMusic('closingHymnTitle', e.target.value); handleHymnTitleSearch('closingHymn', e.target.value); }}
                         onFocus={() => { if (data.musicProgram.closingHymnTitle?.length >= 2) handleHymnTitleSearch('closingHymn', data.musicProgram.closingHymnTitle); }}
-                        placeholder="Search hymn title..." readOnly={!!data.musicProgram.closingHymnNumber}
+                        placeholder={t('form.searchHymnTitle', 'Search hymn title...')} readOnly={!!data.musicProgram.closingHymnNumber}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                       {activeHymnSearch === 'closingHymn' && hymnSearchResults.length > 0 && (
                         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -476,14 +476,14 @@ export default function BaptismEditor() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('bulletin.benediction')}</label>
                   <input type="text" value={data.prayers.closing} onChange={e => updatePrayer('closing', e.target.value)}
-                    placeholder="Closing prayer" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                    placeholder={t('form.closingPrayerPlaceholder', 'Closing prayer')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                 </div>
               </div>
             </div>
 
             {/* Agenda */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Program Agenda</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('bulletin.programAgenda', 'Program Agenda')}</h2>
               <div className="space-y-3">
                 {data.agenda.map((item, idx) => (
                   <div key={item.id} className="bg-gray-50 rounded-lg p-4">
@@ -509,9 +509,9 @@ export default function BaptismEditor() {
                             const title = getSongTitle(e.target.value, 'hymn', currentLang);
                             if (title) updateAgendaItem(item.id, { hymnNumber: e.target.value, hymnTitle: title });
                           }}
-                            placeholder="Hymn #" className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
+                            placeholder={t('form.hymnNumber', 'Hymn #')} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent" />
                           <input type="text" value={item.hymnTitle || item.songName || ''} onChange={e => updateAgendaItem(item.id, { songName: e.target.value, hymnTitle: '' })}
-                            placeholder="Song name" className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            placeholder={t('form.songName', 'Song Name')} className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                             readOnly={!!item.hymnNumber} />
                         </div>
                         <input type="text" value={item.performers || ''} onChange={e => updateAgendaItem(item.id, { performers: e.target.value })}

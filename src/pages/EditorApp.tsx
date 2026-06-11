@@ -57,8 +57,21 @@ function decodeJwtExp(token: string) {
   }
 }
 
+// Map i18n language codes to proper locale codes for date formatting
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 function EditorApp() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [currentView, setCurrentView] = useState<'editor' | 'public'>('editor');
   const [publicBulletinData, setPublicBulletinData] = useState<any>(null);
   const [publicError, setPublicError] = useState('');
@@ -712,7 +725,7 @@ function EditorApp() {
         // destroyed mid-edit.
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError && msLeft <= 0) {
-          toast.warning('Session expired. Please sign in again.');
+          toast.warning(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
           await supabase.auth.signOut();
           window.location.reload();
         }
@@ -894,13 +907,13 @@ function EditorApp() {
     
     try {
       await userService.updateProfileSlug(user.id, newProfileSlug.trim());
-      toast.success('Profile slug created successfully!');
+      toast.success(t('success.profileSlugCreatedSuccessfully', 'Profile slug created successfully!'));
       setShowCreateProfileSlug(false);
       setNewProfileSlug('');
       // Refresh the page to load the new profile
       window.location.reload();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create profile slug');
+      toast.error(error.message || t('qrCode.failedToCreateProfileSlug', 'Failed to create profile slug'));
     }
   };
 
@@ -922,7 +935,7 @@ function EditorApp() {
 
     // Check if there are actually changes to save
     if (!hasUnsavedChanges) {
-      toast.info('No changes to save', {
+      toast.info(t('common.noChangesToSave', 'No changes to save'), {
         toastId: 'no-changes-to-save'
       });
       return;
@@ -931,12 +944,12 @@ function EditorApp() {
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
-        toast.error('Session expired. Please sign in again.');
+        toast.error(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
         setShowAuthModal(true);
         return;
       }
     } catch (err) {
-      toast.error('Session expired. Please sign in again.');
+      toast.error(t('errors.sessionExpired', 'Session expired. Please sign in again.'));
       setShowAuthModal(true);
       return;
     }
@@ -984,15 +997,15 @@ function EditorApp() {
       // Invalidate query cache to refresh saved bulletins modal
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
 
-      toast.success(currentBulletinId ? 'Bulletin updated successfully!' : 'Bulletin saved successfully!', {
+      toast.success(currentBulletinId ? t('success.bulletinUpdated', 'Bulletin updated successfully!') : t('success.bulletinSaved', 'Bulletin saved successfully!'), {
         toastId: 'bulletin-save-success'
       });
     } catch (error) {
       if (timeoutHandle) clearTimeout(timeoutHandle);
       if (didTimeout) {
-        toast.error('Saving took too long. Please check your connection or try again.');
+        toast.error(t('errors.saveTimedOut', 'Saving took too long. Please check your connection or try again.'));
       } else {
-        toast.error('Error saving bulletin: ' + (error as Error).message);
+        toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
       }
       // Try to save to localStorage as fallback
       try {
@@ -1002,9 +1015,9 @@ function EditorApp() {
           created_by: user.id,
           created_at: new Date().toISOString()
         });
-        toast.warning('Bulletin saved locally due to connection issues. It will sync when connection is restored.');
+        toast.warning(t('errors.savedLocallyWillSync', 'Bulletin saved locally due to connection issues. It will sync when connection is restored.'));
       } catch (localError) {
-        toast.error('Error saving bulletin: ' + (error as Error).message);
+        toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
       }
     } finally {
       setLoading(false);
@@ -1038,9 +1051,9 @@ function EditorApp() {
         await handleActiveBulletinSelect(currentBulletinId);
       }
 
-      toast.success('Bulletin is now active on your QR code!');
+      toast.success(t('success.bulletinNowActive', 'Bulletin is now active on your QR code!'));
     } catch (error) {
-      toast.error('Error making bulletin active: ' + (error as Error).message);
+      toast.error(t('errors.makingBulletinActive', 'Error making bulletin active: {{message}}', { message: (error as Error).message }));
     } finally {
       setLoading(false);
     }
@@ -1087,15 +1100,15 @@ function EditorApp() {
 
     try {
       setLoading(true);
-      const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString()}`;
+      const templateName = `${bulletinData.wardName} Template - ${new Date().toLocaleDateString(localeMap[i18n.language] || i18n.language)}`;
       const saved = templateService.saveTemplate(templateName, bulletinData);
       if (saved) {
-        toast.success('Bulletin saved as template!');
+        toast.success(t('success.bulletinSavedAsTemplate', 'Bulletin saved as template!'));
       } else {
-        toast.error('Could not save template: browser storage is full or unavailable. Try deleting old templates.');
+        toast.error(t('errors.templateStorageFull', 'Could not save template: browser storage is full or unavailable. Try deleting old templates.'));
       }
     } catch (error) {
-      toast.error('Error saving template: ' + (error as Error).message);
+      toast.error(t('errors.savingTemplate', 'Error saving template: {{message}}', { message: (error as Error).message }));
     } finally {
       setLoading(false);
     }
@@ -1166,7 +1179,7 @@ function EditorApp() {
       } catch (err) {
         console.error('Failed to load bulletin', { id: bulletin?.id, bulletin, error: err });
         toast.error(
-          `Couldn't load this bulletin (id: ${bulletin?.id ?? 'unknown'}). Please contact support with this ID.`
+          t('errors.couldNotLoadBulletin', "Couldn't load this bulletin (id: {{id}}). Please contact support with this ID.", { id: bulletin?.id ?? 'unknown' })
         );
       }
     };
@@ -1174,8 +1187,8 @@ function EditorApp() {
     if (hasUnsavedChanges) {
       setConfirmationModal({
         isOpen: true,
-        title: 'Unsaved Changes',
-        message: 'You have unsaved changes. Loading this bulletin will discard them. Continue?',
+        title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
+        message: t('common.loadBulletinDiscardConfirm', 'You have unsaved changes. Loading this bulletin will discard them. Continue?'),
         onConfirm: applyLoad,
         variant: 'warning'
       });
@@ -1266,7 +1279,7 @@ function EditorApp() {
     const now = new Date();
     
     if (scheduledDateTime < now) {
-      toast.error('Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.');
+      toast.error(t('bulletin.pastDateError', 'Cannot schedule a bulletin for a date/time in the past. Please select a future date and time.'));
       return;
     }
 
@@ -1293,10 +1306,10 @@ function EditorApp() {
         autoActivate
       });
 
-      toast.success(`Bulletin scheduled for ${new Date(scheduledDate).toLocaleDateString()}`);
+      toast.success(t('success.bulletinScheduledFor', 'Bulletin scheduled for {{date}}', { date: new Date(scheduledDate).toLocaleDateString(localeMap[i18n.language] || i18n.language) }));
       setShowScheduler(false);
     } catch (error: any) {
-      toast.error('Error scheduling bulletin: ' + error.message);
+      toast.error(t('errors.schedulingBulletin', 'Error scheduling bulletin: {{message}}', { message: error.message }));
     } finally {
       setLoading(false);
     }
@@ -1409,7 +1422,7 @@ function EditorApp() {
         queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
       }
     } catch (error) {
-      toast.error('Error updating active bulletin: ' + (error as Error).message);
+      toast.error(t('errors.updatingActiveBulletin', 'Error updating active bulletin: {{message}}', { message: (error as Error).message }));
     }
   };
 
@@ -1581,22 +1594,22 @@ function EditorApp() {
         pdf.autoPrint();
         pdf.save('Ward-Bulletin.pdf');
       } catch (error) {
-        toast.error('There was an error generating the PDF. Please try again.');
+        toast.error(t('errors.pdfGenerationFailed', 'There was an error generating the PDF. Please try again.'));
       }
     } else {
-      toast.error('PDF export failed: Missing page references. Please try again.');
+      toast.error(t('errors.pdfMissingPageReferences', 'PDF export failed: Missing page references. Please try again.'));
     }
   };
 
   // Add a Clear Local Data button for troubleshooting
   const handleClearLocalData = () => {
-    if (confirm('This will clear all local data and drafts. Continue?')) {
+    if (window.confirm(t('common.clearLocalDataConfirm', 'This will clear all local data and drafts. Continue?'))) {
       try {
         localStorage.clear();
         sessionStorage.clear();
         window.location.reload();
       } catch (error) {
-        toast.error('Failed to clear local data. Please try refreshing the page.');
+        toast.error(t('errors.clearLocalDataFailed', 'Failed to clear local data. Please try refreshing the page.'));
       }
     }
   };
@@ -2101,7 +2114,7 @@ function EditorApp() {
               );
               
               if (existingAnnouncement) {
-                toast.info(`"${submission.title}" already exists in the bulletin`);
+                toast.info(t('submissions.alreadyExistsInBulletin', '"{{title}}" already exists in the bulletin', { title: submission.title }));
                 return prev;
               }
 
@@ -2114,15 +2127,15 @@ function EditorApp() {
 
             // Show success toast
             if (submission.title.trim()) {
-              toast.success(`"${submission.title}" has been approved and added to the ${submission.audience.replace('_', ' ')} section!`);
+              toast.success(t('submissions.approvedAndAddedToSection', '"{{title}}" has been approved and added to the {{audience}} section!', { title: submission.title, audience: submission.audience.replace('_', ' ') }));
             } else {
               // This is a consolidated announcement
-              toast.success(`${submission.audience.replace('_', ' ')} announcements have been consolidated and added to the bulletin!`);
+              toast.success(t('submissions.groupApprovedAndConsolidated', '{{audience}} announcements have been consolidated and added to the bulletin!', { audience: submission.audience.replace('_', ' ') }));
             }
           }}
           onSubmissionRejected={(submission) => {
             // Show rejection toast
-            toast.success(`"${submission.title}" has been rejected`);
+            toast.success(t('submissions.hasBeenRejected', '"{{title}}" has been rejected', { title: submission.title }));
           }}
           onSubmissionsChanged={checkPendingSubmissions}
         />
@@ -2168,7 +2181,7 @@ function EditorApp() {
                 type="text"
                 value={newProfileSlug}
                 onChange={(e) => setNewProfileSlug(e.target.value)}
-                placeholder="Enter profile slug (e.g., sunset-hills-ward)"
+                placeholder={t('form.enterProfileSlugPlaceholder', 'Enter profile slug (e.g., sunset-hills-ward)')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
               />
               <div className="flex space-x-3">
@@ -2203,15 +2216,15 @@ function EditorApp() {
             </p>
 
             <nav className="mt-4 space-x-4">
-              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
-              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">How To Use</a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+              <a href="/about" className="text-gray-600 hover:text-gray-900">{t('footer.about', 'About')}</a>
+              <a href="/how-to-use" className="text-gray-600 hover:text-gray-900">{t('footer.howToUse', 'How To Use')}</a>
+              <a href="/contact" className="text-gray-600 hover:text-gray-900">{t('footer.contact', 'Contact')}</a>
             </nav>
             <nav className="mt-3 space-x-4">
-              <span className="text-gray-400 text-sm">Guides:</span>
-              <a href="/guide/create-ward-bulletin" className="text-sm text-gray-500 hover:text-gray-900">Create a Bulletin</a>
-              <a href="/guide/bulletin-templates" className="text-sm text-gray-500 hover:text-gray-900">Templates & Ideas</a>
-              <a href="/guide/sacrament-meeting-program" className="text-sm text-gray-500 hover:text-gray-900">Program Guide</a>
+              <span className="text-gray-400 text-sm">{t('footer.guides', 'Guides:')}</span>
+              <a href="/guide/create-ward-bulletin" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.createBulletinGuide', 'Create a Bulletin')}</a>
+              <a href="/guide/bulletin-templates" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.templatesAndIdeas', 'Templates & Ideas')}</a>
+              <a href="/guide/sacrament-meeting-program" className="text-sm text-gray-500 hover:text-gray-900">{t('footer.programGuide', 'Program Guide')}</a>
             </nav>
           </div>
         </div>

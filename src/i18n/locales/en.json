@@ -78,7 +78,9 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
-    "general": "General"
+    "general": "General",
+    "loadBulletinDiscardConfirm": "You have unsaved changes. Loading this bulletin will discard them. Continue?",
+    "clearLocalDataConfirm": "This will clear all local data and drafts. Continue?"
   },
   "header": {
     "myWardBulletin": "WardBulletin",
@@ -198,7 +200,18 @@
     "joinMeeting": "Join via {{platform}}",
     "joinMeetingGeneric": "Join meeting online",
     "joinMeetingPrint": "Join online:",
-    "draftRestored": "Restored your unsaved changes from this device"
+    "draftRestored": "Restored your unsaved changes from this device",
+    "activeBulletinScheduledNote": "Note: Your currently active bulletin has been scheduled. Select a new active bulletin for your QR code.",
+    "howBulletinStatusWorks": "How Bulletin Status Works",
+    "statusActiveDescription": "This bulletin appears when people scan your QR code",
+    "statusScheduledDescription": "Will automatically become active at the scheduled date/time",
+    "statusDraftDescription": "Work in progress - not visible to QR code scans",
+    "statusArchivedDescription": "Previously used - stored for reference",
+    "scheduledDateLabel": "Scheduled: {{date}}",
+    "updatedDateLabel": "Updated: {{date}}",
+    "clearBaptismProgramConfirm": "Clear this baptism program and start fresh?",
+    "programDetails": "Program Details",
+    "programAgenda": "Program Agenda"
   },
   "terminology": {
     "ward": "Ward",
@@ -462,7 +475,21 @@
     "seniorMissionaryRolePlaceholder": "e.g., Senior Missionary Mentors",
     "childNamePlaceholder": "Child's name",
     "parentNamesPlaceholder": "e.g., John and Jane Smith",
-    "childOf": "Child of"
+    "childOf": "Child of",
+    "enterProfileSlugPlaceholder": "Enter profile slug (e.g., sunset-hills-ward)",
+    "imageSizeSmall": "Small (120px)",
+    "imageSizeMedium": "Medium (200px)",
+    "imageSizeLarge": "Large (300px)",
+    "imageSizeXLarge": "X-Large (400px)",
+    "pleaseSelectImageFile": "Please select an image file.",
+    "imageMustBeUnder3Mb": "Image must be under 3MB.",
+    "pianistNamePlaceholder": "Pianist name",
+    "choristerNamePlaceholder": "Chorister name",
+    "openingPrayerPlaceholder": "Opening prayer",
+    "closingPrayerPlaceholder": "Closing prayer",
+    "specialEventLowercase": "special event",
+    "specialEventsLowercase": "special events",
+    "untitledAnnouncement": "Untitled announcement"
   },
   "modals": {
     "confirmationModal": "Confirmation",
@@ -566,7 +593,28 @@
     "failedToLoadRecurringAnnouncements": "Failed to load recurring announcements",
     "invalidProfile": "Invalid profile",
     "failedToSaveRecurringAnnouncement": "Failed to save recurring announcement",
-    "failedToDeleteRecurringAnnouncement": "Failed to delete recurring announcement"
+    "failedToDeleteRecurringAnnouncement": "Failed to delete recurring announcement",
+    "sessionExpired": "Session expired. Please sign in again.",
+    "saveTimedOut": "Saving took too long. Please check your connection or try again.",
+    "savingBulletin": "Error saving bulletin: {{message}}",
+    "savedLocallyWillSync": "Bulletin saved locally due to connection issues. It will sync when connection is restored.",
+    "makingBulletinActive": "Error making bulletin active: {{message}}",
+    "templateStorageFull": "Could not save template: browser storage is full or unavailable. Try deleting old templates.",
+    "savingTemplate": "Error saving template: {{message}}",
+    "couldNotLoadBulletin": "Couldn't load this bulletin (id: {{id}}). Please contact support with this ID.",
+    "schedulingBulletin": "Error scheduling bulletin: {{message}}",
+    "updatingActiveBulletin": "Error updating active bulletin: {{message}}",
+    "pdfGenerationFailed": "There was an error generating the PDF. Please try again.",
+    "pdfMissingPageReferences": "PDF export failed: Missing page references. Please try again.",
+    "clearLocalDataFailed": "Failed to clear local data. Please try refreshing the page.",
+    "updateBulletinStatusFailed": "Failed to update bulletin status: {{message}}",
+    "failedToConvertToRecurring": "Failed to convert to recurring announcement",
+    "failedToDeleteImage": "Failed to delete image.",
+    "failedToReadFile": "Failed to read file.",
+    "pdfExportFailed": "PDF export failed. Please try again.",
+    "signOutFailed": "Failed to sign out: {{message}}",
+    "currentlyOffline": "You are currently offline. Some features may be limited.",
+    "copyFailed": "Could not copy to clipboard"
   },
   "success": {
     "saved": "Saved",
@@ -587,7 +635,17 @@
     "recurringAnnouncementCreated": "Recurring announcement created successfully",
     "recurringAnnouncementDeleted": "Recurring announcement deleted successfully",
     "announcementAddedToBulletin": "\"{{title}}\" added to current bulletin",
-    "announcementCopiedToBulletin": "\"{{title}}\" copied to current bulletin"
+    "announcementCopiedToBulletin": "\"{{title}}\" copied to current bulletin",
+    "bulletinUpdated": "Bulletin updated successfully!",
+    "bulletinSaved": "Bulletin saved successfully!",
+    "bulletinNowActive": "Bulletin is now active on your QR code!",
+    "bulletinSavedAsTemplate": "Bulletin saved as template!",
+    "bulletinScheduledFor": "Bulletin scheduled for {{date}}",
+    "convertedToRecurring": "\"{{title}}\" converted to recurring announcement",
+    "announcementsConsolidated": "Consolidated {{total}} announcements into {{groups}} groups",
+    "programCleared": "Program cleared",
+    "connectionRestored": "Connection restored!",
+    "copiedToClipboard": "Copied to clipboard"
   },
   "validation": {
     "pleaseFillInNameAndAnnouncement": "Please fill in your name and at least one announcement",
@@ -647,7 +705,8 @@
     "failedToCreateProfileSlug": "Failed to create profile slug",
     "profileSlugExample": "e.g., sunset-hills-ward",
     "dataInconsistencyFixed": "Data inconsistency fixed. Please select a bulletin.",
-    "failedToFixInconsistency": "Failed to fix inconsistency"
+    "failedToFixInconsistency": "Failed to fix inconsistency",
+    "shareBulletinTitle": "{{wardName}} Bulletin - {{date}}"
   },
   "submissions": {
     "submitAnnouncement": "Submit Announcement",
@@ -674,7 +733,10 @@
     "approve": "Approve",
     "reject": "Reject",
     "notes": "Notes",
-    "groupApprovedAndConsolidated": "{{audience}} announcements have been consolidated and added to the bulletin!"
+    "groupApprovedAndConsolidated": "{{audience}} announcements have been consolidated and added to the bulletin!",
+    "alreadyExistsInBulletin": "\"{{title}}\" already exists in the bulletin",
+    "approvedAndAddedToSection": "\"{{title}}\" has been approved and added to the {{audience}} section!",
+    "hasBeenRejected": "\"{{title}}\" has been rejected"
   },
   "sharing": {
     "shareProfile": "Share Profile",
@@ -797,7 +859,8 @@
     "pleaseSignInFirst": "Please sign in to accept the invitation",
     "emailMismatchError": "This invitation was sent to a different email address. Please sign in with the correct account.",
     "failedToAccept": "Failed to accept invitation. Please try again.",
-    "nowHaveAccess": "You now have {{role}} access to {{profile}}"
+    "nowHaveAccess": "You now have {{role}} access to {{profile}}",
+    "signInWithInvitedEmail": "Please sign in with the email address the invitation was sent to."
   },
   "resetPassword": {
     "title": "Reset Password",
@@ -843,7 +906,11 @@
     "freeCreator": "Free Ward Bulletin Creator",
     "about": "About",
     "howToUse": "How To Use",
-    "contact": "Contact"
+    "contact": "Contact",
+    "guides": "Guides:",
+    "createBulletinGuide": "Create a Bulletin",
+    "templatesAndIdeas": "Templates & Ideas",
+    "programGuide": "Program Guide"
   },
   "recurring": {
     "recurringAnnouncements": "Recurring Announcements",
@@ -858,7 +925,9 @@
     "noRecurringAnnouncementsFound": "No recurring announcements found.",
     "createFirstOne": "Create your first one above!",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "customLabel": "Section label",
+    "customLabelPlaceholder": "e.g. Temple News"
   },
   "scheduler": {
     "schedule": "Schedule",
@@ -893,7 +962,10 @@
     "option2Reschedule": "Option 2: Reschedule Existing",
     "rescheduleExistingDescription": "Move an already scheduled bulletin to this date.",
     "rescheduleExisting": "Reschedule Existing",
-    "cannotSchedulePastDates": "Cannot schedule bulletins for past dates: {{dates}}. Please select future dates."
+    "cannotSchedulePastDates": "Cannot schedule bulletins for past dates: {{dates}}. Please select future dates.",
+    "selectDate": "Select date",
+    "invalidDate": "Invalid date",
+    "unnamedWard": "Unnamed Ward"
   },
   "audiences": {
     "ward": "Ward",
@@ -902,7 +974,8 @@
     "youth": "Youth",
     "primary": "Primary",
     "stake": "Stake",
-    "other": "Other"
+    "other": "Other",
+    "standalone": "Standalone (custom label)"
   },
   "templates": {
     "quickStart": "Quick Start Templates",

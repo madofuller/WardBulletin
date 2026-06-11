@@ -5,6 +5,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { bulletinService } from '../lib/supabase';
 import { toast } from 'react-toastify';
 
+// Map i18n language codes to proper locale codes (same pattern as BulletinPreview)
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 interface WeeklyScheduleItem {
   bulletinId: string;
   bulletinTitle: string;
@@ -36,7 +49,8 @@ export default function WeeklySchedulerModal({
   bulletins,
   userId
 }: WeeklySchedulerModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const resolvedLocale = localeMap[i18n.language] || i18n.language;
   const queryClient = useQueryClient();
   const [scheduleItems, setScheduleItems] = useState<WeeklyScheduleItem[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -128,7 +142,7 @@ export default function WeeklySchedulerModal({
     const newItem: WeeklyScheduleItem = {
       bulletinId: bulletin.id,
       bulletinTitle: `${bulletin.ward_name || 'Unnamed Ward'} - ${bulletin.date || 'No date'}`,
-      wardName: bulletin.ward_name || 'Unnamed Ward',
+      wardName: bulletin.ward_name || t('scheduler.unnamedWard', 'Unnamed Ward'),
       meetingDate: bulletin.date || '',
       meetingType: bulletin.meeting_type || 'sacrament',
       weekOf: ''
@@ -248,10 +262,10 @@ export default function WeeklySchedulerModal({
       // Parse as local date (not UTC) - same method as SavedBulletinsModal
       const [year, month, day] = dateString.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString(resolvedLocale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     } catch {
       return dateString; // Fallback to original string if parsing fails
@@ -273,7 +287,7 @@ export default function WeeklySchedulerModal({
       updatedItems[existingItemIndex] = {
         bulletinId: bulletin.id,
         bulletinTitle: `${bulletin.ward_name || 'Unnamed Ward'} - ${bulletin.date || 'No date'}`,
-        wardName: bulletin.ward_name || 'Unnamed Ward',
+        wardName: bulletin.ward_name || t('scheduler.unnamedWard', 'Unnamed Ward'),
         meetingDate: bulletin.date || '',
         meetingType: bulletin.meeting_type || 'sacrament',
         weekOf: selectedDate
@@ -284,7 +298,7 @@ export default function WeeklySchedulerModal({
       const newItem: WeeklyScheduleItem = {
         bulletinId: bulletin.id,
         bulletinTitle: `${bulletin.ward_name || 'Unnamed Ward'} - ${bulletin.date || 'No date'}`,
-        wardName: bulletin.ward_name || 'Unnamed Ward',
+        wardName: bulletin.ward_name || t('scheduler.unnamedWard', 'Unnamed Ward'),
         meetingDate: bulletin.date || '',
         meetingType: bulletin.meeting_type || 'sacrament',
         weekOf: selectedDate
@@ -321,7 +335,7 @@ export default function WeeklySchedulerModal({
   };
 
   const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    return date.toLocaleDateString(resolvedLocale, { month: 'long', year: 'numeric' });
   };
 
   const getNextMonth = () => {
@@ -337,30 +351,29 @@ export default function WeeklySchedulerModal({
   };
 
   const formatWeekDisplay = (weekValue: string) => {
-    if (!weekValue) return 'Select date';
+    if (!weekValue) return t('scheduler.selectDate', 'Select date');
     try {
       // Parse as local date (not UTC) - same method as other components
       const [year, month, day] = weekValue.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString(resolvedLocale, {
         year: 'numeric',
-        month: 'long', 
-        day: 'numeric' 
+        month: 'long',
+        day: 'numeric'
       });
     } catch (error) {
-      return 'Invalid date';
+      return t('scheduler.invalidDate', 'Invalid date');
     }
   };
 
-  const daysOfWeek = [
-    { short: 'S', full: 'Sunday' },
-    { short: 'M', full: 'Monday' },
-    { short: 'T', full: 'Tuesday' },
-    { short: 'W', full: 'Wednesday' },
-    { short: 'T', full: 'Thursday' },
-    { short: 'F', full: 'Friday' },
-    { short: 'S', full: 'Saturday' }
-  ];
+  const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
+    // Aug 1, 2021 was a Sunday - used only to derive localized weekday labels
+    const refDate = new Date(2021, 7, 1 + i);
+    return {
+      short: refDate.toLocaleDateString(resolvedLocale, { weekday: 'narrow' }),
+      full: refDate.toLocaleDateString(resolvedLocale, { weekday: 'long' })
+    };
+  });
 
   return (
     <div 

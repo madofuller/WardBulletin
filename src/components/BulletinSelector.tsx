@@ -44,7 +44,7 @@ export default function BulletinSelector({
   profileSlug,
   permissions
 }: BulletinSelectorProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Cache the last seen user ID so we can fetch local bulletins even if the
   // session temporarily becomes unavailable
@@ -116,10 +116,10 @@ export default function BulletinSelector({
     if (!dateString) return 'No date';
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString(i18n.language, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -233,7 +233,7 @@ export default function BulletinSelector({
       // Don't show duplicate error - already shown in the loop for permission errors
       // Only show generic error if it wasn't already shown
       if (!error?.message?.includes('permission') && !error?.message?.includes('Viewers cannot')) {
-        toast.error('Failed to schedule bulletins: ' + (error as Error).message);
+        toast.error(t('errors.scheduleBulletinsFailed', 'Failed to schedule bulletins: {{message}}', { message: (error as Error).message }));
       }
     }
   };
@@ -354,13 +354,13 @@ export default function BulletinSelector({
       // Revert optimistic update on error by invalidating
       const queryKey = profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', user.id];
       queryClient.invalidateQueries({ queryKey });
-      toast.error('Failed to update bulletin status: ' + error.message);
+      toast.error(t('errors.updateBulletinStatusFailed', 'Failed to update bulletin status: {{message}}', { message: error.message }));
     }
   };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

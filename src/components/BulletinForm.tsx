@@ -79,6 +79,19 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     onChange({ ...data, [field]: value });
   };
 
+  // Accordion state for announcement cards. Collapsed by default so a ward
+  // with 25 announcements sees a scannable list of title rows instead of 25
+  // mounted Quill editors; the editor and image controls only exist in the
+  // DOM while a card is expanded. Newly added announcements start expanded.
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<Set<string>>(new Set());
+  const isAnnouncementExpanded = (id: string) => expandedAnnouncements.has(id);
+  const toggleAnnouncementExpanded = (id: string) => setExpandedAnnouncements(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const expandAnnouncement = (id: string) => setExpandedAnnouncements(prev => new Set(prev).add(id));
+
   // Always-current data for undo closures: a toast's Undo button fires long
   // after the render that created it, so it must not act on stale props.
   const dataRef = useRef(data);
@@ -132,6 +145,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       images: [] // Initialize empty images array
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
+    expandAnnouncement(newAnnouncement.id);
   };
 
   const addAnnouncementToType = (audience: string) => {
@@ -150,6 +164,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       images: []
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
+    expandAnnouncement(newAnnouncement.id);
   };
 
   const updateAnnouncement = (id: string, field: keyof Announcement, value: any) => {
@@ -224,6 +239,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
             images: announcement.images
           };
           updateField('announcements', [...data.announcements, newAnnouncement]);
+          expandAnnouncement(newAnnouncement.id);
         };
 
   const convertToRecurring = async (announcement: Announcement) => {
@@ -238,12 +254,12 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       const result = await recurringAnnouncementsService.convertToRecurring(announcement, profileSlug);
 
       if (result) {
-        toast.success(`"${announcement.title}" converted to recurring announcement`);
+        toast.success(t('success.convertedToRecurring', '"{{title}}" converted to recurring announcement', { title: announcement.title }));
       } else {
-        toast.error('Failed to convert to recurring announcement');
+        toast.error(t('errors.failedToConvertToRecurring', 'Failed to convert to recurring announcement'));
       }
     } catch (error) {
-      toast.error('Failed to convert to recurring announcement');
+      toast.error(t('errors.failedToConvertToRecurring', 'Failed to convert to recurring announcement'));
     }
   };
 
@@ -482,7 +498,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     onImagesRefresh?.(); // Notify parent to refresh its images too
 
     setImageError(null);
-    toast.success('Image uploaded successfully!');
+    toast.success(t('form.imageUploadedSuccessfully', 'Image uploaded successfully!'));
   };
 
   const handleImageError = (error: string) => {
@@ -508,9 +524,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
         updateField('imageId', 'none');
       }
 
-      toast.success('Custom image deleted.');
+      toast.success(t('form.customImageDeleted', 'Custom image deleted.'));
     } catch (error) {
-      toast.error('Failed to delete image.');
+      toast.error(t('errors.failedToDeleteImage', 'Failed to delete image.'));
     } finally {
       setDeleteImageConfirm({ show: false, imageId: null });
     }
@@ -606,7 +622,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     } else {
       localStorage.setItem(DEFAULT_KEYS[key], value);
     }
-    toast.success('Default saved!');
+    toast.success(t('form.defaultSaved', 'Default saved!'));
   };
 
   // Move agenda item up or down
@@ -779,7 +795,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     });
 
     updateField('announcements', consolidated);
-    toast.success(`Consolidated ${data.announcements.length} announcements into ${consolidated.length} groups`);
+    toast.success(t('success.announcementsConsolidated', 'Consolidated {{total}} announcements into {{groups}} groups', { total: data.announcements.length, groups: consolidated.length }));
   };
 
   return (
@@ -1831,7 +1847,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                               ))}
                             </select>
-                            <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'})</span>
+                            <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? t('form.announcement', 'announcement') : t('form.announcements', 'announcements')})</span>
                           </>
                         )}
                       </div>
@@ -1877,8 +1893,34 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     ) : (
                       <div className="space-y-4">
                         {announcements.map((announcement) => (
-                          <div key={announcement.id} className="bg-gray-50 p-4 rounded-lg space-y-3">
-                            <div className="flex-1 space-y-3">
+                          <div key={announcement.id} className="bg-gray-50 rounded-lg">
+                            {/* Collapsed header: title + badges, click to expand.
+                                The editor below only mounts while expanded. */}
+                            <button
+                              type="button"
+                              onClick={() => toggleAnnouncementExpanded(announcement.id)}
+                              aria-expanded={isAnnouncementExpanded(announcement.id)}
+                              className="w-full flex items-center gap-2 px-4 py-3 text-left rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <svg
+                                className={`w-4 h-4 text-gray-500 flex-shrink-0 transition-transform ${isAnnouncementExpanded(announcement.id) ? 'rotate-90' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              <span className="flex-1 min-w-0 truncate font-medium text-gray-900">
+                                {announcement.title
+                                  || (announcement.content || '').replace(/<[^>]*>/g, '').trim().slice(0, 60)
+                                  || t('form.untitledAnnouncement', 'Untitled announcement')}
+                              </span>
+                              {announcement.hideOnPrint && (
+                                <span className="flex-shrink-0 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                                  {t('form.webOnly', 'Web only')}
+                                </span>
+                              )}
+                            </button>
+                            {isAnnouncementExpanded(announcement.id) && (
+                            <div className="flex-1 space-y-3 px-4 pb-4">
                               {/* Title row */}
                               <div className="flex items-center gap-2">
                                 <input
@@ -2003,7 +2045,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                   onClick={() => updateAnnouncement(announcement.id, 'imageId', 'none')}
                                   className="text-red-600 hover:text-red-800 text-xs"
                                 >
-                                  Remove
+                                  {t('common.remove', 'Remove')}
                                 </button>
                               </div>
                             </div>
@@ -2081,10 +2123,10 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                         }}
                                         className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0 max-w-32"
                                       >
-                                        <option value="small">Small (120px)</option>
-                                        <option value="medium">Medium (200px)</option>
-                                        <option value="large">Large (300px)</option>
-                                        <option value="xlarge">X-Large (400px)</option>
+                                        <option value="small">{t('form.imageSizeSmall', 'Small (120px)')}</option>
+                                        <option value="medium">{t('form.imageSizeMedium', 'Medium (200px)')}</option>
+                                        <option value="large">{t('form.imageSizeLarge', 'Large (300px)')}</option>
+                                        <option value="xlarge">{t('form.imageSizeXLarge', 'X-Large (400px)')}</option>
                                       </select>
                                     </label>
                                   </div>
@@ -2097,7 +2139,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                     }}
                                     className="text-red-600 hover:text-red-800 text-xs self-start"
                                   >
-                                    Remove
+                                    {t('common.remove', 'Remove')}
                                   </button>
                                 </div>
                               </div>
@@ -2168,6 +2210,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     </details>
                   </div>
                             </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2377,9 +2420,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           updateField('wardLeadership', updated);
                         }}
                         className="w-full px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        title="Remove"
+                        title={t('common.remove', 'Remove')}
                       >
-                        Remove
+                        {t('common.remove', 'Remove')}
                       </button>
                     </div>
                   </div>
@@ -2511,9 +2554,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        title="Remove"
+                        title={t('common.remove', 'Remove')}
                       >
-                        Remove
+                        {t('common.remove', 'Remove')}
                       </button>
                     </div>
                   </div>
@@ -2598,11 +2641,11 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                   const getReturnStatusBadge = () => {
                     if (daysUntilReturn === null) return null;
                     if (daysUntilReturn < 0) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-green-100 text-green-800 rounded-full">Returned</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-green-100 text-green-800 rounded-full">{t('form.returned', 'Returned')}</span>;
                     } else if (daysUntilReturn <= 30) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-800 rounded-full">Returning Soon</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-800 rounded-full">{t('form.returningSoon', 'Returning Soon')}</span>;
                     } else if (daysUntilReturn <= 90) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">Returning in {daysUntilReturn} days</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">{t('form.returningInDays', 'Returning in {{days}} days', { days: daysUntilReturn })}</span>;
                     }
                     return null;
                   };
@@ -2613,7 +2656,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                         {/* Left Column */}
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.name', 'Name')}</label>
                             <input
                               type="text"
                               value={entry.name}
@@ -2627,7 +2670,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Mission</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.mission', 'Mission')}</label>
                             <input
                               type="text"
                               value={entry.mission || ''}
@@ -2641,7 +2684,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
                             <input
                               type="email"
                               value={entry.email || ''}
@@ -2659,7 +2702,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                         {/* Right Column */}
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Set Apart Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
                             <input
                               type="date"
                               value={entry.setApartDate || ''}
@@ -2673,7 +2716,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Expected Return Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
                             <div className="space-y-2">
                               <input
                                 type="date"
@@ -2697,9 +2740,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                              title="Remove"
+                              title={t('common.remove', 'Remove')}
                             >
-                              Remove Missionary
+                              {t('form.removeMissionary', 'Remove Missionary')}
                             </button>
                           </div>
                         </div>
@@ -2740,11 +2783,11 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                   const getReturnStatusBadge = () => {
                     if (daysUntilReturn === null) return null;
                     if (daysUntilReturn < 0) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mt-1">Returned</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mt-1">{t('form.returned', 'Returned')}</span>;
                     } else if (daysUntilReturn <= 30) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full mt-1">Returning Soon</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full mt-1">{t('form.returningSoon', 'Returning Soon')}</span>;
                     } else if (daysUntilReturn <= 90) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full mt-1">Returning in {daysUntilReturn} days</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full mt-1">{t('form.returningInDays', 'Returning in {{days}} days', { days: daysUntilReturn })}</span>;
                     }
                     return null;
                   };
@@ -2753,7 +2796,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.name', 'Name')}</label>
                           <input
                             type="text"
                             value={entry.name}
@@ -2767,7 +2810,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mission</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.mission', 'Mission')}</label>
                           <input
                             type="text"
                             value={entry.mission || ''}
@@ -2781,7 +2824,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Set Apart Date</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
                           <input
                             type="date"
                             value={entry.setApartDate || ''}
@@ -2795,7 +2838,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expected Return Date</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
                           <input
                             type="date"
                             value={entry.expectedReturnDate || ''}
@@ -2810,7 +2853,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           {getReturnStatusBadge()}
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
                           <input
                             type="email"
                             value={entry.email || ''}
@@ -2831,9 +2874,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                            title="Remove"
+                            title={t('common.remove', 'Remove')}
                           >
-                            Remove
+                            {t('common.remove', 'Remove')}
                           </button>
                         </div>
                       </div>
@@ -2916,7 +2959,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               updateField('serviceMissionaries', updated);
                             }}
                             className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                            title="Remove"
+                            title={t('common.remove', 'Remove')}
                           >
                             {t('form.removeMissionary')}
                           </button>
