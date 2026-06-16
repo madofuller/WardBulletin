@@ -33,7 +33,7 @@ interface BulletinFormProps {
   onImagesRefresh?: () => void;
 }
 
-export default function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
+function BulletinForm({ data, onChange, profileSlug, userId, allImages: externalAllImages, onImagesRefresh }: BulletinFormProps) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   useEffect(() => { preloadSongData(currentLang); }, [currentLang]);
@@ -79,6 +79,62 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     onChange({ ...data, [field]: value });
   };
 
+  // Accordion state for announcement cards. Collapsed by default so a ward
+  // with 25 announcements sees a scannable list of title rows instead of 25
+  // mounted Quill editors; the editor and image controls only exist in the
+  // DOM while a card is expanded. Newly added announcements start expanded.
+  const [expandedAnnouncements, setExpandedAnnouncements] = useState<Set<string>>(new Set());
+  const isAnnouncementExpanded = (id: string) => expandedAnnouncements.has(id);
+  const toggleAnnouncementExpanded = (id: string) => setExpandedAnnouncements(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const expandAnnouncement = (id: string) => setExpandedAnnouncements(prev => new Set(prev).add(id));
+
+  // Always-current data for undo closures: a toast's Undo button fires long
+  // after the render that created it, so it must not act on stale props.
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // Remove a list item with a 6-second Undo toast instead of a confirm
+  // dialog: no friction on intentional deletes, but mis-taps are recoverable.
+  const removeWithUndo = (
+    field: 'announcements' | 'meetings' | 'specialEvents' | 'agenda',
+    id: string
+  ) => {
+    const list = dataRef.current[field] as Array<{ id: string }>;
+    const index = list.findIndex(item => item.id === id);
+    if (index === -1) return;
+    const removed = list[index];
+    onChangeRef.current({ ...dataRef.current, [field]: list.filter(item => item.id !== id) });
+
+    const undo = () => {
+      const current = dataRef.current[field] as Array<{ id: string }>;
+      if (current.some(item => item.id === id)) return; // already restored
+      const next = [...current];
+      next.splice(Math.min(index, next.length), 0, removed);
+      onChangeRef.current({ ...dataRef.current, [field]: next });
+    };
+
+    toast.info(
+      ({ closeToast }) => (
+        <div className="flex items-center justify-between gap-3">
+          <span>{t('common.itemDeleted', 'Deleted')}</span>
+          <button
+            onClick={() => { undo(); closeToast?.(); }}
+            className="font-semibold underline whitespace-nowrap"
+          >
+            {t('common.undo', 'Undo')}
+          </button>
+        </div>
+      ),
+      { autoClose: 6000, closeOnClick: false }
+    );
+  };
+
   const addAnnouncement = (audience?: string) => {
     const newAnnouncement: Announcement = {
       id: generateUniqueId(),
@@ -89,6 +145,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       images: [] // Initialize empty images array
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
+    expandAnnouncement(newAnnouncement.id);
   };
 
   const addAnnouncementToType = (audience: string) => {
@@ -107,17 +164,62 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       images: []
     };
     updateField('announcements', [...data.announcements, newAnnouncement]);
+    expandAnnouncement(newAnnouncement.id);
   };
 
   const updateAnnouncement = (id: string, field: keyof Announcement, value: any) => {
-    const updated = data.announcements.map(ann => 
+    const updated = data.announcements.map(ann =>
       ann.id === id ? { ...ann, [field]: value } : ann
     );
     updateField('announcements', updated);
   };
 
+  // Stable per-announcement content handlers so the memoized HtmlEditor's
+  // props don't change identity on every parent render — that stability is
+  // what lets the other 24 Quill instances skip re-rendering per keystroke.
+  const updateAnnouncementRef = useRef(updateAnnouncement);
+  updateAnnouncementRef.current = updateAnnouncement;
+  const contentHandlersRef = useRef<Record<string, (value: string) => void>>({});
+  const getAnnouncementContentHandler = (id: string) => {
+    if (!contentHandlersRef.current[id]) {
+      contentHandlersRef.current[id] = (value: string) =>
+        updateAnnouncementRef.current(id, 'content', value || '');
+    }
+    return contentHandlersRef.current[id];
+  };
+
   const removeAnnouncement = (id: string) => {
-    updateField('announcements', data.announcements.filter(ann => ann.id !== id));
+    removeWithUndo('announcements', id);
+  };
+
+  // The announcements UI is grouped by audience, but the data is one flat
+  // array. Reorder must swap with the nearest SAME-audience neighbor:
+  // swapping with a flat-array neighbor from another group is invisible in
+  // the grouped UI and can even flip whole sections (group order is
+  // first-occurrence order). Swapping two same-audience positions provably
+  // leaves every other group's order and all section order untouched.
+  const moveAnnouncementInGroup = (id: string, direction: -1 | 1) => {
+    const list = data.announcements;
+    const index = list.findIndex(a => a.id === id);
+    if (index === -1) return;
+    const audience = list[index].audience;
+    let neighbor = -1;
+    for (let i = index + direction; i >= 0 && i < list.length; i += direction) {
+      if (list[i].audience === audience) { neighbor = i; break; }
+    }
+    if (neighbor === -1) return;
+    const updated = [...list];
+    [updated[index], updated[neighbor]] = [updated[neighbor], updated[index]];
+    updateField('announcements', updated);
+  };
+
+  const announcementGroupPosition = (id: string): { first: boolean; last: boolean } => {
+    const list = data.announcements;
+    const item = list.find(a => a.id === id);
+    if (!item) return { first: true, last: true };
+    const group = list.filter(a => a.audience === item.audience);
+    const gi = group.findIndex(a => a.id === id);
+    return { first: gi === 0, last: gi === group.length - 1 };
   };
 
           const handleRecurringAnnouncementSelected = (announcement: any) => {
@@ -137,20 +239,27 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             images: announcement.images
           };
           updateField('announcements', [...data.announcements, newAnnouncement]);
+          expandAnnouncement(newAnnouncement.id);
         };
 
   const convertToRecurring = async (announcement: Announcement) => {
+    // Recurring announcements are stored and fetched by profile slug; saving
+    // under the 'default' fallback strands them somewhere no UI can ever
+    // list. Without a profile this feature simply isn't available yet.
+    if (!profileSlug) {
+      toast.info(t('form.recurringNeedsProfile', 'Create a profile first to use recurring announcements (sign in and set a profile name).'));
+      return;
+    }
     try {
-      const actualProfileSlug = profileSlug || 'default';
-      const result = await recurringAnnouncementsService.convertToRecurring(announcement, actualProfileSlug);
+      const result = await recurringAnnouncementsService.convertToRecurring(announcement, profileSlug);
 
       if (result) {
-        toast.success(`"${announcement.title}" converted to recurring announcement`);
+        toast.success(t('success.convertedToRecurring', '"{{title}}" converted to recurring announcement', { title: announcement.title }));
       } else {
-        toast.error('Failed to convert to recurring announcement');
+        toast.error(t('errors.failedToConvertToRecurring', 'Failed to convert to recurring announcement'));
       }
     } catch (error) {
-      toast.error('Failed to convert to recurring announcement');
+      toast.error(t('errors.failedToConvertToRecurring', 'Failed to convert to recurring announcement'));
     }
   };
 
@@ -301,7 +410,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   };
 
   const removeMeeting = (id: string) => {
-    updateField('meetings', data.meetings.filter(meeting => meeting.id !== id));
+    removeWithUndo('meetings', id);
   };
 
   const addSpecialEvent = () => {
@@ -324,7 +433,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   };
 
   const removeSpecialEvent = (id: string) => {
-    updateField('specialEvents', data.specialEvents.filter(event => event.id !== id));
+    removeWithUndo('specialEvents', id);
   };
 
   // Add Section dropdown state and ref
@@ -389,7 +498,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     onImagesRefresh?.(); // Notify parent to refresh its images too
 
     setImageError(null);
-    toast.success('Image uploaded successfully!');
+    toast.success(t('form.imageUploadedSuccessfully', 'Image uploaded successfully!'));
   };
 
   const handleImageError = (error: string) => {
@@ -415,9 +524,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
         updateField('imageId', 'none');
       }
 
-      toast.success('Custom image deleted.');
+      toast.success(t('form.customImageDeleted', 'Custom image deleted.'));
     } catch (error) {
-      toast.error('Failed to delete image.');
+      toast.error(t('errors.failedToDeleteImage', 'Failed to delete image.'));
     } finally {
       setDeleteImageConfirm({ show: false, imageId: null });
     }
@@ -513,7 +622,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     } else {
       localStorage.setItem(DEFAULT_KEYS[key], value);
     }
-    toast.success('Default saved!');
+    toast.success(t('form.defaultSaved', 'Default saved!'));
   };
 
   // Move agenda item up or down
@@ -576,15 +685,6 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
   // Helper to check if an audience is standalone (not grouped)
   const isStandaloneAudience = (audience: string) => {
     return audience.startsWith('standalone_');
-  };
-
-  // Add the moveAnnouncement function near the other move functions:
-  const moveAnnouncement = (idx: number, direction: -1 | 1) => {
-    const newAnnouncements = [...data.announcements];
-    const targetIdx = idx + direction;
-    if (targetIdx < 0 || targetIdx >= newAnnouncements.length) return;
-    [newAnnouncements[idx], newAnnouncements[targetIdx]] = [newAnnouncements[targetIdx], newAnnouncements[idx]];
-    updateField('announcements', newAnnouncements);
   };
 
   const moveImage = (announcementId: string, imageIndex: number, direction: -1 | 1) => {
@@ -695,22 +795,33 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     });
 
     updateField('announcements', consolidated);
-    toast.success(`Consolidated ${data.announcements.length} announcements into ${consolidated.length} groups`);
+    toast.success(t('success.announcementsConsolidated', 'Consolidated {{total}} announcements into {{groups}} groups', { total: data.announcements.length, groups: consolidated.length }));
   };
 
   return (
     <div className="space-y-8 font-sans">
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-4" aria-label="Main tabs">
-        <ul className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
-          {['program', 'announcements', 'unitinfo'].map(tab => (
+        <ul role="tablist" className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto justify-center items-center">
+          {(['program', 'announcements', 'unitinfo'] as const).map(tab => (
             <li key={tab} role="presentation" className="w-full sm:w-auto">
               <button
                 type="button"
                 role="tab"
+                id={`form-tab-${tab}`}
+                tabIndex={activeTab === tab ? 0 : -1}
                 aria-selected={activeTab === tab}
-                aria-controls={`tab-panel-${tab}`}
-                className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 rounded-full font-semibold focus:outline-none border-2 transition-all duration-200 text-base sm:text-lg
+                aria-controls={`form-tab-panel-${tab}`}
+                onKeyDown={(e) => {
+                  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                  e.preventDefault();
+                  const tabs = ['program', 'announcements', 'unitinfo'] as const;
+                  const idx = tabs.indexOf(tab);
+                  const next = tabs[(idx + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+                  setActiveTab(next);
+                  document.getElementById(`form-tab-${next}`)?.focus();
+                }}
+                className={`w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 rounded-full font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 border-2 transition-all duration-200 text-base sm:text-lg
                   ${activeTab === tab
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900'}
@@ -725,7 +836,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
       </nav>
       {/* Tab Content */}
       {activeTab === 'program' && (
-        <>
+        <div id="form-tab-panel-program" role="tabpanel" aria-labelledby="form-tab-program" className="space-y-8">
           {/* Basic Information */}
           <section className="space-y-4">
             <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">
@@ -734,9 +845,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.wardName', { unit: getTranslatedUnitLabel(t) })}</label>
+                <label htmlFor="form-ward-name" className="block text-base font-medium text-gray-700 mb-2">{t('form.wardName', { unit: getTranslatedUnitLabel(t) })}</label>
                 <div className="flex gap-2 md:flex-col md:gap-0">
                   <input
+                    id="form-ward-name"
                     type="text"
                     value={data.wardName || ''}
                     onChange={(e) => updateField('wardName', e.target.value)}
@@ -754,8 +866,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 </div>
               </div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.date')}</label>
+                <label htmlFor="form-date" className="block text-base font-medium text-gray-700 mb-2">{t('form.date')}</label>
                 <input
+                  id="form-date"
                   type="date"
                   value={data.date || ''}
                   onChange={(e) => updateField('date', e.target.value)}
@@ -765,8 +878,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
             </div>
             <div>
               <div>
-                <label className="block text-base font-medium text-gray-700 mb-2">{t('form.themeScripture')}</label>
+                <label htmlFor="form-theme" className="block text-base font-medium text-gray-700 mb-2">{t('form.themeScripture')}</label>
                 <input
+                  id="form-theme"
                   type="text"
                   value={data.theme || ''}
                   onChange={(e) => updateField('theme', e.target.value)}
@@ -1045,6 +1159,20 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Virtual meeting link (Zoom, Google Meet, Teams, ...) */}
+            <div>
+              <label htmlFor="meeting-link-input" className="block text-base font-medium text-gray-700 mb-2">{t('bulletin.meetingLinkLabel')}</label>
+              <input
+                id="meeting-link-input"
+                type="url"
+                value={data.leadership.meetingLink || ''}
+                onChange={(e) => updateField('leadership', { ...data.leadership, meetingLink: e.target.value })}
+                placeholder="https://zoom.us/j/..."
+                className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="mt-1 text-sm text-gray-500">{t('bulletin.meetingLinkHelp')}</p>
             </div>
           </section>
 
@@ -1551,7 +1679,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                 <div className="flex flex-row items-center space-x-2">
                   <button onClick={() => moveAgendaItem(idx, -1)} disabled={idx === 0} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↑</button>
                   <button onClick={() => moveAgendaItem(idx, 1)} disabled={idx === data.agenda.length - 1} className="px-3 py-2 text-gray-600 hover:text-black disabled:opacity-30 text-lg">↓</button>
-                  <button onClick={() => updateField('agenda', data.agenda.filter(ag => ag.id !== item.id))} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-full text-sm">Remove</button>
+                  <button onClick={() => removeWithUndo('agenda', item.id)} className="ml-2 px-3 py-2 text-red-600 hover:bg-red-100 rounded-full text-sm">{t('common.remove')}</button>
                 </div>
               </div>
             ))}
@@ -1608,10 +1736,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </button>
             </div>
           </section>
-        </>
+        </div>
       )}
       {activeTab === 'announcements' && (
-        <>
+        <div id="form-tab-panel-announcements" role="tabpanel" aria-labelledby="form-tab-announcements" className="space-y-8">
           {/* Announcements Section */}
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
@@ -1708,11 +1836,18 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               }}
                               className="text-lg font-semibold text-gray-900 border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                             >
+                              {/* Stored values are terminology-dependent ('ward' vs 'branch',
+                                  'stake' vs 'district/stake'), so a bulletin saved under the
+                                  other unit type can hold a value not in today's options —
+                                  include it so the select never renders blank. */}
+                              {!audienceOptions.some(opt => opt.value === audience) && (
+                                <option value={audience}>{getAudienceDisplayName(audience)}</option>
+                              )}
                               {audienceOptions.filter(opt => opt.value !== 'standalone').map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                               ))}
                             </select>
-                            <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? 'announcement' : 'announcements'})</span>
+                            <span className="text-sm text-gray-500">({announcements.length} {announcements.length === 1 ? t('form.announcement', 'announcement') : t('form.announcements', 'announcements')})</span>
                           </>
                         )}
                       </div>
@@ -1758,8 +1893,34 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     ) : (
                       <div className="space-y-4">
                         {announcements.map((announcement) => (
-                          <div key={announcement.id} className="bg-gray-50 p-4 rounded-lg space-y-3">
-                            <div className="flex-1 space-y-3">
+                          <div key={announcement.id} className="bg-gray-50 rounded-lg">
+                            {/* Collapsed header: title + badges, click to expand.
+                                The editor below only mounts while expanded. */}
+                            <button
+                              type="button"
+                              onClick={() => toggleAnnouncementExpanded(announcement.id)}
+                              aria-expanded={isAnnouncementExpanded(announcement.id)}
+                              className="w-full flex items-center gap-2 px-4 py-3 text-left rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <svg
+                                className={`w-4 h-4 text-gray-500 flex-shrink-0 transition-transform ${isAnnouncementExpanded(announcement.id) ? 'rotate-90' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              <span className="flex-1 min-w-0 truncate font-medium text-gray-900">
+                                {announcement.title
+                                  || (announcement.content || '').replace(/<[^>]*>/g, '').trim().slice(0, 60)
+                                  || t('form.untitledAnnouncement', 'Untitled announcement')}
+                              </span>
+                              {announcement.hideOnPrint && (
+                                <span className="flex-shrink-0 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                                  {t('form.webOnly', 'Web only')}
+                                </span>
+                              )}
+                            </button>
+                            {isAnnouncementExpanded(announcement.id) && (
+                            <div className="flex-1 space-y-3 px-4 pb-4">
                               {/* Title row */}
                               <div className="flex items-center gap-2">
                                 <input
@@ -1772,37 +1933,32 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               </div>
                               {/* Action buttons row */}
                               <div className="flex items-center gap-2 flex-wrap">
-                                {/* Up/Down buttons - move announcement globally in the list */}
+                                {/* Up/Down buttons - move announcement within its audience group */}
                                 <button
-                                  onClick={() => {
-                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                    if (currentIndex > 0) {
-                                      const updated = [...data.announcements];
-                                      [updated[currentIndex - 1], updated[currentIndex]] = [updated[currentIndex], updated[currentIndex - 1]];
-                                      updateField('announcements', updated);
-                                    }
-                                  }}
-                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === 0}
+                                  onClick={() => moveAnnouncementInGroup(announcement.id, -1)}
+                                  disabled={announcementGroupPosition(announcement.id).first}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                                   title={t('form.moveUp')}
                                 >
                                   ↑ {t('form.up')}
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    const currentIndex = data.announcements.findIndex(a => a.id === announcement.id);
-                                    if (currentIndex < data.announcements.length - 1) {
-                                      const updated = [...data.announcements];
-                                      [updated[currentIndex], updated[currentIndex + 1]] = [updated[currentIndex + 1], updated[currentIndex]];
-                                      updateField('announcements', updated);
-                                    }
-                                  }}
-                                  disabled={data.announcements.findIndex(a => a.id === announcement.id) === data.announcements.length - 1}
+                                  onClick={() => moveAnnouncementInGroup(announcement.id, 1)}
+                                  disabled={announcementGroupPosition(announcement.id).last}
                                   className="px-2 py-1 flex items-center gap-1 text-gray-600 hover:text-black disabled:opacity-30 text-sm rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                                   title={t('form.moveDown')}
                                 >
                                   ↓ {t('form.down')}
                                 </button>
+                                <label className="px-2 py-1 flex items-center gap-1.5 text-sm text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer" title={t('form.webOnlyHelp', 'Shown online but left off the printed program')}>
+                                  <input
+                                    type="checkbox"
+                                    checked={announcement.hideOnPrint || false}
+                                    onChange={(e) => updateAnnouncement(announcement.id, 'hideOnPrint', e.target.checked)}
+                                    className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                  />
+                                  {t('form.webOnly', 'Web only')}
+                                </label>
                                 {/* Make Standalone button - only show for grouped announcements */}
                                 {!isStandalone && (
                                   <button
@@ -1848,7 +2004,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               </div>
                               <HtmlEditor
                                 value={announcement.content}
-                                onChange={(value) => updateAnnouncement(announcement.id, 'content', value || '')}
+                                onChange={getAnnouncementContentHandler(announcement.id)}
                                 placeholder={t('form.announcementContentPlaceholder')}
                               />
                   
@@ -1889,7 +2045,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                   onClick={() => updateAnnouncement(announcement.id, 'imageId', 'none')}
                                   className="text-red-600 hover:text-red-800 text-xs"
                                 >
-                                  Remove
+                                  {t('common.remove', 'Remove')}
                                 </button>
                               </div>
                             </div>
@@ -1967,10 +2123,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                         }}
                                         className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0 max-w-32"
                                       >
-                                        <option value="small">Small (120px)</option>
-                                        <option value="medium">Medium (200px)</option>
-                                        <option value="large">Large (300px)</option>
-                                        <option value="xlarge">X-Large (400px)</option>
+                                        <option value="small">{t('form.imageSizeSmall', 'Small (120px)')}</option>
+                                        <option value="medium">{t('form.imageSizeMedium', 'Medium (200px)')}</option>
+                                        <option value="large">{t('form.imageSizeLarge', 'Large (300px)')}</option>
+                                        <option value="xlarge">{t('form.imageSizeXLarge', 'X-Large (400px)')}</option>
                                       </select>
                                     </label>
                                   </div>
@@ -1983,7 +2139,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                     }}
                                     className="text-red-600 hover:text-red-800 text-xs self-start"
                                   >
-                                    Remove
+                                    {t('common.remove', 'Remove')}
                                   </button>
                                 </div>
                               </div>
@@ -2054,6 +2210,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     </details>
                   </div>
                             </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2122,10 +2279,10 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               </button>
             </div>
           </section>
-        </>
+        </div>
       )}
       {activeTab === 'unitinfo' && (
-        <>
+        <div id="form-tab-panel-unitinfo" role="tabpanel" aria-labelledby="form-tab-unitinfo" className="space-y-8">
           {/* Ward Leadership Section */}
           <section className="space-y-4">
             <h3 className="text-xl font-medium text-gray-900 border-b pb-2 flex items-center justify-between">{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t) })}
@@ -2263,9 +2420,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           updateField('wardLeadership', updated);
                         }}
                         className="w-full px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        title="Remove"
+                        title={t('common.remove', 'Remove')}
                       >
-                        Remove
+                        {t('common.remove', 'Remove')}
                       </button>
                     </div>
                   </div>
@@ -2397,9 +2554,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           updateField('missionaries', updated);
                         }}
                         className="w-full px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                        title="Remove"
+                        title={t('common.remove', 'Remove')}
                       >
-                        Remove
+                        {t('common.remove', 'Remove')}
                       </button>
                     </div>
                   </div>
@@ -2484,11 +2641,11 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   const getReturnStatusBadge = () => {
                     if (daysUntilReturn === null) return null;
                     if (daysUntilReturn < 0) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-green-100 text-green-800 rounded-full">Returned</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-green-100 text-green-800 rounded-full">{t('form.returned', 'Returned')}</span>;
                     } else if (daysUntilReturn <= 30) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-800 rounded-full">Returning Soon</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-800 rounded-full">{t('form.returningSoon', 'Returning Soon')}</span>;
                     } else if (daysUntilReturn <= 90) {
-                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">Returning in {daysUntilReturn} days</span>;
+                      return <span className="inline-block px-3 py-1.5 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">{t('form.returningInDays', 'Returning in {{days}} days', { days: daysUntilReturn })}</span>;
                     }
                     return null;
                   };
@@ -2499,7 +2656,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         {/* Left Column */}
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.name', 'Name')}</label>
                             <input
                               type="text"
                               value={entry.name}
@@ -2513,7 +2670,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Mission</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.mission', 'Mission')}</label>
                             <input
                               type="text"
                               value={entry.mission || ''}
@@ -2527,7 +2684,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
                             <input
                               type="email"
                               value={entry.email || ''}
@@ -2545,7 +2702,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                         {/* Right Column */}
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Set Apart Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
                             <input
                               type="date"
                               value={entry.setApartDate || ''}
@@ -2559,7 +2716,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Expected Return Date</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
                             <div className="space-y-2">
                               <input
                                 type="date"
@@ -2583,9 +2740,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                              title="Remove"
+                              title={t('common.remove', 'Remove')}
                             >
-                              Remove Missionary
+                              {t('form.removeMissionary', 'Remove Missionary')}
                             </button>
                           </div>
                         </div>
@@ -2626,11 +2783,11 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                   const getReturnStatusBadge = () => {
                     if (daysUntilReturn === null) return null;
                     if (daysUntilReturn < 0) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mt-1">Returned</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full mt-1">{t('form.returned', 'Returned')}</span>;
                     } else if (daysUntilReturn <= 30) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full mt-1">Returning Soon</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-orange-100 text-orange-800 rounded-full mt-1">{t('form.returningSoon', 'Returning Soon')}</span>;
                     } else if (daysUntilReturn <= 90) {
-                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full mt-1">Returning in {daysUntilReturn} days</span>;
+                      return <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full mt-1">{t('form.returningInDays', 'Returning in {{days}} days', { days: daysUntilReturn })}</span>;
                     }
                     return null;
                   };
@@ -2639,7 +2796,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                     <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Name</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.name', 'Name')}</label>
                           <input
                             type="text"
                             value={entry.name}
@@ -2653,7 +2810,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mission</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.mission', 'Mission')}</label>
                           <input
                             type="text"
                             value={entry.mission || ''}
@@ -2667,7 +2824,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Set Apart Date</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
                           <input
                             type="date"
                             value={entry.setApartDate || ''}
@@ -2681,7 +2838,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expected Return Date</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
                           <input
                             type="date"
                             value={entry.expectedReturnDate || ''}
@@ -2696,7 +2853,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                           {getReturnStatusBadge()}
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
                           <input
                             type="email"
                             value={entry.email || ''}
@@ -2717,9 +2874,9 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                            title="Remove"
+                            title={t('common.remove', 'Remove')}
                           >
-                            Remove
+                            {t('common.remove', 'Remove')}
                           </button>
                         </div>
                       </div>
@@ -2802,7 +2959,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
                               updateField('serviceMissionaries', updated);
                             }}
                             className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
-                            title="Remove"
+                            title={t('common.remove', 'Remove')}
                           >
                             {t('form.removeMissionary')}
                           </button>
@@ -2887,7 +3044,7 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
               {t('form.addServiceMissionary')}
             </button>
           </section>
-        </>
+        </div>
       )}
 
       {/* Recurring Announcements Modal */}
@@ -2943,3 +3100,4 @@ export default function BulletinForm({ data, onChange, profileSlug, userId, allI
     </div>
   );
 }
+export default React.memo(BulletinForm);

@@ -12,15 +12,23 @@ const getSelectedUnitType = (): UnitType => {
   return stored && ['ward', 'branch'].includes(stored) ? stored : 'ward';
 };
 
+// The unit-type switch reloads the page so every label re-renders
+// consistently. The editor flushes its draft in beforeunload, so no work is
+// lost — suppress its "unsaved changes" dialog, which would otherwise be a
+// false alarm and, when cancelled, leave the app half-toggled.
+let unloadWarningSuppressed = false;
+export const suppressUnloadWarning = (): void => {
+  unloadWarningSuppressed = true;
+};
+export const isUnloadWarningSuppressed = (): boolean => unloadWarningSuppressed;
+
 export const setSelectedUnitType = (unitType: UnitType): void => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('selectedUnitType', unitType);
-    // Force reload of terminology
+    suppressUnloadWarning();
     window.location.reload();
   }
 };
-
-const SELECTED_UNIT_TYPE = getSelectedUnitType();
 
 // Get terminology based on selected unit type
 export const getTerminologyForUnitType = (unitType: UnitType) => {
@@ -50,9 +58,10 @@ export const getTerminologyForUnitType = (unitType: UnitType) => {
   }
 };
 
-export const TERMINOLOGY = getTerminologyForUnitType(SELECTED_UNIT_TYPE);
-
+// Read live on every call: the value can change after module load (cloud
+// profile sync on login writes localStorage), and a frozen snapshot left the
+// UI showing the wrong unit's terminology until a manual refresh.
 export const getCurrentUnitType = (): UnitType => {
-  return SELECTED_UNIT_TYPE;
+  return getSelectedUnitType();
 };
 

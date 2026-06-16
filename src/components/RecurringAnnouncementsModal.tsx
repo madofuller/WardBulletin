@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, Edit3, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { sanitizeHtml } from '../lib/sanitizeHtml';
 import { decodeHtml } from '../lib/decodeHtml';
+import HtmlEditor from './HtmlEditor';
 
 // Helper function to strip HTML tags and return plain text
 const stripHtmlTags = (html: string): string => {
@@ -94,10 +94,17 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       return;
     }
 
-    if (!formData.title.trim() || !formData.content.trim()) {
+    // Content is Quill HTML now — an "empty" editor still holds <p><br></p>,
+    // so validate on the visible text, not the raw markup.
+    if (!formData.title.trim() || !stripHtmlTags(formData.content)) {
       toast.error(t('validation.fillTitleAndContent'));
       return;
     }
+
+    // The custom label only applies to standalone announcements.
+    const customLabel = formData.audience === 'standalone'
+      ? formData.custom_audience_label.trim() || null
+      : null;
 
     try {
       if (editingId) {
@@ -108,6 +115,7 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
             title: formData.title.trim(),
             content: formData.content.trim(),
             audience: formData.audience,
+            custom_audience_label: customLabel,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingId)
@@ -123,7 +131,8 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
             profile_slug: profileSlug,
             title: formData.title.trim(),
             content: formData.content.trim(),
-            audience: formData.audience
+            audience: formData.audience,
+            custom_audience_label: customLabel
           })
           .select();
 
@@ -186,8 +195,15 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
     toast.success(t('success.announcementAddedToBulletin', { title: announcement.title }));
   };
 
-  const handleCopy = (announcement: RecurringAnnouncement) => {
-    toast.success(t('success.announcementCopiedToBulletin', { title: announcement.title }));
+  const handleCopy = async (announcement: RecurringAnnouncement) => {
+    // Actually copy — this used to show the success toast without writing
+    // anything to the clipboard.
+    try {
+      await navigator.clipboard.writeText(`${announcement.title}\n\n${stripHtmlTags(announcement.content)}`);
+      toast.success(t('success.copiedToClipboard', 'Copied to clipboard'));
+    } catch {
+      toast.error(t('errors.copyFailed', 'Could not copy to clipboard'));
+    }
   };
 
   const resetForm = () => {
@@ -241,13 +257,13 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {t('recurring.content')}
                       </label>
-                      <textarea
+                      {/* Rich-text editor, same as the bulletin form: the
+                          content IS Quill HTML, and a plain textarea forced
+                          clerks to hand-edit raw <p>/<strong> markup. */}
+                      <HtmlEditor
                         value={formData.content}
-                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                        onChange={(value) => setFormData(prev => ({ ...prev, content: value || '' }))}
                         placeholder={t('recurring.enterAnnouncementContent')}
-                        required
                       />
                     </div>
 
@@ -266,9 +282,30 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                         <option value="youth">{t('audiences.youth')}</option>
                         <option value="primary">{t('audiences.primary')}</option>
                         <option value="stake">{t('audiences.stake')}</option>
+                        <option value="standalone">{t('audiences.standalone', 'Standalone (custom label)')}</option>
                         <option value="other">{t('audiences.other')}</option>
+                        {/* Editing an item whose stored audience isn't listed
+                            (e.g. branch-mode values) must not blank the select */}
+                        {!['ward', 'relief_society', 'elders_quorum', 'youth', 'primary', 'stake', 'standalone', 'other'].includes(formData.audience) && (
+                          <option value={formData.audience}>{formData.audience}</option>
+                        )}
                       </select>
                     </div>
+
+                    {formData.audience === 'standalone' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t('recurring.customLabel', 'Section label')}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.custom_audience_label}
+                          onChange={(e) => setFormData(prev => ({ ...prev, custom_audience_label: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          placeholder={t('recurring.customLabelPlaceholder', 'e.g. Temple News')}
+                        />
+                      </div>
+                    )}
 
                     <div className="flex flex-col sm:flex-row gap-2 pt-2">
                       <button

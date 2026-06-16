@@ -17,6 +17,7 @@ export interface Announcement {
   customAudienceLabel?: string; // Free-text label for standalone announcements
   imageId?: string; // Optional image for flyers/announcements (legacy support)
   hideImageOnPrint?: boolean; // Hide image when printing (legacy support)
+  hideOnPrint?: boolean; // Web-only announcement: shown online, excluded from the printed program
   images?: AnnouncementImage[]; // Multiple images support
 }
 
@@ -68,6 +69,8 @@ export interface Leadership {
   organist: string;
   organistLabel?: 'Organist' | 'Pianist';
   preludeMusic?: string;
+  /** Optional video-meeting URL (e.g. Zoom) shown at the top of the program */
+  meetingLink?: string;
 }
 
 export interface Speaker {

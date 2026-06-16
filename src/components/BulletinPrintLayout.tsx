@@ -1,7 +1,9 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
+import { linkifyHtml } from "../lib/linkifyHtml";
 import { decodeHtml } from '../lib/decodeHtml';
+import { sanitizedAnnouncementHtml } from '../lib/sanitizeCache';
 import { LDS_IMAGES, getImageByIdSync } from '../data/images';
 import { useSession } from '../lib/SessionContext';
 import { themes } from '../data/themes';
@@ -318,9 +320,21 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, 3/4 = forced column count
 
-  const announcementCount = (data.announcements || []).length;
-  const announcementTotalChars = (data.announcements || []).reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
-  const announcementsContentKey = announcementCount + ':' + announcementTotalChars;
+  // Announcements marked web-only never reach paper; everything below
+  // (column auto-fit, grouping, the section header) works off this list.
+  const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
+  const announcementCount = printableAnnouncements.length;
+  const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
+  const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
+  // Debounce the content key so the auto-fit measure/shrink loop (forced
+  // reflows of two full off-screen print pages) runs once per typing pause
+  // instead of on every keystroke.
+  const [announcementsContentKey, setAnnouncementsContentKey] = useState(announcementsContentKeyRaw);
+  useEffect(() => {
+    if (announcementsContentKeyRaw === announcementsContentKey) return;
+    const timer = setTimeout(() => setAnnouncementsContentKey(announcementsContentKeyRaw), 500);
+    return () => clearTimeout(timer);
+  }, [announcementsContentKeyRaw, announcementsContentKey]);
   const isHeavyContent = announcementTotalChars > 2000;
   const isLightContent = announcementTotalChars < 800;
 
@@ -663,10 +677,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           <div className="w-1/2" />
         ) : (
         <div className={`w-1/2 text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
+              {/* No header over an empty panel: a minimal program without
+                  announcements shouldn't print an "Announcements & Events"
+                  title with nothing under it. */}
+              {announcementCount > 0 && (
+                <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5">{t('printPreview.announcementsAndEvents')}</h2>
+              )}
               <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               {(() => {
-                const grouped = (data.announcements || []).reduce((groups: Record<string, any[]>, announcement: any) => {
+                const grouped = printableAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
                   const isStandalone = announcement.audience?.startsWith('standalone_');
                   const audienceLabel = isStandalone
                     ? (announcement.customAudienceLabel || '')
@@ -694,7 +713,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                       <div key={audienceLabel} style={{ marginBottom: groupIdx < Object.keys(grouped).length - 1 ? (isLightContent ? '1rem' : tight ? '0.125rem' : '0.25rem') : 0 }}>
                         <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
                           {(announcements as any[]).map((a: any, idx: number) => {
-                            const decodedContent = sanitizeHtml(decodeHtml(a.content));
+                            const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
                             const showHeader = idx === 0 && audienceLabel;
                             return (
                               <li key={idx} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
@@ -721,7 +740,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                   </span>
                                 )}
                                 <div
-                                  className="print:!text-black leading-tight"
+                                  className="print:!text-black leading-tight [&_a]:underline [&_a]:break-all"
                                   style={{
                                     fontSize: contentFontSize,
                                     wordWrap: 'break-word',
@@ -823,6 +842,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
               <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
             </>
+          )}
+
+          {data.leadership?.meetingLink && data.leadership.meetingLink.trim() !== '' && (
+            <p className="text-xs text-gray-600 mb-2 print:!text-sm">
+              {t('bulletin.joinMeetingPrint')} {data.leadership.meetingLink.trim()}
+            </p>
           )}
 
           <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
@@ -982,7 +1007,7 @@ function PrintQRCode({ profileSlug, size = 128 }: { profileSlug: string; size?: 
   );
 }
 
-export default BulletinPrintLayout;
+export default React.memo(BulletinPrintLayout);
 
 function ProgramTableRow({ label, value, extra }: { label: string, value?: string, extra?: string }) {
   return (

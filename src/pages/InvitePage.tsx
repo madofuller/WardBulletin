@@ -8,8 +8,21 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import Logo from '../components/Logo';
 
+// Map i18n language codes to proper locale codes for date formatting
+const localeMap: Record<string, string> = {
+  'en': 'en-US',
+  'zh': 'zh-TW',
+  'pt': 'pt-BR',
+  'es': 'es-ES',
+  'fr': 'fr-FR',
+  'de': 'de-DE',
+  'it': 'it-IT',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR'
+};
+
 export default function InvitePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user } = useSession();
@@ -69,9 +82,9 @@ export default function InvitePage() {
       if (error || !invitation) {
         // Check if it's an expiration error specifically
         if (error?.message?.includes('expired')) {
-          throw new Error('This invitation has expired. Please contact the profile owner to request a new invitation.');
+          throw new Error(t('invite.invitationExpired', 'This invitation has expired. Please contact the profile owner to request a new invitation.'));
         }
-        throw new Error('Invalid invitation or invitation not found');
+        throw new Error(t('invite.invalidOrNotFound', 'Invalid invitation or invitation not found'));
       }
 
       setInvitation(invitation);
@@ -108,7 +121,7 @@ export default function InvitePage() {
 
   const handleAcceptInvitation = async () => {
     if (!user || !token) {
-      toast.error('Please sign in to accept the invitation');
+      toast.error(t('invite.pleaseSignInFirst', 'Please sign in to accept the invitation'));
       return;
     }
 
@@ -118,7 +131,7 @@ export default function InvitePage() {
     
     if (userEmail !== invitedEmail) {
       setEmailMismatch(true);
-      toast.error('This invitation was sent to a different email address. Please sign in with the correct account.');
+      toast.error(t('invite.emailMismatchError', 'This invitation was sent to a different email address. Please sign in with the correct account.'));
       return;
     }
 
@@ -127,7 +140,7 @@ export default function InvitePage() {
     try {
       const result = await profileSharingService.acceptInvitation(token, user.id);
       
-      toast.success(`You now have ${result.role} access to ${result.profile_slug}`);
+      toast.success(t('invite.nowHaveAccess', 'You now have {{role}} access to {{profile}}', { role: result.role, profile: result.profile_slug }));
 
       // Invalidate all queries related to profiles and bulletins to force refresh
       queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
@@ -148,9 +161,9 @@ export default function InvitePage() {
       // If error is about email mismatch, handle it specially
       if (error.message?.includes('different email address')) {
         setEmailMismatch(true);
-        toast.error('This invitation was sent to a different email address. Please sign in with the correct account.');
+        toast.error(t('invite.emailMismatchError', 'This invitation was sent to a different email address. Please sign in with the correct account.'));
       } else {
-        const errorMessage = error.message || 'Failed to accept invitation. Please try again.';
+        const errorMessage = error.message || t('invite.failedToAccept', 'Failed to accept invitation. Please try again.');
         setError(errorMessage);
         toast.error(errorMessage);
       }
@@ -164,9 +177,9 @@ export default function InvitePage() {
     try {
       await supabase.auth.signOut();
       setEmailMismatch(false);
-      toast.info('Please sign in with the email address the invitation was sent to.');
+      toast.info(t('invite.signInWithInvitedEmail', 'Please sign in with the email address the invitation was sent to.'));
     } catch (error: any) {
-      toast.error('Failed to sign out: ' + error.message);
+      toast.error(t('errors.signOutFailed', 'Failed to sign out: {{message}}', { message: error.message }));
     } finally {
       setSigningOut(false);
     }
@@ -357,7 +370,7 @@ export default function InvitePage() {
           {/* Expiration Info */}
           {invitation?.expires_at && (
             <div className="mt-4 text-center text-xs text-gray-500">
-              {t('invite.expiresOn')} {new Date(invitation.expires_at).toLocaleDateString()}
+              {t('invite.expiresOn')} {new Date(invitation.expires_at).toLocaleDateString(localeMap[i18n.language] || i18n.language)}
             </div>
           )}
         </div>
