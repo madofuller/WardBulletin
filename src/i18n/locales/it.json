@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Aggiungi feedback per chi ha inviato...",
     "theme": "Tema",
     "preludeMusic": "Musica di Preludio",
+    "interpreter": "Interprete",
+    "interpreterPlaceholder": "es. LIS, inglese",
     "organist": "Organista",
     "pianist": "Pianista",
     "chorister": "Direttore del Coro",

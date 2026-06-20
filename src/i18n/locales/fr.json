@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Ajouter un commentaire pour le soumissionnaire...",
     "theme": "Thème",
     "preludeMusic": "Musique de prélude",
+    "interpreter": "Interprète",
+    "interpreterPlaceholder": "ex. : LSF, anglais",
     "organist": "Organiste",
     "pianist": "Pianiste",
     "chorister": "Choriste",

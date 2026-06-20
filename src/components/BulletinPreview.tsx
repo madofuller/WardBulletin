@@ -612,6 +612,11 @@ function BulletinPreview({
             <DottedLine rightAlign={data?.leadership?.organist}>
               <span>{data?.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')}</span>
             </DottedLine>
+            {data?.leadership?.interpreter && (
+              <DottedLine rightAlign={data.leadership.interpreter}>
+                <span>{t('form.interpreter')}</span>
+              </DottedLine>
+            )}
             {data?.leadership?.preludeMusic && (
               <DottedLine rightAlign={data.leadership.preludeMusic}>
                 <span>{t('form.preludeMusic')}</span>

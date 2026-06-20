@@ -68,6 +68,7 @@ export interface Leadership {
   choristerLabel?: 'Chorister' | 'Music Leader';
   organist: string;
   organistLabel?: 'Organist' | 'Pianist';
+  interpreter?: string;
   preludeMusic?: string;
   /** Optional video-meeting URL (e.g. Zoom) shown at the top of the program */
   meetingLink?: string;
