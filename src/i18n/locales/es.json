@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Agregar comentarios para el remitente...",
     "theme": "Tema",
     "preludeMusic": "Música de Preludio",
+    "interpreter": "Intérprete",
+    "interpreterPlaceholder": "p. ej. lengua de señas, inglés",
     "organist": "Organista",
     "pianist": "Pianista",
     "chorister": "Director de Música",

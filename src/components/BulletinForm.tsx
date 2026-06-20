@@ -539,6 +539,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     conducting: 'default_conducting',
     chorister: 'default_chorister',
     organist: 'default_organist',
+    interpreter: 'default_interpreter',
     preludeMusic: 'default_preludeMusic',
     wardLeadership: 'default_wardLeadership',
     missionaries: 'default_missionaries',
@@ -567,6 +568,10 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     }
     if (!data.leadership.organist && localStorage.getItem(DEFAULT_KEYS.organist)) {
       newData.leadership = { ...newData.leadership, organist: localStorage.getItem(DEFAULT_KEYS.organist) || '' };
+      changed = true;
+    }
+    if (!data.leadership.interpreter && localStorage.getItem(DEFAULT_KEYS.interpreter)) {
+      newData.leadership = { ...newData.leadership, interpreter: localStorage.getItem(DEFAULT_KEYS.interpreter) || '' };
       changed = true;
     }
     if (!data.leadership.preludeMusic && localStorage.getItem(DEFAULT_KEYS.preludeMusic)) {
@@ -1158,6 +1163,28 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     {t('form.saveAsDefault')}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Interpreter (optional) */}
+            <div>
+              <label className="block text-base font-medium text-gray-700 mb-2">{t('form.interpreter')}</label>
+              <div className="flex gap-2 md:flex-col md:gap-0">
+                <input
+                  type="text"
+                  value={data.leadership.interpreter || ''}
+                  onChange={(e) => updateField('leadership', { ...data.leadership, interpreter: e.target.value })}
+                  placeholder={t('form.interpreterPlaceholder')}
+                  className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => saveDefault('interpreter', data.leadership.interpreter || '')}
+                  className="px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 border border-gray-300 md:mt-2"
+                  title={t('form.saveAsDefault')}
+                >
+                  {t('form.saveAsDefault')}
+                </button>
               </div>
             </div>
 

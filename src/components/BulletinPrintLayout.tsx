@@ -856,6 +856,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
               <ProgramTableRow label={data.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')} value={data.leadership?.chorister} />
               <ProgramTableRow label={data.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')} value={data.leadership?.organist} />
+              {data.leadership?.interpreter && (
+                <ProgramTableRow label={t('form.interpreter')} value={data.leadership?.interpreter} />
+              )}
               {data.leadership?.preludeMusic && (
                 <ProgramTableRow label={t('bulletin.preludeMusic')} value={data.leadership?.preludeMusic} />
               )}

@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Adicionar comentário para quem enviou...",
     "theme": "Tema",
     "preludeMusic": "Música de Prelúdio",
+    "interpreter": "Intérprete",
+    "interpreterPlaceholder": "ex.: Libras, inglês",
     "organist": "Organista",
     "pianist": "Pianista",
     "chorister": "Regente",
