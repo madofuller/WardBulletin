@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "제출자에게 피드백 추가...",
     "theme": "테마",
     "preludeMusic": "전주 음악",
+    "interpreter": "통역",
+    "interpreterPlaceholder": "예: 수어, 영어",
     "organist": "오르간 연주자",
     "pianist": "피아노 연주자",
     "chorister": "찬송 인도자",

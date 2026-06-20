@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Add feedback for the submitter...",
     "theme": "Theme",
     "preludeMusic": "Prelude Music",
+    "interpreter": "Interpreter",
+    "interpreterPlaceholder": "e.g. ASL, Spanish",
     "organist": "Organist",
     "pianist": "Pianist",
     "chorister": "Chorister",

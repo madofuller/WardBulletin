@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "Feedback für den Einreicher hinzufügen...",
     "theme": "Thema",
     "preludeMusic": "Vorspiel",
+    "interpreter": "Dolmetscher",
+    "interpreterPlaceholder": "z. B. Gebärdensprache, Englisch",
     "organist": "Organist",
     "pianist": "Pianist",
     "chorister": "Chorleiter",

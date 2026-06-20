@@ -296,6 +296,8 @@
     "addFeedbackForSubmitter": "為提交者新增意見回饋...",
     "theme": "主題",
     "preludeMusic": "開會前音樂",
+    "interpreter": "翻譯",
+    "interpreterPlaceholder": "例如：手語、英語",
     "organist": "司琴（風琴）",
     "pianist": "司琴（鋼琴）",
     "chorister": "領唱",
