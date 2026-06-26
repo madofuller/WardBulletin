@@ -222,6 +222,40 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     return { first: gi === 0, last: gi === group.length - 1 };
   };
 
+  // The display order of the whole sections (RS, EQ, Youth, …) is the
+  // first-occurrence order of each audience in the flat array, matching how
+  // the form and preview both group with reduce()+Object.keys.
+  const groupOrder = (): string[] => {
+    const order: string[] = [];
+    for (const a of data.announcements) {
+      const key = a.audience || 'ward';
+      if (!order.includes(key)) order.push(key);
+    }
+    return order;
+  };
+
+  const sectionGroupPosition = (audience: string): { first: boolean; last: boolean } => {
+    const order = groupOrder();
+    const i = order.indexOf(audience);
+    return { first: i <= 0, last: i === order.length - 1 };
+  };
+
+  // Move an entire audience section up/down past its neighboring section.
+  // Rebuild the flat array following the swapped group order, keeping each
+  // section's internal item order intact — so section order changes while
+  // within-section order (and every other section) is preserved.
+  const moveSection = (audience: string, direction: -1 | 1) => {
+    const order = groupOrder();
+    const index = order.indexOf(audience);
+    const target = index + direction;
+    if (index === -1 || target < 0 || target >= order.length) return;
+    [order[index], order[target]] = [order[target], order[index]];
+    const updated = order.flatMap(key =>
+      data.announcements.filter(a => (a.audience || 'ward') === key)
+    );
+    updateField('announcements', updated);
+  };
+
           const handleRecurringAnnouncementSelected = (announcement: any) => {
           // Check if this is a standalone recurring announcement
           const isStandalone = announcement.audience === 'standalone';
@@ -1828,15 +1862,39 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                   : (audienceOptions.find(opt => opt.value === audience)?.label || getAudienceDisplayName(audience));
 
                 // Get the index of this group's first announcement in the full list for move operations
-                const groupFirstIndex = data.announcements.findIndex(a => a.audience === audience);
                 const allAudienceKeys = Object.keys(grouped);
-                const groupIndex = allAudienceKeys.indexOf(audience);
 
                 return (
                   <div key={audience} className="border border-gray-200 rounded-lg p-4 mb-4 bg-white">
                     {/* Type Header */}
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
                       <div className="flex items-center gap-3 flex-1">
+                        {/* Move the whole section up/down past its neighbor.
+                            Only meaningful when more than one section exists. */}
+                        {allAudienceKeys.length > 1 && (
+                          <div className="flex flex-col flex-shrink-0 -my-1">
+                            <button
+                              type="button"
+                              onClick={() => moveSection(audience, -1)}
+                              disabled={sectionGroupPosition(audience).first}
+                              title={t('form.moveSectionUp')}
+                              aria-label={t('form.moveSectionUp')}
+                              className="px-2 leading-none text-gray-500 hover:text-black disabled:opacity-30 disabled:hover:text-gray-500 transition-colors"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveSection(audience, 1)}
+                              disabled={sectionGroupPosition(audience).last}
+                              title={t('form.moveSectionDown')}
+                              aria-label={t('form.moveSectionDown')}
+                              className="px-2 leading-none text-gray-500 hover:text-black disabled:opacity-30 disabled:hover:text-gray-500 transition-colors"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        )}
                         {isStandalone ? (
                           <input
                             type="text"

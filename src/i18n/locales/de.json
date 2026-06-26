@@ -412,6 +412,8 @@
     "xLarge": "Sehr Groß",
     "moveUp": "Nach oben verschieben",
     "moveDown": "Nach unten verschieben",
+    "moveSectionUp": "Abschnitt nach oben verschieben",
+    "moveSectionDown": "Abschnitt nach unten verschieben",
     "orChooseFromExisting": "oder aus vorhandenen auswählen",
     "consolidate": "Zusammenfassen",
     "consolidateTooltip": "Gruppiert mehrere Ankündigungen nach Zielgruppe in zusammengefasste Einträge.",

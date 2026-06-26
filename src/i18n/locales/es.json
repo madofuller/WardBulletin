@@ -438,6 +438,8 @@
     "xLarge": "Extra Grande",
     "moveUp": "Mover arriba",
     "moveDown": "Mover abajo",
+    "moveSectionUp": "Mover sección arriba",
+    "moveSectionDown": "Mover sección abajo",
     "orChooseFromExisting": "o elegir de existentes",
     "consolidate": "Consolidar",
     "consolidateTooltip": "Agrupa múltiples anuncios en entradas consolidadas por audiencia objetivo.",

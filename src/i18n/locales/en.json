@@ -412,6 +412,8 @@
     "xLarge": "X-Large",
     "moveUp": "Move up",
     "moveDown": "Move down",
+    "moveSectionUp": "Move section up",
+    "moveSectionDown": "Move section down",
     "orChooseFromExisting": "Or choose from existing images",
     "consolidate": "Consolidate",
     "consolidateTooltip": "Group multiple announcements by their target audience into single consolidated entries.",

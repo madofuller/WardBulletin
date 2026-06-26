@@ -412,6 +412,8 @@
     "xLarge": "Extra Grande",
     "moveUp": "Mover para cima",
     "moveDown": "Mover para baixo",
+    "moveSectionUp": "Mover seção para cima",
+    "moveSectionDown": "Mover seção para baixo",
     "orChooseFromExisting": "Ou escolha de imagens existentes",
     "consolidate": "Consolidar",
     "consolidateTooltip": "Agrupe vários anúncios pelo público-alvo em entradas consolidadas.",

@@ -438,6 +438,8 @@
     "xLarge": "特大",
     "moveUp": "上に移動",
     "moveDown": "下に移動",
+    "moveSectionUp": "セクションを上に移動",
+    "moveSectionDown": "セクションを下に移動",
     "orChooseFromExisting": "または既存から選択",
     "consolidate": "統合",
     "consolidateTooltip": "複数のお知らせを対象者別に統合されたエントリにグループ化します。",

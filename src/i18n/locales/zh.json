@@ -411,6 +411,8 @@
     "xLarge": "特大",
     "moveUp": "上移",
     "moveDown": "下移",
+    "moveSectionUp": "上移區段",
+    "moveSectionDown": "下移區段",
     "orChooseFromExisting": "或從現有圖片中選擇",
     "consolidate": "整合",
     "consolidateTooltip": "將多個公告按目標對象分組為整合條目。",
