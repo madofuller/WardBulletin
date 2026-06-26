@@ -438,6 +438,8 @@
     "xLarge": "Très Grand",
     "moveUp": "Déplacer vers le haut",
     "moveDown": "Déplacer vers le bas",
+    "moveSectionUp": "Déplacer la section vers le haut",
+    "moveSectionDown": "Déplacer la section vers le bas",
     "orChooseFromExisting": "ou choisir parmi les existants",
     "consolidate": "Consolider",
     "consolidateTooltip": "Regroupe plusieurs annonces en entrées consolidées par public cible.",
