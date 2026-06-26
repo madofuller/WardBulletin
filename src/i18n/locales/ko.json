@@ -438,6 +438,8 @@
     "xLarge": "매우 큼",
     "moveUp": "위로 이동",
     "moveDown": "아래로 이동",
+    "moveSectionUp": "섹션 위로 이동",
+    "moveSectionDown": "섹션 아래로 이동",
     "orChooseFromExisting": "또는 기존 항목에서 선택",
     "consolidate": "통합",
     "consolidateTooltip": "여러 공지사항을 대상별로 통합된 항목으로 그룹화합니다.",

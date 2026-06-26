@@ -412,6 +412,8 @@
     "xLarge": "Extra Grande",
     "moveUp": "Sposta su",
     "moveDown": "Sposta giù",
+    "moveSectionUp": "Sposta sezione su",
+    "moveSectionDown": "Sposta sezione giù",
     "orChooseFromExisting": "o scegli tra esistenti",
     "consolidate": "Consolida",
     "consolidateTooltip": "Raggruppa più annunci in voci consolidate per pubblico di destinazione.",
