@@ -1,0 +1,24 @@
+name: Lint (React Hooks)
+
+# Gate that blocks React Rules-of-Hooks violations — the class of bug behind
+# React error #310 ("Rendered more hooks than during the previous render").
+# Scoped to a single rule via eslint.hooks.config.js so it isn't blocked by the
+# repo's pre-existing lint errors. Once the full `npm run lint` is clean this
+# can be replaced by the broader gate.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint:hooks

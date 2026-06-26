@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:hooks": "eslint . --config eslint.hooks.config.js",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
