@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import PublicBulletinView from '../components/PublicBulletinView';
 import DynamicMetaTags from '../components/DynamicMetaTags';
+import DynamicManifest from '../components/DynamicManifest';
 import { bulletinService } from '../lib/supabase';
 import { SkeletonBulletin } from '../components/SkeletonLoader';
 
@@ -173,6 +174,10 @@ export default function PublicBulletinPage() {
         bulletinData={bulletinData}
         profileSlug={slug || null}
         isPublicPage={true}
+      />
+      <DynamicManifest
+        slug={slug || null}
+        wardName={bulletinData?.wardName || null}
       />
       <PublicBulletinView
         bulletinData={bulletinData}
