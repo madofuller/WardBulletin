@@ -339,7 +339,7 @@ export const LDS_HYMNS: Record<number, string> = {
   337: "O Home Beloved",
   338: "America the Beautiful",
   339: "My Country, 'Tis of Thee",
-  340: "Come, Come, Ye Saints",
+  340: "The Star-Spangled Banner",
   341: "God Save the King",
   
   // Sabbath and Weekday (1001–1041)
