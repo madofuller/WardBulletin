@@ -12,30 +12,59 @@ interface DynamicManifestProps {
 const DEFAULT_MANIFEST_HREF = '/site.webmanifest';
 
 /**
- * Points the document's <link rel="manifest"> at a per-ward manifest while a
- * public ward page is displayed, so that installing the page / adding it to the
- * home screen launches the specific ward (e.g. /auburnhills) instead of the
- * generic site root.
+ * Makes installing / adding a public ward page to the home screen launch the
+ * specific ward (e.g. /auburnhills) instead of the generic site root. The SPA
+ * serves the same index.html for every route, so the correct behavior has to be
+ * applied at runtime once we know which ward is being viewed.
  *
- * The per-ward manifest is served by the same-origin /api/manifest function
- * (a blob: manifest would be blocked by the site's `default-src 'self'` CSP).
- * The slug is available immediately from the URL, so start_url is correct from
- * first render; the ward name is layered in once the bulletin data loads.
+ * Two very different browser behaviors are handled:
  *
- * This is skipped on iOS/iPadOS: Safari's "Add to Home Screen" already saves
- * the current ward page's URL, and it does not reliably honor a manifest whose
- * href is swapped in via JavaScript. Pointing it at /api/manifest broke saving
- * to the home screen on iPhones (it only succeeded in airplane mode, when the
- * manifest fetch failed and Safari fell back to its default behavior). Leaving
- * the static site manifest untouched on iOS restores the working behavior while
- * Chromium browsers (Android/desktop) still get the correct per-ward start_url.
+ * Chromium (Android/desktop): point <link rel="manifest"> at a per-ward
+ * manifest served by the same-origin /api/manifest function (a blob: manifest
+ * would be blocked by the site's `default-src 'self'` CSP). The slug is
+ * available immediately from the URL, so start_url is correct from first
+ * render; the ward name is layered in once the bulletin data loads.
+ *
+ * iOS/iPadOS: Safari's "Add to Home Screen" *honors the manifest's start_url*,
+ * so the static site manifest (start_url: "/") rewrites a ward page like
+ * /wx-5th-ward down to the bare site root before the user can even save it.
+ * Swapping the manifest href to /api/manifest does not fix this — it broke
+ * saving entirely on iPhones (it only "worked" in airplane mode, when the
+ * manifest fetch failed and Safari fell back to its default behavior). Instead
+ * we detach the <link rel="manifest"> while a ward page is shown, which makes
+ * Safari fall back to bookmarking the *current* URL (the ward page). Standalone
+ * display is preserved by the apple-mobile-web-app-capable meta tags in
+ * index.html, and the ward name is offered as the suggested icon label.
  */
 const DynamicManifest: React.FC<DynamicManifestProps> = ({ slug, wardName }) => {
   useEffect(() => {
-    if (isIOSDevice()) return;
-
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (!link || !slug) return;
+
+    if (isIOSDevice()) {
+      // Detach the manifest so Safari's Add to Home Screen saves the current
+      // ward URL instead of the manifest's start_url ("/").
+      const parent = link.parentNode;
+      const nextSibling = link.nextSibling;
+      parent?.removeChild(link);
+
+      // Offer the ward name as the suggested home-screen label when we have it.
+      const titleMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="apple-mobile-web-app-title"]'
+      );
+      const previousTitle = titleMeta?.getAttribute('content') ?? null;
+      if (titleMeta && wardName && wardName.trim()) {
+        titleMeta.setAttribute('content', wardName.trim());
+      }
+
+      return () => {
+        // Re-attach the manifest and restore the title when leaving the page.
+        if (parent) parent.insertBefore(link, nextSibling);
+        if (titleMeta && previousTitle !== null) {
+          titleMeta.setAttribute('content', previousTitle);
+        }
+      };
+    }
 
     const previousHref = link.getAttribute('href') || DEFAULT_MANIFEST_HREF;
 

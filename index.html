@@ -23,6 +23,18 @@
     <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
     <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/favicon-32x32.png" />
+    <!--
+      iOS/iPadOS standalone ("web app") support. iOS predates Web App Manifest
+      support and still relies on these meta tags for Add to Home Screen. They
+      matter because on ward pages we detach the manifest on iOS (see
+      DynamicManifest) so Safari bookmarks the specific ward URL instead of the
+      manifest's start_url; without these tags the saved icon would lose its
+      standalone display.
+    -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="WardBulletin" />
     <link rel="manifest" href="/site.webmanifest" />
     <script type="application/ld+json">
     {
