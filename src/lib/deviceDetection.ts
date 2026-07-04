@@ -16,13 +16,11 @@ export const isMobileDevice = (): boolean => {
 /**
  * Detect iOS/iPadOS (Safari and all in-app WebViews, which share WebKit).
  *
- * iOS Safari's "Add to Home Screen" already bookmarks the URL of the page the
- * user is currently viewing, and its Web App Manifest support is fragile: it
- * does not reliably honor a `<link rel="manifest">` whose href is swapped by
- * JavaScript after load. Pointing it at our dynamic /api/manifest endpoint
- * broke Add to Home Screen on iPhones (it only "worked" in airplane mode, when
- * the fetch failed and Safari fell back to its default behavior). We therefore
- * leave the static manifest in place on iOS — see DynamicManifest.
+ * iOS Safari's Web App Manifest support is fragile: it does not honor a
+ * `<link rel="manifest">` whose href is swapped by JavaScript after load, so the
+ * per-ward /api/manifest swap in DynamicManifest is a no-op on iOS and is
+ * skipped there. iOS still lands on the right ward because the static manifest
+ * omits `start_url`, which makes Safari fall back to the current document URL.
  *
  * iPadOS 13+ reports a desktop ("MacIntel") user agent, so also treat a
  * touch-capable Mac as iOS.

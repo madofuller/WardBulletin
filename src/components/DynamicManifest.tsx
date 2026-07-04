@@ -22,13 +22,14 @@ const DEFAULT_MANIFEST_HREF = '/site.webmanifest';
  * The slug is available immediately from the URL, so start_url is correct from
  * first render; the ward name is layered in once the bulletin data loads.
  *
- * This is skipped on iOS/iPadOS: Safari's "Add to Home Screen" already saves
- * the current ward page's URL, and it does not reliably honor a manifest whose
- * href is swapped in via JavaScript. Pointing it at /api/manifest broke saving
- * to the home screen on iPhones (it only succeeded in airplane mode, when the
- * manifest fetch failed and Safari fell back to its default behavior). Leaving
- * the static site manifest untouched on iOS restores the working behavior while
- * Chromium browsers (Android/desktop) still get the correct per-ward start_url.
+ * This is skipped on iOS/iPadOS, because Safari does not honor a manifest whose
+ * href is swapped in via JavaScript after load — it only reads the manifest
+ * declared in the initial HTML (/site.webmanifest). So on iOS this swap has no
+ * effect and we avoid the wasted work. iOS instead gets the correct ward by way
+ * of the static manifest omitting `start_url`, which makes every browser fall
+ * back to the current document URL (see public/site.webmanifest). Chromium
+ * browsers (Android/desktop) do honor the swap, so they additionally get an
+ * explicit per-ward start_url, id and name from /api/manifest here.
  */
 const DynamicManifest: React.FC<DynamicManifestProps> = ({ slug, wardName }) => {
   useEffect(() => {

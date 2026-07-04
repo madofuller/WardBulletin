@@ -16,6 +16,5 @@
   "theme_color": "#3b82f6",
   "background_color": "#ffffff",
   "display": "standalone",
-  "start_url": "/",
   "description": "Create, share, and print beautiful digital ward bulletins for your LDS ward."
 }
