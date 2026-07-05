@@ -21,9 +21,10 @@ export const isMobileDevice = (): boolean => {
  * the site root. Its manifest support is also fragile: pointing the
  * `<link rel="manifest">` at our dynamic /api/manifest endpoint broke Add to
  * Home Screen on iPhones (it only "worked" in airplane mode, when the fetch
- * failed and Safari fell back to its default behavior). We therefore detach the
- * manifest on ward pages on iOS so Safari bookmarks the current URL — see
- * DynamicManifest.
+ * failed and Safari fell back to its default behavior). Ward pages therefore
+ * carry no manifest at all on iOS, decided at parse time by the inline script
+ * in index.html (iOS resolves the manifest at document load, so this cannot
+ * wait for React) — see also DynamicManifest.
  *
  * iPadOS 13+ reports a desktop ("MacIntel") user agent, so also treat a
  * touch-capable Mac as iOS.

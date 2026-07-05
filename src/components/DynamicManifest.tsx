@@ -8,45 +8,45 @@ interface DynamicManifestProps {
   wardName?: string | null;
 }
 
-// The default site-wide manifest referenced from index.html.
+// The default site-wide manifest attached for non-ward URLs by the inline
+// script in index.html.
 const DEFAULT_MANIFEST_HREF = '/site.webmanifest';
 
 /**
- * Makes installing / adding a public ward page to the home screen launch the
- * specific ward (e.g. /auburnhills) instead of the generic site root. The SPA
- * serves the same index.html for every route, so the correct behavior has to be
- * applied at runtime once we know which ward is being viewed.
+ * Runtime companion to the inline manifest script in index.html.
  *
- * Two very different browser behaviors are handled:
+ * The load-bearing decision — which manifest (if any) the page carries — is
+ * made synchronously in index.html while the document is still parsing,
+ * because iOS Safari resolves the manifest at document load and "Add to Home
+ * Screen" ignores later changes to <link rel="manifest">. By the time React
+ * runs it is already too late to change what iOS will save. See index.html
+ * for the full rationale.
  *
- * Chromium (Android/desktop): point <link rel="manifest"> at a per-ward
- * manifest served by the same-origin /api/manifest function (a blob: manifest
- * would be blocked by the site's `default-src 'self'` CSP). The slug is
- * available immediately from the URL, so start_url is correct from first
- * render; the ward name is layered in once the bulletin data loads.
+ * What this component still does once a ward page is mounted:
  *
- * iOS/iPadOS: Safari's "Add to Home Screen" *honors the manifest's start_url*,
- * so the static site manifest (start_url: "/") rewrites a ward page like
- * /wx-5th-ward down to the bare site root before the user can even save it.
- * Swapping the manifest href to /api/manifest does not fix this — it broke
- * saving entirely on iPhones (it only "worked" in airplane mode, when the
- * manifest fetch failed and Safari fell back to its default behavior). Instead
- * we detach the <link rel="manifest"> while a ward page is shown, which makes
- * Safari fall back to bookmarking the *current* URL (the ward page). Standalone
- * display is preserved by the apple-mobile-web-app-capable meta tags in
- * index.html, and the ward name is offered as the suggested icon label.
+ * iOS/iPadOS: offer the ward name as the suggested home-screen label via the
+ * apple-mobile-web-app-title meta tag, and (best effort) detach any manifest
+ * link left over from client-side navigation off a non-ward page.
+ *
+ * Chromium (Android/desktop): re-point the manifest link at /api/manifest with
+ * the ward name layered in once the bulletin data loads (Chromium re-reads the
+ * manifest on demand, so runtime swaps work there). This also covers
+ * client-side navigation, where the link still holds the default manifest.
  */
 const DynamicManifest: React.FC<DynamicManifestProps> = ({ slug, wardName }) => {
   useEffect(() => {
+    if (!slug) return;
+
     const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
-    if (!link || !slug) return;
 
     if (isIOSDevice()) {
-      // Detach the manifest so Safari's Add to Home Screen saves the current
-      // ward URL instead of the manifest's start_url ("/").
-      const parent = link.parentNode;
-      const nextSibling = link.nextSibling;
-      parent?.removeChild(link);
+      // Direct loads of a ward URL have no manifest link at all (the inline
+      // script skipped it), which is what makes Safari bookmark the ward URL.
+      // After client-side navigation from a non-ward page a link may still be
+      // present; detach it too, though iOS may have already cached it.
+      const parent = link?.parentNode ?? null;
+      const nextSibling = link?.nextSibling ?? null;
+      if (link && parent) parent.removeChild(link);
 
       // Offer the ward name as the suggested home-screen label when we have it.
       const titleMeta = document.querySelector<HTMLMetaElement>(
@@ -59,14 +59,14 @@ const DynamicManifest: React.FC<DynamicManifestProps> = ({ slug, wardName }) => 
 
       return () => {
         // Re-attach the manifest and restore the title when leaving the page.
-        if (parent) parent.insertBefore(link, nextSibling);
+        if (link && parent) parent.insertBefore(link, nextSibling);
         if (titleMeta && previousTitle !== null) {
           titleMeta.setAttribute('content', previousTitle);
         }
       };
     }
 
-    const previousHref = link.getAttribute('href') || DEFAULT_MANIFEST_HREF;
+    if (!link) return;
 
     const params = new URLSearchParams({ slug });
     if (wardName && wardName.trim()) {
@@ -75,8 +75,10 @@ const DynamicManifest: React.FC<DynamicManifestProps> = ({ slug, wardName }) => 
     link.setAttribute('href', `/api/manifest?${params.toString()}`);
 
     return () => {
-      // Restore the default manifest when leaving the ward page.
-      link.setAttribute('href', previousHref);
+      // Restore the default manifest when leaving the ward page. (The href at
+      // mount time may already be the per-ward manifest from the inline
+      // script, so restore the site default rather than the previous value.)
+      link.setAttribute('href', DEFAULT_MANIFEST_HREF);
     };
   }, [slug, wardName]);
 

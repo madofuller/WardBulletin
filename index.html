@@ -24,18 +24,56 @@
     <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/favicon-32x32.png" />
     <!--
-      iOS/iPadOS standalone ("web app") support. iOS predates Web App Manifest
-      support and still relies on these meta tags for Add to Home Screen. They
-      matter because on ward pages we detach the manifest on iOS (see
-      DynamicManifest) so Safari bookmarks the specific ward URL instead of the
-      manifest's start_url; without these tags the saved icon would lose its
-      standalone display.
+      iOS/iPadOS standalone ("web app") support. These meta tags matter because
+      on ward pages we serve no manifest at all on iOS (see the inline script
+      below) so Safari bookmarks the specific ward URL instead of the manifest's
+      start_url; without these tags the saved icon would lose its standalone
+      display.
     -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="WardBulletin" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <script>
+      // Attach the correct <link rel="manifest"> for the current URL
+      // synchronously, during HTML parsing. This cannot wait for React:
+      // iOS Safari resolves the manifest when the document loads, and
+      // "Add to Home Screen" ignores later changes to the link element, so a
+      // ward page that ever exposes the static site manifest (start_url: "/")
+      // gets its /ward-name path stripped down to the bare site root.
+      //
+      // Ward pages are the single-segment /:slug routes. For those:
+      //  - iOS/iPadOS: attach NO manifest. Safari then falls back to
+      //    bookmarking the current URL (the ward page); standalone display is
+      //    preserved by the apple-mobile-web-app-* meta tags above. Pointing
+      //    iOS at /api/manifest instead has been tried and broke Add to Home
+      //    Screen entirely on iPhones.
+      //  - Everything else: attach the per-ward /api/manifest so installs
+      //    launch at /:slug (DynamicManifest layers in the ward name later).
+      // Non-ward URLs get the static site manifest on every platform.
+      (function () {
+        // Single path segment, not one of the reserved top-level routes
+        // (see src/App.tsx). Slug charset mirrors validateProfileSlug().
+        var reserved = ['about', 'how-to-use', 'contact', 'baptism',
+          'reset-password', 'profile', 'guide', 'invite', 'submit'];
+        var match = /^\/([A-Za-z0-9-]{1,50})\/?$/.exec(location.pathname);
+        var slug = match ? match[1].toLowerCase() : null;
+        if (slug && reserved.indexOf(slug) !== -1) slug = null;
+
+        var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+          (/Macintosh/.test(navigator.userAgent) &&
+            navigator.maxTouchPoints > 1); // iPadOS 13+ masquerades as macOS
+
+        if (slug && isIOS) return;
+
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = slug
+          ? '/api/manifest?slug=' + encodeURIComponent(slug)
+          : '/site.webmanifest';
+        document.head.appendChild(link);
+      })();
+    </script>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
