@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, User, Save, Lock, Eye, EyeOff, Mail } from 'lucide-react';
+import { X, User, Save, Lock, Eye, EyeOff, Mail, ArrowRightLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 // import ProfileSharingModal from './ProfileSharingModal'; // WIP - commented out
@@ -33,6 +33,12 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
     currentPassword: '',
     newEmail: ''
   });
+  const [showTransferSection, setShowTransferSection] = useState(false);
+  const [transferData, setTransferData] = useState({
+    currentPassword: '',
+    newOwnerEmail: '',
+    confirmSlug: ''
+  });
   // const [showSharingModal, setShowSharingModal] = useState(false); // WIP - commented out
   const { profile } = useSession();
 
@@ -47,6 +53,8 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       });
       setShowEmailSection(false);
       setEmailData({ currentPassword: '', newEmail: '' });
+      setShowTransferSection(false);
+      setTransferData({ currentPassword: '', newOwnerEmail: '', confirmSlug: '' });
       setError('');
       setSuccess('');
     }
@@ -118,6 +126,85 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
       }
     } catch (err: any) {
       setError(err.message || t('modals.failedToUpdateEmail'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTransferInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTransferData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+  };
+
+  const handleTransferOwnership = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(transferData.newOwnerEmail)) {
+      setError(t('modals.pleaseEnterValidEmail'));
+      setLoading(false);
+      return;
+    }
+
+    if (transferData.newOwnerEmail.trim().toLowerCase() === user.email.toLowerCase()) {
+      setError(t('modals.cannotTransferToSelf'));
+      setLoading(false);
+      return;
+    }
+
+    if (transferData.confirmSlug.trim() !== profile?.profile_slug) {
+      setError(t('modals.transferConfirmSlugMismatch'));
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Verify current password before an irreversible handoff
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: transferData.currentPassword
+      });
+
+      if (signInError) {
+        setError(t('modals.currentPasswordIncorrect'));
+        setLoading(false);
+        return;
+      }
+
+      const { error: transferError } = await supabase.rpc('transfer_profile_ownership', {
+        new_owner_email: transferData.newOwnerEmail.trim()
+      });
+
+      if (transferError) {
+        const message = transferError.message || '';
+        if (message.includes('recipient_not_found')) {
+          setError(t('modals.recipientNotFound'));
+        } else if (message.includes('recipient_already_has_profile')) {
+          setError(t('modals.recipientAlreadyHasProfile'));
+        } else if (message.includes('cannot_transfer_to_self')) {
+          setError(t('modals.cannotTransferToSelf'));
+        } else if (message.includes('no_profile_to_transfer')) {
+          setError(t('modals.noProfileToTransfer'));
+        } else {
+          setError(t('modals.failedToTransferOwnership'));
+        }
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(t('modals.ownershipTransferred', { email: transferData.newOwnerEmail.trim() }));
+      setTransferData({ currentPassword: '', newOwnerEmail: '', confirmSlug: '' });
+      setShowTransferSection(false);
+
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
+    } catch (err: any) {
+      setError(err.message || t('modals.failedToTransferOwnership'));
     } finally {
       setLoading(false);
     }
@@ -239,7 +326,7 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-900">{t('modals.profileSettings')}</h3>
           <button
@@ -499,6 +586,134 @@ export default function ProfileModal({ isOpen, onClose, user, onProfileUpdate }:
             </form>
           )}
         </div>
+
+        {/* Transfer Ownership Section */}
+        {profile?.profile_slug && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-medium text-gray-900 flex items-center">
+                <ArrowRightLeft className="w-5 h-5 mr-2 text-gray-400" />
+                {t('modals.ownership')}
+              </h4>
+              {!showTransferSection && (
+                <button
+                  onClick={() => setShowTransferSection(true)}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  {t('modals.transferOwnership')}
+                </button>
+              )}
+            </div>
+
+            {showTransferSection && (
+              <form onSubmit={handleTransferOwnership} className="space-y-4 p-4 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-sm text-gray-700">
+                  {t('modals.transferOwnershipDescription', { slug: profile.profile_slug })}
+                </p>
+                <p className="text-sm text-red-700">
+                  {t('modals.transferOwnershipWarning')}
+                </p>
+
+                <div>
+                  <label htmlFor="newOwnerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('modals.newOwnerEmail')}
+                  </label>
+                  <input
+                    type="email"
+                    id="newOwnerEmail"
+                    name="newOwnerEmail"
+                    value={transferData.newOwnerEmail}
+                    onChange={handleTransferInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    placeholder={t('modals.enterNewOwnerEmail')}
+                    required
+                    disabled={loading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('modals.newOwnerMustHaveAccount')}</p>
+                </div>
+
+                <div>
+                  <label htmlFor="transferCurrentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('modals.currentPassword')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      id="transferCurrentPassword"
+                      name="currentPassword"
+                      value={transferData.currentPassword}
+                      onChange={handleTransferInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 pr-10"
+                      placeholder={t('modals.enterCurrentPassword')}
+                      required
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmSlug" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('modals.typeSlugToConfirm', { slug: profile.profile_slug })}
+                  </label>
+                  <input
+                    type="text"
+                    id="confirmSlug"
+                    name="confirmSlug"
+                    value={transferData.confirmSlug}
+                    onChange={handleTransferInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    placeholder={profile.profile_slug}
+                    autoComplete="off"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    disabled={loading || transferData.confirmSlug.trim() !== profile.profile_slug}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {t('modals.transferring')}
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRightLeft className="w-4 h-4 mr-2" />
+                        {t('modals.transferOwnership')}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTransferSection(false);
+                      setTransferData({ currentPassword: '', newOwnerEmail: '', confirmSlug: '' });
+                      setError('');
+                    }}
+                    disabled={loading}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
