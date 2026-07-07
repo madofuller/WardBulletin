@@ -220,6 +220,92 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- Function to transfer profile ownership to another account
+-- (See supabase/migrations/20260705_transfer_profile_ownership.sql for details)
+CREATE OR REPLACE FUNCTION public.transfer_profile_ownership(new_owner_email TEXT)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_caller_id UUID := auth.uid();
+    v_slug TEXT;
+    v_active_bulletin TEXT;
+    v_new_owner_id UUID;
+    v_new_owner_slug TEXT;
+BEGIN
+    IF v_caller_id IS NULL THEN
+        RAISE EXCEPTION 'not_authenticated';
+    END IF;
+
+    SELECT profile_slug, active_bulletin_id
+    INTO v_slug, v_active_bulletin
+    FROM public.users
+    WHERE id = v_caller_id;
+
+    IF v_slug IS NULL THEN
+        RAISE EXCEPTION 'no_profile_to_transfer';
+    END IF;
+
+    SELECT id, profile_slug
+    INTO v_new_owner_id, v_new_owner_slug
+    FROM public.users
+    WHERE lower(email) = lower(trim(new_owner_email))
+    LIMIT 1;
+
+    IF v_new_owner_id IS NULL THEN
+        RAISE EXCEPTION 'recipient_not_found';
+    END IF;
+
+    IF v_new_owner_id = v_caller_id THEN
+        RAISE EXCEPTION 'cannot_transfer_to_self';
+    END IF;
+
+    IF v_new_owner_slug IS NOT NULL THEN
+        RAISE EXCEPTION 'recipient_already_has_profile';
+    END IF;
+
+    UPDATE public.users
+    SET profile_slug = NULL, active_bulletin_id = NULL
+    WHERE id = v_caller_id;
+
+    UPDATE public.users
+    SET profile_slug = v_slug, active_bulletin_id = v_active_bulletin
+    WHERE id = v_new_owner_id;
+
+    DELETE FROM public.profile_shares
+    WHERE profile_slug = v_slug AND shared_with_id = v_new_owner_id;
+
+    UPDATE public.profile_shares
+    SET owner_id = v_new_owner_id, updated_at = NOW()
+    WHERE profile_slug = v_slug;
+
+    DELETE FROM public.profile_invitations
+    WHERE profile_slug = v_slug
+    AND lower(invited_email) = lower(trim(new_owner_email));
+
+    UPDATE public.profile_invitations
+    SET owner_id = v_new_owner_id
+    WHERE profile_slug = v_slug;
+
+    INSERT INTO public.profile_shares (profile_slug, owner_id, shared_with_id, role)
+    VALUES (v_slug, v_new_owner_id, v_caller_id, 'editor')
+    ON CONFLICT (profile_slug, shared_with_id)
+    DO UPDATE SET owner_id = EXCLUDED.owner_id, role = 'editor', updated_at = NOW();
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'profile_slug', v_slug,
+        'new_owner_id', v_new_owner_id
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.transfer_profile_ownership(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.transfer_profile_ownership(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.transfer_profile_ownership(TEXT) TO authenticated;
+
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive } from 'lucide-react';
+import { Plus, Download, QrCode, LogIn, Menu, X, MessageSquare, Repeat, Paintbrush, Printer, Clock, Archive, Settings, Users } from 'lucide-react';
 import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
 import { getCurrentUnitType, isUnloadWarningSuppressed } from '../lib/config';
@@ -1798,6 +1798,26 @@ function EditorApp() {
                       className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                     >
                       {t('bulletin.myBulletins')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfile(true);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      {t('modals.profileSettings')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileSharing(true);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {t('sharing.shareProfile')}
                     </button>
                       <button
                         onClick={async () => {

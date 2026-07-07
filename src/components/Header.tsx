@@ -5,7 +5,7 @@ import UserMenu from './UserMenu';
 import TerminologyToggle from './TerminologyToggle';
 import LanguageSelector from './LanguageSelector';
 import BulletinActions from './BulletinActions';
-import { Plus, Download, QrCode, LogIn, Menu, X, Droplet } from 'lucide-react';
+import { Plus, Download, QrCode, LogIn, Menu, X, Droplet, Settings } from 'lucide-react';
 import { getUnitLabel, getTranslatedUnitLabel } from '../lib/terminology';
 import { BulletinData } from '../types/bulletin';
 
@@ -240,6 +240,16 @@ export default function Header({
                     className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                   >
                     {t('bulletin.myBulletins')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfile(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    {t('modals.profileSettings')}
                   </button>
                   <button
                     onClick={() => {

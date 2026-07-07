@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { pickTokenRow } from './tokenResolution'
 
 // Environment variables are loaded securely
 
@@ -352,27 +353,25 @@ export const tokenService = {
     return data;
   },
 
-  async getToken(_userId: string, key: string): Promise<string | null> {
+  async getToken(preferredOwnerId: string, key: string): Promise<string | null> {
     try {
       // NOTE: We don't filter by created_by here - RLS policies handle access control
-      // This allows shared users to see tokens for bulletins they have access to
-      // _userId parameter kept for backward compatibility but not used for filtering
+      // This allows shared users to see tokens for bulletins they have access to.
+      // The same key can exist under multiple created_by values (owner + shared
+      // editors), so fetch all visible rows and resolve deterministically instead
+      // of .single(), which errors on duplicates and made bulletins load blank.
       const { data, error } = await supabase
         .from('tokens')
-        .select('value')
+        .select('value, created_by')
         .eq('key', key)
-        .single();
+        .order('created_at', { ascending: false });
 
       if (error) {
-        // Log specific error types for debugging
-        if (error.code === 'PGRST116') {
-          // No rows returned - this is expected for missing tokens
-          return null;
-        }
         console.warn(`Token fetch error for key "${key}":`, error);
         return null;
       }
-      return data?.value || null;
+      const row = pickTokenRow(data, preferredOwnerId);
+      return row?.value || null;
     } catch (err: any) {
       // Check for specific HTTP error codes
       if (err.message?.includes('406') || err.status === 406) {
@@ -386,16 +385,18 @@ export const tokenService = {
     }
   },
 
-  async getTokensBatch(_userId: string, keys: string[]): Promise<Record<string, string>> {
+  async getTokensBatch(preferredOwnerId: string, keys: string[]): Promise<Record<string, string>> {
     try {
       // NOTE: We don't filter by created_by here - RLS policies handle access control
-      // This allows shared users to see tokens for bulletins they have access to
-      // _userId parameter kept for backward compatibility but not used for filtering
+      // This allows shared users to see tokens for bulletins they have access to.
+      // Duplicate keys (owner + shared editor rows) are resolved by preferring
+      // the preferredOwnerId row rather than letting the last row win.
       const { data, error } = await withTimeout(
         supabase
           .from('tokens')
-          .select('key, value')
-          .in('key', keys),
+          .select('key, value, created_by')
+          .in('key', keys)
+          .order('created_at', { ascending: false }),
         15000
       );
 
@@ -404,9 +405,17 @@ export const tokenService = {
         return {};
       }
 
-      const tokenMap: Record<string, string> = {};
+      const rowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
       (data || []).forEach(token => {
-        tokenMap[token.key] = token.value;
+        const rows = rowsByKey.get(token.key) || [];
+        rows.push(token);
+        rowsByKey.set(token.key, rows);
+      });
+
+      const tokenMap: Record<string, string> = {};
+      rowsByKey.forEach((rows, key) => {
+        const row = pickTokenRow(rows, preferredOwnerId);
+        if (row) tokenMap[key] = row.value;
       });
 
       return tokenMap;
@@ -870,16 +879,24 @@ export const bulletinService = {
         tokenChunks.push(allTokenKeys.slice(i, i + CHUNK_SIZE));
       }
 
-      const tokenMap = new Map<string, string>();
-      
+      // Same key can exist under multiple created_by values (owner + shared
+      // editors) - keep all visible rows and resolve per bulletin below.
+      const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
+      const collectToken = (token: { key: string; value: string; created_by: string }) => {
+        const rows = tokenRowsByKey.get(token.key) || [];
+        rows.push(token);
+        tokenRowsByKey.set(token.key, rows);
+      };
+
       for (const chunk of tokenChunks) {
         try {
           // Query tokens - RLS will filter to show tokens user has access to
           const { data: chunkTokens, error: chunkError } = await withTimeout(
             supabase
               .from('tokens')
-              .select('key, value')
-              .in('key', chunk),
+              .select('key, value, created_by')
+              .in('key', chunk)
+              .order('created_at', { ascending: false }),
             10000
           );
 
@@ -889,23 +906,20 @@ export const bulletinService = {
             const { data: fallbackTokens, error: fallbackError } = await withTimeout(
               supabase
                 .from('tokens')
-                .select('key, value')
+                .select('key, value, created_by')
                 .eq('created_by', userId)
-                .in('key', chunk),
+                .in('key', chunk)
+                .order('created_at', { ascending: false }),
               10000
             );
             if (!fallbackError && fallbackTokens) {
-              fallbackTokens.forEach(token => {
-                tokenMap.set(token.key, token.value);
-              });
+              fallbackTokens.forEach(collectToken);
             }
             continue;
           }
 
           if (chunkTokens && chunkTokens.length > 0) {
-            chunkTokens.forEach(token => {
-              tokenMap.set(token.key, token.value);
-            });
+            chunkTokens.forEach(collectToken);
           }
         } catch (chunkErr) {
           console.warn('Error fetching token chunk:', chunkErr);
@@ -916,7 +930,10 @@ export const bulletinService = {
 
       // Build bulletins with token data (same logic as getUserBulletins)
       const bulletinsWithData = data.map(bulletin => {
-        const getToken = (suffix: string) => tokenMap.get(`bulletin-${bulletin.slug}-${suffix}`) || null;
+        const getToken = (suffix: string) => {
+          const rows = tokenRowsByKey.get(`bulletin-${bulletin.slug}-${suffix}`);
+          return pickTokenRow(rows, bulletin.created_by)?.value || null;
+        };
 
         const safeJsonParse = (value: string | null, fallback: any) => {
           if (!value) return fallback;
@@ -1082,10 +1099,16 @@ export const bulletinService = {
 
         // Fetch tokens in chunks
         // RLS policy allows: auth.uid() = created_by OR tokens for shared profiles
-        // We query without created_by filter and let RLS handle access control
-        const allTokens: any[] = [];
-        const tokenMap = new Map<string, string>();
-        
+        // We query without created_by filter and let RLS handle access control.
+        // Same key can exist under multiple created_by values (owner + shared
+        // editors) - keep all visible rows and resolve per bulletin below.
+        const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
+        const collectToken = (token: { key: string; value: string; created_by: string }) => {
+          const rows = tokenRowsByKey.get(token.key) || [];
+          rows.push(token);
+          tokenRowsByKey.set(token.key, rows);
+        };
+
         for (const chunk of tokenChunks) {
           try {
             // Query tokens - RLS will filter to show:
@@ -1094,8 +1117,9 @@ export const bulletinService = {
             const { data: chunkTokens, error: chunkError } = await withTimeout(
               supabase
                 .from('tokens')
-                .select('key, value')
-                .in('key', chunk),
+                .select('key, value, created_by')
+                .in('key', chunk)
+                .order('created_at', { ascending: false }),
               10000
             );
 
@@ -1105,35 +1129,32 @@ export const bulletinService = {
               const { data: fallbackTokens, error: fallbackError } = await withTimeout(
                 supabase
                   .from('tokens')
-                  .select('key, value')
+                  .select('key, value, created_by')
                   .eq('created_by', userId)
-                  .in('key', chunk),
+                  .in('key', chunk)
+                  .order('created_at', { ascending: false }),
                 10000
               );
               if (!fallbackError && fallbackTokens) {
-                fallbackTokens.forEach(token => {
-                  tokenMap.set(token.key, token.value);
-                });
+                fallbackTokens.forEach(collectToken);
               }
               continue;
             }
 
             if (chunkTokens && chunkTokens.length > 0) {
-              chunkTokens.forEach(token => {
-                tokenMap.set(token.key, token.value);
-              });
+              chunkTokens.forEach(collectToken);
             }
           } catch (chunkErr) {
             continue; // Skip this chunk and try the next one
           }
         }
-        
-        // Convert map to array (for compatibility, though we use the map directly)
-        allTokens.push(...Array.from(tokenMap.entries()).map(([key, value]) => ({ key, value })));
 
         // Build bulletins with token data
         const bulletinsWithData = data.map(bulletin => {
-          const getToken = (suffix: string) => tokenMap.get(`bulletin-${bulletin.slug}-${suffix}`) || null;
+          const getToken = (suffix: string) => {
+            const rows = tokenRowsByKey.get(`bulletin-${bulletin.slug}-${suffix}`);
+            return pickTokenRow(rows, bulletin.created_by)?.value || null;
+          };
 
           const safeJsonParse = (value: string | null, fallback: any) => {
             if (!value) return fallback;
@@ -1478,17 +1499,28 @@ export const bulletinService = {
       `bulletin-${data.slug}-imageOpacity`
     ];
 
-    // Fetch all tokens in a single query
+    // Fetch all tokens in a single query. Don't filter by created_by: legacy
+    // bulletins can have their content saved under a shared editor's id rather
+    // than the bulletin creator's. Fetch all visible rows and prefer the
+    // creator's row per key, falling back to editor-saved rows.
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select('key, value')
-      .eq('created_by', userId)
-      .in('key', tokenKeys);
+      .select('key, value, created_by')
+      .in('key', tokenKeys)
+      .order('created_at', { ascending: false });
+
+    const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
+    (tokenData || []).forEach((token: any) => {
+      const rows = tokenRowsByKey.get(token.key) || [];
+      rows.push(token);
+      tokenRowsByKey.set(token.key, rows);
+    });
 
     // Create a map for quick lookup
     const tokenMap = new Map();
-    (tokenData || []).forEach((token: any) => {
-      tokenMap.set(token.key, token.value);
+    tokenRowsByKey.forEach((rows, key) => {
+      const row = pickTokenRow(rows, userId);
+      if (row) tokenMap.set(key, row.value);
     });
 
     // Extract values from the map
