@@ -363,7 +363,8 @@ export const tokenService = {
       const { data, error } = await supabase
         .from('tokens')
         .select('value, created_by')
-        .eq('key', key);
+        .eq('key', key)
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.warn(`Token fetch error for key "${key}":`, error);
@@ -394,7 +395,8 @@ export const tokenService = {
         supabase
           .from('tokens')
           .select('key, value, created_by')
-          .in('key', keys),
+          .in('key', keys)
+          .order('created_at', { ascending: false }),
         15000
       );
 
@@ -893,7 +895,8 @@ export const bulletinService = {
             supabase
               .from('tokens')
               .select('key, value, created_by')
-              .in('key', chunk),
+              .in('key', chunk)
+              .order('created_at', { ascending: false }),
             10000
           );
 
@@ -905,7 +908,8 @@ export const bulletinService = {
                 .from('tokens')
                 .select('key, value, created_by')
                 .eq('created_by', userId)
-                .in('key', chunk),
+                .in('key', chunk)
+                .order('created_at', { ascending: false }),
               10000
             );
             if (!fallbackError && fallbackTokens) {
@@ -1114,7 +1118,8 @@ export const bulletinService = {
               supabase
                 .from('tokens')
                 .select('key, value, created_by')
-                .in('key', chunk),
+                .in('key', chunk)
+                .order('created_at', { ascending: false }),
               10000
             );
 
@@ -1126,7 +1131,8 @@ export const bulletinService = {
                   .from('tokens')
                   .select('key, value, created_by')
                   .eq('created_by', userId)
-                  .in('key', chunk),
+                  .in('key', chunk)
+                  .order('created_at', { ascending: false }),
                 10000
               );
               if (!fallbackError && fallbackTokens) {
@@ -1500,7 +1506,8 @@ export const bulletinService = {
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
       .select('key, value, created_by')
-      .in('key', tokenKeys);
+      .in('key', tokenKeys)
+      .order('created_at', { ascending: false });
 
     const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
     (tokenData || []).forEach((token: any) => {
