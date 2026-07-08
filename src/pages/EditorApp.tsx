@@ -294,9 +294,18 @@ function EditorApp() {
       if (!currentProfileSlug) return bulletin;
       
       const recurringAnnouncements = await recurringAnnouncementsService.getAnnouncementsForNewBulletin(currentProfileSlug);
-      
-      if (recurringAnnouncements.length > 0) {
-        const newAnnouncements = recurringAnnouncements.map(announcement => ({
+
+      // Templates made from real bulletins already contain this week's
+      // recurring announcements - don't add a second copy of the same title.
+      const existingTitles = new Set(
+        bulletin.announcements.map(a => (a.title || '').trim().toLowerCase())
+      );
+      const freshAnnouncements = recurringAnnouncements.filter(
+        a => !existingTitles.has((a.title || '').trim().toLowerCase())
+      );
+
+      if (freshAnnouncements.length > 0) {
+        const newAnnouncements = freshAnnouncements.map(announcement => ({
           id: Date.now().toString() + Math.random(),
           title: announcement.title,
           content: announcement.content,
@@ -316,6 +325,19 @@ function EditorApp() {
     } catch (error) {
       return bulletin;
     }
+  }
+
+  // A template is a reusable snapshot of a past bulletin. Starting a bulletin
+  // from it must not inherit that week's date or lifecycle state, otherwise
+  // "apply template + save" creates duplicate bulletins dated months in the past.
+  function bulletinFromTemplate(data: BulletinData): BulletinData {
+    return {
+      ...data,
+      date: upcomingSundayISO(),
+      status: 'draft',
+      scheduledDate: undefined,
+      autoActivate: false
+    };
   }
 
   // Helper function to get appropriate meeting type based on unit type
@@ -432,7 +454,7 @@ function EditorApp() {
       if (activeId) {
         const tmpl = templateService.getTemplate(activeId);
         if (tmpl) {
-          setBulletinData(tmpl.data);
+          setBulletinData(bulletinFromTemplate(tmpl.data));
           setHasUnsavedChanges(false);
           return;
         }
@@ -833,6 +855,9 @@ function EditorApp() {
         setCurrentBulletinId(bulletin.id);
         setHasUnsavedChanges(false);
         clearLocalDraft();
+        // The cloud bulletin is now on screen - a previously applied template
+        // snapshot must not shadow it on the next app start.
+        templateService.setActiveTemplateId(null);
       };
 
       try {
@@ -894,6 +919,7 @@ function EditorApp() {
         setActiveBulletinId(activeId);
         setHasUnsavedChanges(false);
         clearLocalDraft();
+        templateService.setActiveTemplateId(null);
       } catch {
         // Offline or transient failure — keep showing the current state.
       }
@@ -986,8 +1012,11 @@ function EditorApp() {
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
       // The work just reached the cloud — the local draft is no longer the
-      // source of truth and must not shadow future cloud loads.
+      // source of truth and must not shadow future cloud loads. Same for the
+      // applied template snapshot: once the bulletin exists in the cloud, the
+      // template must not replace it on the next app start.
       clearLocalDraft();
+      templateService.setActiveTemplateId(null);
 
       // If the bulletin was active before saving, re-activate it with the new ID
       if (wasActive && savedBulletin.id !== activeBulletinId) {
@@ -1174,6 +1203,9 @@ function EditorApp() {
         setCurrentBulletinId(bulletin.id);
         setHasUnsavedChanges(false);
         clearLocalDraft();
+        // Real data is on screen - a previously applied template snapshot must
+        // not shadow it on the next app start.
+        templateService.setActiveTemplateId(null);
         setShowSavedBulletins(false);
         setShowQRCode(false);
       } catch (err) {
@@ -1207,7 +1239,7 @@ function EditorApp() {
       toast.success(t(builtIn.nameKey) + ' ' + t('templates.applied', 'template applied'));
     } else if (template) {
       templateService.setActiveTemplateId(template.id);
-      next = template.data;
+      next = bulletinFromTemplate(template.data);
     } else {
       templateService.setActiveTemplateId(null);
       next = createBlankBulletin();
