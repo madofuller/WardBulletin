@@ -602,6 +602,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                               {member.mission && (
                                 <span className="text-gray-600">{member.mission}</span>
                               )}
+                              {member.mission && member.email && <span className="text-gray-400"> · </span>}
+                              {member.email && (
+                                <span className="text-gray-700">{member.email}</span>
+                              )}
                             </div>
                           </div>
                         ))}
