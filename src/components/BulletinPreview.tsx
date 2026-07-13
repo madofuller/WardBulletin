@@ -1158,6 +1158,7 @@ function BulletinPreview({
                           <div key={idx} className="border border-gray-300 rounded-lg p-3">
                             <div className="font-bold text-sm mb-2">{e.name}</div>
                             {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
+                            {e.email && <div className="text-xs text-gray-600 font-normal">{e.email}</div>}
                           </div>
                         ))}
                       </div>
@@ -1168,6 +1169,7 @@ function BulletinPreview({
                             <tr className="bg-gray-100">
                               <th className="px-3 py-2 border">{t('form.name')}</th>
                               <th className="px-3 py-2 border">{t('form.militaryBranch', 'Branch of Service')}</th>
+                              <th className="px-3 py-2 border">{t('form.email')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1175,6 +1177,7 @@ function BulletinPreview({
                               <tr key={idx}>
                                 <td className="border px-3 py-2 font-bold">{e.name}</td>
                                 <td className="border px-3 py-2 font-normal">{e.mission}</td>
+                                <td className="border px-3 py-2 font-normal">{e.email}</td>
                               </tr>
                             ))}
                           </tbody>
