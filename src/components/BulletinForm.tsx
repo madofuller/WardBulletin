@@ -2735,11 +2735,31 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     return null;
                   };
                   
+                  const isMilitary = entry.serviceType === 'military';
+
                   return (
                     <div key={idx} className="bg-white border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Left Column */}
                         <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.serviceType', 'Type of Service')}</label>
+                            <select
+                              value={entry.serviceType || 'mission'}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                const serviceType = e.target.value as 'mission' | 'military';
+                                updated[idx] = serviceType === 'military'
+                                  ? { ...updated[idx], serviceType, setApartDate: '', expectedReturnDate: '' }
+                                  : { ...updated[idx], serviceType };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="mission">{t('form.serviceTypeMission', 'Full-Time Mission')}</option>
+                              <option value="military">{t('form.serviceTypeMilitary', 'Military Service')}</option>
+                            </select>
+                          </div>
                           <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.name', 'Name')}</label>
                             <input
@@ -2755,7 +2775,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.mission', 'Mission')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{isMilitary ? t('form.branchOfService', 'Branch / Assignment') : t('form.mission', 'Mission')}</label>
                             <input
                               type="text"
                               value={entry.mission || ''}
@@ -2765,7 +2785,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.missionNamePlaceholder')}
+                              placeholder={isMilitary ? t('form.branchOfServicePlaceholder', 'e.g. U.S. Army') : t('form.missionNamePlaceholder')}
                             />
                           </div>
                           <div>
@@ -2783,40 +2803,47 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             />
                           </div>
                         </div>
-                        
+
                         {/* Right Column */}
                         <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
-                            <input
-                              type="date"
-                              value={entry.setApartDate || ''}
-                              onChange={e => {
-                                const updated = [...data.wardMissionaries];
-                                updated[idx] = { ...updated[idx], setApartDate: e.target.value };
-                                updateField('wardMissionaries', updated);
-                              }}
-                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.setApartDatePlaceholder')}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
-                            <div className="space-y-2">
-                              <input
-                                type="date"
-                                value={entry.expectedReturnDate || ''}
-                                onChange={e => {
-                                  const updated = [...data.wardMissionaries];
-                                  updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                                  updateField('wardMissionaries', updated);
-                                }}
-                                className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder={t('form.expectedReturnPlaceholder')}
-                              />
-                              {getReturnStatusBadge()}
-                            </div>
-                          </div>
+                          {!isMilitary && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
+                                <input
+                                  type="date"
+                                  value={entry.setApartDate || ''}
+                                  onChange={e => {
+                                    const updated = [...data.wardMissionaries];
+                                    updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                                    updateField('wardMissionaries', updated);
+                                  }}
+                                  className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder={t('form.setApartDatePlaceholder')}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
+                                <div className="space-y-2">
+                                  <input
+                                    type="date"
+                                    value={entry.expectedReturnDate || ''}
+                                    onChange={e => {
+                                      const updated = [...data.wardMissionaries];
+                                      updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                                      updateField('wardMissionaries', updated);
+                                    }}
+                                    className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder={t('form.expectedReturnPlaceholder')}
+                                  />
+                                  {getReturnStatusBadge()}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          {isMilitary && (
+                            <p className="text-sm text-gray-500">{t('form.militaryNoDatesNote', 'No set apart or return dates needed for military service.')}</p>
+                          )}
                           <div className="pt-2">
                             <button
                               type="button"
@@ -2877,9 +2904,29 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     return null;
                   };
                   
+                  const isMilitary = entry.serviceType === 'military';
+
                   return (
                     <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                       <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.serviceType', 'Type of Service')}</label>
+                          <select
+                            value={entry.serviceType || 'mission'}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              const serviceType = e.target.value as 'mission' | 'military';
+                              updated[idx] = serviceType === 'military'
+                                ? { ...updated[idx], serviceType, setApartDate: '', expectedReturnDate: '' }
+                                : { ...updated[idx], serviceType };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="mission">{t('form.serviceTypeMission', 'Full-Time Mission')}</option>
+                            <option value="military">{t('form.serviceTypeMilitary', 'Military Service')}</option>
+                          </select>
+                        </div>
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.name', 'Name')}</label>
                           <input
@@ -2895,7 +2942,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.mission', 'Mission')}</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{isMilitary ? t('form.branchOfService', 'Branch / Assignment') : t('form.mission', 'Mission')}</label>
                           <input
                             type="text"
                             value={entry.mission || ''}
@@ -2905,38 +2952,42 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.missionNamePlaceholder')}
+                            placeholder={isMilitary ? t('form.branchOfServicePlaceholder', 'e.g. U.S. Army') : t('form.missionNamePlaceholder')}
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
-                          <input
-                            type="date"
-                            value={entry.setApartDate || ''}
-                            onChange={e => {
-                              const updated = [...data.wardMissionaries];
-                              updated[idx] = { ...updated[idx], setApartDate: e.target.value };
-                              updateField('wardMissionaries', updated);
-                            }}
-                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.setApartDatePlaceholder')}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
-                          <input
-                            type="date"
-                            value={entry.expectedReturnDate || ''}
-                            onChange={e => {
-                              const updated = [...data.wardMissionaries];
-                              updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                              updateField('wardMissionaries', updated);
-                            }}
-                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.expectedReturnPlaceholder')}
-                          />
-                          {getReturnStatusBadge()}
-                        </div>
+                        {!isMilitary && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
+                              <input
+                                type="date"
+                                value={entry.setApartDate || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('form.setApartDatePlaceholder')}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
+                              <input
+                                type="date"
+                                value={entry.expectedReturnDate || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('form.expectedReturnPlaceholder')}
+                              />
+                              {getReturnStatusBadge()}
+                            </div>
+                          </>
+                        )}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
                           <input

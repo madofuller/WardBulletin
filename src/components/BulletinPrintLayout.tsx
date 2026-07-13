@@ -549,14 +549,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                           {missionary.name}
                         </div>
                         <div className="text-center flex-1 px-2 font-normal">
-                          {missionary.mission && (
+                          {missionary.mission ? (
                             <span className="text-gray-600">{missionary.mission}</span>
-                          )}
+                          ) : missionary.serviceType === 'military' ? (
+                            <span className="text-gray-600">{t('bulletin.militaryService')}</span>
+                          ) : null}
                         </div>
                         <div className="text-right flex-shrink-0 font-normal" style={{ minWidth: '120px' }}>
                           {missionary.email ? (
                             <span className="text-gray-700">{missionary.email}</span>
-                          ) : (
+                          ) : missionary.serviceType === 'military' ? null : (
                             <span className="text-gray-400">{t('bulletin.noEmail')}</span>
                           )}
                         </div>

@@ -105,12 +105,13 @@ export interface MissionaryEntry {
 
 export interface UnitMissionaryEntry {
   name: string;
-  mission?: string;
+  mission?: string; // Mission name, or branch/assignment for military service entries
   missionAddress?: string;
   email?: string;
-  setApartDate?: string; // Date when missionary was set apart
-  expectedReturnDate?: string; // Expected return date for sorting
+  setApartDate?: string; // Date when missionary was set apart (not used for military service)
+  expectedReturnDate?: string; // Expected return date for sorting (not used for military service)
   sortOrder?: number; // Manual sort order
+  serviceType?: 'mission' | 'military'; // Defaults to 'mission' when absent
 }
 
 // Legacy type alias for backward compatibility
