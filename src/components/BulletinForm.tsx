@@ -2773,22 +2773,20 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               placeholder={isMilitary ? t('form.militaryBranchPlaceholder', 'e.g., U.S. Army') : t('form.missionNamePlaceholder')}
                             />
                           </div>
-                          {!isMilitary && (
-                            <div>
-                              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
-                              <input
-                                type="email"
-                                value={entry.email || ''}
-                                onChange={e => {
-                                  const updated = [...data.wardMissionaries];
-                                  updated[idx] = { ...updated[idx], email: e.target.value };
-                                  updateField('wardMissionaries', updated);
-                                }}
-                                className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder={t('form.emailPlaceholder')}
-                              />
-                            </div>
-                          )}
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
+                            <input
+                              type="email"
+                              value={entry.email || ''}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], email: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder={t('form.emailPlaceholder')}
+                            />
+                          </div>
                         </div>
                         
                         {/* Right Column */}
@@ -2957,22 +2955,20 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                             </div>
                           </>
                         )}
-                        {!isMilitary && (
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
-                            <input
-                              type="email"
-                              value={entry.email || ''}
-                              onChange={e => {
-                                const updated = [...data.wardMissionaries];
-                                updated[idx] = { ...updated[idx], email: e.target.value };
-                                updateField('wardMissionaries', updated);
-                              }}
-                              className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.emailPlaceholder')}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
+                          <input
+                            type="email"
+                            value={entry.email || ''}
+                            onChange={e => {
+                              const updated = [...data.wardMissionaries];
+                              updated[idx] = { ...updated[idx], email: e.target.value };
+                              updateField('wardMissionaries', updated);
+                            }}
+                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder={t('form.emailPlaceholder')}
+                          />
+                        </div>
                         <div className="pt-2">
                           <button
                             type="button"
