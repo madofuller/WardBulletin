@@ -2735,8 +2735,13 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     return null;
                   };
                   
+                  const isMilitary = entry.serviceType === 'military';
+
                   return (
                     <div key={idx} className="bg-white border rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow">
+                      {isMilitary && (
+                        <span className="inline-block px-3 py-1 mb-4 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">{t('form.servingInMilitary', 'Serving in the Military')}</span>
+                      )}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Left Column */}
                         <div className="space-y-4">
@@ -2751,11 +2756,11 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                              placeholder={t('form.missionaryNamePlaceholder')}
+                              placeholder={isMilitary ? t('form.militaryMemberNamePlaceholder', 'Member name') : t('form.missionaryNamePlaceholder')}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.mission', 'Mission')}</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{isMilitary ? t('form.militaryBranch', 'Branch of Service') : t('form.mission', 'Mission')}</label>
                             <input
                               type="text"
                               value={entry.mission || ''}
@@ -2765,58 +2770,64 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 updateField('wardMissionaries', updated);
                               }}
                               className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.missionNamePlaceholder')}
+                              placeholder={isMilitary ? t('form.militaryBranchPlaceholder', 'e.g., U.S. Army') : t('form.missionNamePlaceholder')}
                             />
                           </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
-                            <input
-                              type="email"
-                              value={entry.email || ''}
-                              onChange={e => {
-                                const updated = [...data.wardMissionaries];
-                                updated[idx] = { ...updated[idx], email: e.target.value };
-                                updateField('wardMissionaries', updated);
-                              }}
-                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.emailPlaceholder')}
-                            />
-                          </div>
+                          {!isMilitary && (
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.email', 'Email')}</label>
+                              <input
+                                type="email"
+                                value={entry.email || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], email: e.target.value };
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('form.emailPlaceholder')}
+                              />
+                            </div>
+                          )}
                         </div>
                         
                         {/* Right Column */}
                         <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
-                            <input
-                              type="date"
-                              value={entry.setApartDate || ''}
-                              onChange={e => {
-                                const updated = [...data.wardMissionaries];
-                                updated[idx] = { ...updated[idx], setApartDate: e.target.value };
-                                updateField('wardMissionaries', updated);
-                              }}
-                              className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder={t('form.setApartDatePlaceholder')}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
-                            <div className="space-y-2">
-                              <input
-                                type="date"
-                                value={entry.expectedReturnDate || ''}
-                                onChange={e => {
-                                  const updated = [...data.wardMissionaries];
-                                  updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                                  updateField('wardMissionaries', updated);
-                                }}
-                                className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder={t('form.expectedReturnPlaceholder')}
-                              />
-                              {getReturnStatusBadge()}
-                            </div>
-                          </div>
+                          {!isMilitary && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.setApartDate', 'Set Apart Date')}</label>
+                                <input
+                                  type="date"
+                                  value={entry.setApartDate || ''}
+                                  onChange={e => {
+                                    const updated = [...data.wardMissionaries];
+                                    updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                                    updateField('wardMissionaries', updated);
+                                  }}
+                                  className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder={t('form.setApartDatePlaceholder')}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
+                                <div className="space-y-2">
+                                  <input
+                                    type="date"
+                                    value={entry.expectedReturnDate || ''}
+                                    onChange={e => {
+                                      const updated = [...data.wardMissionaries];
+                                      updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                                      updateField('wardMissionaries', updated);
+                                    }}
+                                    className="w-full px-4 py-3 text-base border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder={t('form.expectedReturnPlaceholder')}
+                                  />
+                                  {getReturnStatusBadge()}
+                                </div>
+                              </div>
+                            </>
+                          )}
                           <div className="pt-2">
                             <button
                               type="button"
@@ -2827,7 +2838,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               className="w-full px-4 py-2.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
                               title={t('common.remove', 'Remove')}
                             >
-                              {t('form.removeMissionary', 'Remove Missionary')}
+                              {isMilitary ? t('form.removeMilitaryMember', 'Remove Military Member') : t('form.removeMissionary', 'Remove Missionary')}
                             </button>
                           </div>
                         </div>
@@ -2877,9 +2888,14 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                     return null;
                   };
                   
+                  const isMilitary = entry.serviceType === 'military';
+
                   return (
                     <div key={idx} className="bg-white border rounded-lg p-4 shadow-sm">
                       <div className="space-y-3">
+                        {isMilitary && (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">{t('form.servingInMilitary', 'Serving in the Military')}</span>
+                        )}
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.name', 'Name')}</label>
                           <input
@@ -2891,11 +2907,11 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-                            placeholder={t('form.missionaryNamePlaceholder')}
+                            placeholder={isMilitary ? t('form.militaryMemberNamePlaceholder', 'Member name') : t('form.missionaryNamePlaceholder')}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.mission', 'Mission')}</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{isMilitary ? t('form.militaryBranch', 'Branch of Service') : t('form.mission', 'Mission')}</label>
                           <input
                             type="text"
                             value={entry.mission || ''}
@@ -2905,52 +2921,58 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                               updateField('wardMissionaries', updated);
                             }}
                             className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.missionNamePlaceholder')}
+                            placeholder={isMilitary ? t('form.militaryBranchPlaceholder', 'e.g., U.S. Army') : t('form.missionNamePlaceholder')}
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
-                          <input
-                            type="date"
-                            value={entry.setApartDate || ''}
-                            onChange={e => {
-                              const updated = [...data.wardMissionaries];
-                              updated[idx] = { ...updated[idx], setApartDate: e.target.value };
-                              updateField('wardMissionaries', updated);
-                            }}
-                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.setApartDatePlaceholder')}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
-                          <input
-                            type="date"
-                            value={entry.expectedReturnDate || ''}
-                            onChange={e => {
-                              const updated = [...data.wardMissionaries];
-                              updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
-                              updateField('wardMissionaries', updated);
-                            }}
-                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.expectedReturnPlaceholder')}
-                          />
-                          {getReturnStatusBadge()}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
-                          <input
-                            type="email"
-                            value={entry.email || ''}
-                            onChange={e => {
-                              const updated = [...data.wardMissionaries];
-                              updated[idx] = { ...updated[idx], email: e.target.value };
-                              updateField('wardMissionaries', updated);
-                            }}
-                            className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder={t('form.emailPlaceholder')}
-                          />
-                        </div>
+                        {!isMilitary && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.setApartDate', 'Set Apart Date')}</label>
+                              <input
+                                type="date"
+                                value={entry.setApartDate || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], setApartDate: e.target.value };
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('form.setApartDatePlaceholder')}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.expectedReturnDate', 'Expected Return Date')}</label>
+                              <input
+                                type="date"
+                                value={entry.expectedReturnDate || ''}
+                                onChange={e => {
+                                  const updated = [...data.wardMissionaries];
+                                  updated[idx] = { ...updated[idx], expectedReturnDate: e.target.value };
+                                  updateField('wardMissionaries', updated);
+                                }}
+                                className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={t('form.expectedReturnPlaceholder')}
+                              />
+                              {getReturnStatusBadge()}
+                            </div>
+                          </>
+                        )}
+                        {!isMilitary && (
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">{t('form.email', 'Email')}</label>
+                            <input
+                              type="email"
+                              value={entry.email || ''}
+                              onChange={e => {
+                                const updated = [...data.wardMissionaries];
+                                updated[idx] = { ...updated[idx], email: e.target.value };
+                                updateField('wardMissionaries', updated);
+                              }}
+                              className="w-full px-3 py-2.5 text-base border rounded bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder={t('form.emailPlaceholder')}
+                            />
+                          </div>
+                        )}
                         <div className="pt-2">
                           <button
                             type="button"
@@ -2971,14 +2993,24 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
               )}
             </div>
             
-            <button
-              type="button"
-              onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
-              className="mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4 inline mr-2" />
-              {t('form.addUnitMissionary', { unit: getTranslatedUnitLabel(t) })}
-            </button>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '' }])}
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4 inline mr-2" />
+                {t('form.addUnitMissionary', { unit: getTranslatedUnitLabel(t) })}
+              </button>
+              <button
+                type="button"
+                onClick={() => updateField('wardMissionaries', [...data.wardMissionaries, { name: '', mission: '', email: '', serviceType: 'military' as const }])}
+                className="px-4 py-2.5 bg-white text-blue-700 border border-blue-600 rounded-lg text-base font-medium hover:bg-blue-50 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4 inline mr-2" />
+                {t('form.addMilitaryMember', 'Add Military Member')}
+              </button>
+            </div>
           </section>
 
           {/* Service Missionaries Section */}
