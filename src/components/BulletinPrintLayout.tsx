@@ -437,11 +437,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // Filter out empty ward info entries
   const filteredWardLeadership = data.wardLeadership?.filter(hasValidLeadershipInfo) || [];
   const filteredMissionaries = data.missionaries?.filter(hasValidMissionaryInfo) || [];
-  const filteredWardMissionaries = data.wardMissionaries?.filter(hasValidMissionaryInfo) || [];
+  const allWardMissionaries = data.wardMissionaries?.filter(hasValidMissionaryInfo) || [];
+  const filteredWardMissionaries = allWardMissionaries.filter((entry: any) => entry.serviceType !== 'military');
+  const filteredMilitaryMembers = allWardMissionaries.filter((entry: any) => entry.serviceType === 'military');
   const filteredServiceMissionaries = data.serviceMissionaries?.filter(hasValidServiceMissionaryInfo) || [];
 
   // Check if there's any meaningful ward info to display
-  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0 || filteredServiceMissionaries.length > 0;
+  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0 || filteredMilitaryMembers.length > 0 || filteredServiceMissionaries.length > 0;
 
   const selectedTheme = themes.find(t => t.name === data.userTheme);
 
@@ -568,6 +570,44 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
                     <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} {t('bulletin.moreWardMissionaries')}</p>
                   )}
+                </div>
+              )}
+
+              {/* Serving in the Military */}
+              {filteredMilitaryMembers.length > 0 && (
+                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
+                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.servingInMilitary', 'Serving in the Military').toUpperCase()}</h3>
+                  {(() => {
+                    const militaryCount = filteredMilitaryMembers.length;
+                    // Dynamic font sizing: fewer entries = larger font, more entries = smaller font
+                    let fontSize = scalePx(9);
+                    if (militaryCount <= 3) {
+                      fontSize = scalePx(11);
+                    } else if (militaryCount <= 6) {
+                      fontSize = scalePx(10);
+                    } else if (militaryCount <= 10) {
+                      fontSize = scalePx(9);
+                    } else {
+                      fontSize = scalePx(8);
+                    }
+
+                    return (
+                      <div className="space-y-1" style={{ fontSize }}>
+                        {filteredMilitaryMembers.map((member: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center py-0">
+                            <div className="font-bold" style={{ width: '40%' }}>
+                              {member.name}
+                            </div>
+                            <div className="text-right flex-1 font-normal">
+                              {member.mission && (
+                                <span className="text-gray-600">{member.mission}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

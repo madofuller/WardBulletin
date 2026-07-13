@@ -1088,61 +1088,104 @@ function BulletinPreview({
           )}
 
           {/* Ward Missionaries Section */}
-          {Array.isArray(data.wardMissionaries) && data.wardMissionaries.some(e => e && (e.name || e.mission || e.setApartDate || e.expectedReturnDate || e.email)) && (
-            <>
-              <h3 className="text-base font-bold mb-3 text-center mt-8">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h3>
-              {(() => {
-                // Sort by expected return date (earliest first)
-                const sorted = [...(data?.wardMissionaries || [])].sort((a, b) => {
-                  const dateA = a.expectedReturnDate || '';
-                  const dateB = b.expectedReturnDate || '';
-                  if (!dateA && !dateB) return 0;
-                  if (!dateA) return 1;
-                  if (!dateB) return -1;
-                  return dateA.localeCompare(dateB);
-                });
-                
-                return sorted.length > 2 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sorted.map((e, idx) => (
-                      <div key={idx} className="border border-gray-300 rounded-lg p-3">
-                        <div className="font-bold text-sm mb-2">{e.name}</div>
-                        {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
-                        {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.setApartDate')}: {formatDate(e.setApartDate, i18n.language)}</div>}
-                        {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.expectedReturn')}: {formatDate(e.expectedReturnDate, i18n.language)}</div>}
-                        {e.email && <div className="text-xs text-gray-600 font-normal">{e.email}</div>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border text-sm">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="px-3 py-2 border">{t('form.name')}</th>
-                          <th className="px-3 py-2 border">{t('form.mission')}</th>
-                          <th className="px-3 py-2 border">{t('form.setApartDate')}</th>
-                          <th className="px-3 py-2 border">{t('form.expectedReturn')}</th>
-                          <th className="px-3 py-2 border">{t('form.email')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+          {Array.isArray(data.wardMissionaries) && data.wardMissionaries.some(e => e && (e.name || e.mission || e.setApartDate || e.expectedReturnDate || e.email)) && (() => {
+            const fullTimeMissionaries = (data?.wardMissionaries || []).filter(e => e && e.serviceType !== 'military');
+            const militaryMembers = (data?.wardMissionaries || []).filter(e => e && e.serviceType === 'military');
+
+            // Sort by expected return date (earliest first)
+            const sorted = [...fullTimeMissionaries].sort((a, b) => {
+              const dateA = a.expectedReturnDate || '';
+              const dateB = b.expectedReturnDate || '';
+              if (!dateA && !dateB) return 0;
+              if (!dateA) return 1;
+              if (!dateB) return -1;
+              return dateA.localeCompare(dateB);
+            });
+
+            return (
+              <>
+                {sorted.length > 0 && (
+                  <>
+                    <h3 className="text-base font-bold mb-3 text-center mt-8">{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h3>
+                    {sorted.length > 2 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {sorted.map((e, idx) => (
-                          <tr key={idx}>
-                            <td className="border px-3 py-2 font-bold">{e.name}</td>
-                            <td className="border px-3 py-2 font-normal">{e.mission}</td>
-                            <td className="border px-3 py-2 font-normal">{e.setApartDate ? formatDate(e.setApartDate, i18n.language) : ''}</td>
-                            <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? formatDate(e.expectedReturnDate, i18n.language) : ''}</td>
-                            <td className="border px-3 py-2 font-normal">{e.email}</td>
-                          </tr>
+                          <div key={idx} className="border border-gray-300 rounded-lg p-3">
+                            <div className="font-bold text-sm mb-2">{e.name}</div>
+                            {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
+                            {e.setApartDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.setApartDate')}: {formatDate(e.setApartDate, i18n.language)}</div>}
+                            {e.expectedReturnDate && <div className="text-xs text-gray-600 mb-1 font-normal">{t('form.expectedReturn')}: {formatDate(e.expectedReturnDate, i18n.language)}</div>}
+                            {e.email && <div className="text-xs text-gray-600 font-normal">{e.email}</div>}
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </>
-          )}
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border text-sm">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="px-3 py-2 border">{t('form.name')}</th>
+                              <th className="px-3 py-2 border">{t('form.mission')}</th>
+                              <th className="px-3 py-2 border">{t('form.setApartDate')}</th>
+                              <th className="px-3 py-2 border">{t('form.expectedReturn')}</th>
+                              <th className="px-3 py-2 border">{t('form.email')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sorted.map((e, idx) => (
+                              <tr key={idx}>
+                                <td className="border px-3 py-2 font-bold">{e.name}</td>
+                                <td className="border px-3 py-2 font-normal">{e.mission}</td>
+                                <td className="border px-3 py-2 font-normal">{e.setApartDate ? formatDate(e.setApartDate, i18n.language) : ''}</td>
+                                <td className="border px-3 py-2 font-normal">{e.expectedReturnDate ? formatDate(e.expectedReturnDate, i18n.language) : ''}</td>
+                                <td className="border px-3 py-2 font-normal">{e.email}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Serving in the Military Section */}
+                {militaryMembers.length > 0 && (
+                  <>
+                    <h3 className="text-base font-bold mb-3 text-center mt-8">{t('bulletin.servingInMilitary', 'Serving in the Military')}</h3>
+                    {militaryMembers.length > 2 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {militaryMembers.map((e, idx) => (
+                          <div key={idx} className="border border-gray-300 rounded-lg p-3">
+                            <div className="font-bold text-sm mb-2">{e.name}</div>
+                            {e.mission && <div className="text-xs text-gray-600 mb-1 font-normal">{e.mission}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full border text-sm">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="px-3 py-2 border">{t('form.name')}</th>
+                              <th className="px-3 py-2 border">{t('form.militaryBranch', 'Branch of Service')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {militaryMembers.map((e, idx) => (
+                              <tr key={idx}>
+                                <td className="border px-3 py-2 font-bold">{e.name}</td>
+                                <td className="border px-3 py-2 font-normal">{e.mission}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {/* Service Missionaries Section */}
           {Array.isArray(data.serviceMissionaries) && data.serviceMissionaries.some(e => e && (e.name || e.serviceName)) && (
