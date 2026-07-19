@@ -441,12 +441,20 @@ const getHymnRelease = (number: number): number | null => {
   return null;
 };
 
+// Hymns whose churchofjesuschrist.org slug can't be derived from the title alone.
+// 173 and 174 share the title "While of These Emblems We Partake" and are
+// disambiguated on the site by tune name (SAUL vs AEOLIAN).
+const HYMN_SLUG_OVERRIDES: Record<number, string> = {
+  173: 'while-of-these-emblems-we-partake-saul',
+  174: 'while-of-these-emblems-we-partake-aeolian',
+};
+
 export const getHymnUrl = (number: number): string => {
   const title = LDS_HYMNS[number];
   if (!title) return '';
 
   // Remove apostrophes and parentheses, then slugify: lowercase, replace non-alphanum with hyphens, collapse multiple hyphens
-  const slug = title
+  const slug = HYMN_SLUG_OVERRIDES[number] ?? title
     .toLowerCase()
     .replace(/'/g, '') // Remove apostrophes
     .replace(/\([^)]*\)/g, '') // Remove parentheses and their content

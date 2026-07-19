@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   searchSongsByTitle,
   getSongTitle,
+  getSongUrl,
   isValidSongNumber,
   getMaxHymnNumber,
 } from './songService';
@@ -41,6 +42,15 @@ describe('songService', () => {
     it('falls back to English for unknown language', () => {
       const title = getSongTitle('2', 'hymn', 'xx');
       expect(title).toBe('The Spirit of God');
+    });
+  });
+
+  describe('getSongUrl', () => {
+    it('disambiguates hymns 173 and 174 by tune name (same title, different songs)', () => {
+      expect(getSongTitle('173', 'hymn')).toBe('While of These Emblems We Partake');
+      expect(getSongTitle('174', 'hymn')).toBe('While of These Emblems We Partake');
+      expect(getSongUrl('173', 'hymn')).toContain('while-of-these-emblems-we-partake-saul');
+      expect(getSongUrl('174', 'hymn')).toContain('while-of-these-emblems-we-partake-aeolian');
     });
   });
 
