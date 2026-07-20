@@ -591,7 +591,10 @@ function EditorApp() {
       closingHymnNumber: '',
       closingHymnTitle: ''
     },
+    // Spread first so optional fields (meetingLink, interpreter, and any
+    // added later) survive the round trip instead of being wiped on reload.
     leadership: {
+      ...(bulletin.leadership || {}),
       presiding: bulletin.leadership?.presiding || '',
       chorister: bulletin.leadership?.chorister || '',
       organist: bulletin.leadership?.organist || '',
