@@ -721,9 +721,11 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showAddTypeDropdown]);
 
-  // Helper to check if an audience is standalone (not grouped)
+  // Helper to check if an audience is standalone (not grouped). Older
+  // bulletins populated from recurring announcements carry the literal
+  // 'standalone' audience without the _id suffix.
   const isStandaloneAudience = (audience: string) => {
-    return audience.startsWith('standalone_');
+    return audience === 'standalone' || audience.startsWith('standalone_');
   };
 
   const moveImage = (announcementId: string, imageIndex: number, direction: -1 | 1) => {

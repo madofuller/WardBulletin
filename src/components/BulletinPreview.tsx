@@ -479,8 +479,10 @@ function BulletinPreview({
   const sanitizedAnnouncements = useMemo(() => {
     const arr = data?.announcements ?? [];
     return arr.map(a => {
-      // For standalone announcements, use customAudienceLabel if available
-      const isStandalone = a.audience?.startsWith('standalone_');
+      // For standalone announcements, use customAudienceLabel if available.
+      // Recurring standalone items were stored with the literal 'standalone'
+      // audience (no _id suffix), so match both forms.
+      const isStandalone = a.audience === 'standalone' || a.audience?.startsWith('standalone_');
       let label: string;
       if (isStandalone) {
         label = a.customAudienceLabel || ''; // Use custom label or empty for standalone
@@ -864,9 +866,12 @@ function BulletinPreview({
           {sanitizedAnnouncements.length > 0 ? (
             <div className="space-y-8">
               {(() => {
-                // Group announcements by audience/type
+                // Group announcements by audience/type. Standalone
+                // announcements without a custom label have an empty label:
+                // they group under '' and render with no section header
+                // (falling back to 'Ward' here put a wrong header on them).
                 const grouped = sanitizedAnnouncements.reduce((groups, announcement) => {
-                  const audience = announcement.audienceLabel || 'Ward';
+                  const audience = announcement.audienceLabel ?? '';
                   if (!groups[audience]) {
                     groups[audience] = [];
                   }
@@ -876,8 +881,10 @@ function BulletinPreview({
 
                 // Render grouped announcements
                 return Object.entries(grouped).map(([audience, announcements]) => (
-                  <article key={audience} className="border-l-4 border-[#edf4ff] pl-4">
-                    <h3 className="text-xl sm:text-2xl text-gray-900 mb-4">{audience}</h3>
+                  <article key={audience || 'no-label'} className="border-l-4 border-[#edf4ff] pl-4">
+                    {audience && (
+                      <h3 className="text-xl sm:text-2xl text-gray-900 mb-4">{audience}</h3>
+                    )}
                     <div className="space-y-6">
                       {announcements.map((a, i) => (
                         <div key={i} className={a.hideOnPrint ? 'print:hidden' : undefined}>

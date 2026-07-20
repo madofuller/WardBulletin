@@ -8,6 +8,7 @@ export interface RecurringAnnouncement {
   audience: 'ward' | 'relief_society' | 'elders_quorum' | 'youth' | 'primary' | 'stake' | 'other' | string;
   custom_audience_label?: string; // Free-text label for standalone announcements
   is_active: boolean;
+  sort_order?: number | null; // Position in the bulletin; null on rows created before the column existed
   created_at: string;
   updated_at: string;
   // Image support
@@ -29,9 +30,22 @@ export const recurringAnnouncementsService = {
         .select('*')
         .eq('profile_slug', profileSlug)
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // Databases without the sort_order column yet: fall back to creation
+        // order (oldest first, so new announcements land at the bottom).
+        const { data: fallback, error: fallbackError } = await supabase
+          .from('recurring_announcements')
+          .select('*')
+          .eq('profile_slug', profileSlug)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        if (fallbackError) throw fallbackError;
+        return fallback || [];
+      }
       return data || [];
     } catch (error) {
       console.error('Error fetching recurring announcements:', error);
@@ -43,7 +57,21 @@ export const recurringAnnouncementsService = {
   async createRecurringAnnouncement(announcement: Omit<RecurringAnnouncement, 'id' | 'created_at' | 'updated_at'>): Promise<RecurringAnnouncement | null> {
     try {
       console.log('Service: Creating recurring announcement:', announcement);
-      
+
+      // New announcements go to the END of the list (max sort_order + 1),
+      // not the top. Skipped silently if the sort_order column doesn't exist.
+      let nextSortOrder: number | undefined;
+      const { data: maxRows, error: maxError } = await supabase
+        .from('recurring_announcements')
+        .select('sort_order')
+        .eq('profile_slug', announcement.profile_slug)
+        .order('sort_order', { ascending: false, nullsFirst: false })
+        .limit(1);
+      if (!maxError) {
+        const max = maxRows?.[0]?.sort_order;
+        nextSortOrder = typeof max === 'number' ? max + 1 : 0;
+      }
+
       // Create a safe version with image and custom label support
       const safeAnnouncement = {
         profile_slug: announcement.profile_slug,
@@ -51,6 +79,7 @@ export const recurringAnnouncementsService = {
         content: announcement.content,
         audience: announcement.audience,
         is_active: announcement.is_active,
+        ...(nextSortOrder !== undefined && { sort_order: nextSortOrder }),
         // Include custom audience label for standalone announcements
         ...(announcement.custom_audience_label && { custom_audience_label: announcement.custom_audience_label }),
         // Include image fields
@@ -66,15 +95,17 @@ export const recurringAnnouncementsService = {
       if (error) {
         console.error('Service: Supabase error:', error);
         
-        // If it's a column not found error, try without image fields
-        if (error.code === 'PGRST204' && error.message.includes('images')) {
-          console.log('Service: Retrying without image fields...');
+        // If it's a column not found error (images / sort_order not migrated
+        // yet), retry with only the guaranteed base columns
+        if (error.code === 'PGRST204') {
+          console.log('Service: Retrying with base fields only...');
           const basicAnnouncement = {
             profile_slug: announcement.profile_slug,
             title: announcement.title,
             content: announcement.content,
             audience: announcement.audience,
-            is_active: announcement.is_active
+            is_active: announcement.is_active,
+            ...(announcement.custom_audience_label && { custom_audience_label: announcement.custom_audience_label })
           };
           
           const { data: retryData, error: retryError } = await supabase
@@ -115,6 +146,30 @@ export const recurringAnnouncementsService = {
       return true;
     } catch (error) {
       console.error('Error updating recurring announcement:', error);
+      return false;
+    }
+  },
+
+  // Persist a full ordering: each announcement's position in orderedIds
+  // becomes its sort_order. Returns false if the sort_order column is missing
+  // (migration not applied) or any update fails.
+  async updateSortOrder(profileSlug: string, orderedIds: string[]): Promise<boolean> {
+    try {
+      const results = await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase
+            .from('recurring_announcements')
+            .update({ sort_order: index })
+            .eq('id', id)
+            .eq('profile_slug', profileSlug)
+        )
+      );
+
+      const failed = results.find(r => r.error);
+      if (failed?.error) throw failed.error;
+      return true;
+    } catch (error) {
+      console.error('Error updating recurring announcement order:', error);
       return false;
     }
   },
@@ -193,6 +248,9 @@ export const recurringAnnouncementsService = {
         title: announcement.title,
         content: announcement.content,
         audience: announcement.audience,
+        // Standalone announcements need their section label to survive into
+        // the bulletin, otherwise they print a raw "Standalone" header
+        custom_audience_label: announcement.custom_audience_label,
         is_active: announcement.is_active,
         // Preserve image data in images array format
         images: announcement.images
