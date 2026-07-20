@@ -730,7 +730,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               {(() => {
                 const grouped = printableAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
-                  const isStandalone = announcement.audience?.startsWith('standalone_');
+                  // Recurring standalone items may carry the literal
+                  // 'standalone' audience (no _id suffix) — match both forms
+                  const isStandalone = announcement.audience === 'standalone' || announcement.audience?.startsWith('standalone_');
                   const audienceLabel = isStandalone
                     ? (announcement.customAudienceLabel || '')
                     : getAudienceLabel(announcement.audience || getUnitLowercase(unitTypeOverride));

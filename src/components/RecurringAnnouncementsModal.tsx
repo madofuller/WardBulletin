@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, Edit3, Copy } from 'lucide-react';
+import { recurringAnnouncementsService } from '../lib/recurringAnnouncementsService';
+import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, Edit3, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { decodeHtml } from '../lib/decodeHtml';
 import HtmlEditor from './HtmlEditor';
@@ -67,15 +68,10 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .from('recurring_announcements')
-        .select('*')
-        .eq('profile_slug', profileSlug)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAnnouncements(data || []);
+      // Same query + ordering (sort_order, then created_at) as the bulletin
+      // itself, so this list previews the order they'll appear in.
+      const data = await recurringAnnouncementsService.getRecurringAnnouncements(profileSlug);
+      setAnnouncements(data);
     } catch (error) {
       console.error('Error fetching recurring announcements:', error);
       toast.error(t('errors.failedToLoadRecurringAnnouncements'));
@@ -124,19 +120,18 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
         if (error) throw error;
         toast.success(t('success.recurringAnnouncementUpdated'));
       } else {
-        // Create new announcement
-        const { error } = await supabase
-          .from('recurring_announcements')
-          .insert({
-            profile_slug: profileSlug,
-            title: formData.title.trim(),
-            content: formData.content.trim(),
-            audience: formData.audience,
-            custom_audience_label: customLabel
-          })
-          .select();
+        // Create new announcement via the service so it gets the next
+        // sort_order and lands at the END of the list, not the top
+        const created = await recurringAnnouncementsService.createRecurringAnnouncement({
+          profile_slug: profileSlug,
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          audience: formData.audience,
+          custom_audience_label: customLabel || undefined,
+          is_active: true
+        });
 
-        if (error) throw error;
+        if (!created) throw new Error('Failed to create recurring announcement');
         toast.success(t('success.recurringAnnouncementCreated'));
       }
 
@@ -180,6 +175,26 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
       await fetchRecurringAnnouncements();
     } catch (error) {
       toast.error(t('errors.failedToDeleteRecurringAnnouncement'));
+    }
+  };
+
+  // Swap an announcement with its neighbor and persist the whole list's
+  // order. Optimistic: the list updates immediately, and reloads on failure.
+  const handleMove = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= announcements.length) return;
+
+    const reordered = [...announcements];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setAnnouncements(reordered);
+
+    const saved = await recurringAnnouncementsService.updateSortOrder(
+      profileSlug,
+      reordered.map(a => a.id)
+    );
+    if (!saved) {
+      toast.error(t('errors.failedToSaveOrder', 'Could not save the new order'));
+      await fetchRecurringAnnouncements();
     }
   };
 
@@ -336,7 +351,10 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
 
                 {/* Existing Announcements Section */}
                 <div>
-                  <h4 className="text-md font-medium text-gray-700 mb-3">{t('recurring.existingRecurringAnnouncements')}</h4>
+                  <h4 className="text-md font-medium text-gray-700 mb-1">{t('recurring.existingRecurringAnnouncements')}</h4>
+                  <p className="text-xs text-gray-500 mb-3">
+                    {t('recurring.orderHint', 'New bulletins list these in this order — use the arrows to reorder.')}
+                  </p>
                   {loading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="animate-spin h-8 w-8 text-blue-600" />
@@ -348,12 +366,34 @@ export default function RecurringAnnouncementsModal({ isOpen, onClose, profileSl
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {announcements.map((announcement) => (
+                      {announcements.map((announcement, index) => (
                         <div
                           key={announcement.id}
                           className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="flex sm:flex-col gap-1 flex-shrink-0 self-start">
+                              <button
+                                type="button"
+                                onClick={() => handleMove(index, -1)}
+                                disabled={index === 0}
+                                className="p-1 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                                aria-label={t('recurring.moveUp', 'Move up')}
+                                title={t('recurring.moveUp', 'Move up')}
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMove(index, 1)}
+                                disabled={index === announcements.length - 1}
+                                className="p-1 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+                                aria-label={t('recurring.moveDown', 'Move down')}
+                                title={t('recurring.moveDown', 'Move down')}
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </div>
                             <div className="flex-1 min-w-0">
                               <h5 className="font-medium text-gray-900 text-sm leading-tight mb-1">
                                 {announcement.title}

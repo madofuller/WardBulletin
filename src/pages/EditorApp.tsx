@@ -305,15 +305,24 @@ function EditorApp() {
       );
 
       if (freshAnnouncements.length > 0) {
-        const newAnnouncements = freshAnnouncements.map(announcement => ({
-          id: Date.now().toString() + Math.random(),
-          title: announcement.title,
-          content: announcement.content,
-          category: announcement.category || 'general',
-          audience: announcement.audience,
-          // Preserve image data from recurring announcement
-          images: announcement.images
-        }));
+        const newAnnouncements = freshAnnouncements.map(announcement => {
+          // Recurring standalone items are stored with the literal
+          // 'standalone' audience; the bulletin needs the unique
+          // standalone_<id> form plus the custom label, otherwise the
+          // renderers print a raw "Standalone" section header.
+          const isStandalone = announcement.audience === 'standalone';
+          const id = Date.now().toString() + Math.random();
+          return {
+            id,
+            title: announcement.title,
+            content: announcement.content,
+            category: announcement.category || 'general',
+            audience: isStandalone ? `standalone_${id}` : announcement.audience,
+            customAudienceLabel: isStandalone ? (announcement.custom_audience_label || '') : undefined,
+            // Preserve image data from recurring announcement
+            images: announcement.images
+          };
+        });
         
         return {
           ...bulletin,
