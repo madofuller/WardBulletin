@@ -43,7 +43,7 @@ export default function HowToUsePage() {
               <ul className="list-disc ml-6 mt-2 space-y-1">
                 <li>Rearrange agenda items with simple position changes</li>
                 <li>Click into each field to edit text</li>
-                <li>Use the "+ Add Section" button for Speakers, Musical Numbers, or Bearing of Testimonies</li>
+                <li>Use the "+ Add Section" button for Speakers, Musical Numbers, Bearing of Testimonies, or a custom heading like "Primary Program"</li>
                 <li>You can build as much as you want before signing in.</li>
               </ul>
             </li>

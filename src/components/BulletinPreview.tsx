@@ -750,6 +750,14 @@ function BulletinPreview({
                       )}
                     </div>
                   )}
+                  {item.type === 'program' && (
+                    <div className="text-center py-2">
+                      <p className="font-bold text-lg text-gray-900">{item.title}</p>
+                      {item.note && (
+                        <p className="text-sm text-gray-700 italic mt-1">{item.note}</p>
+                      )}
+                    </div>
+                  )}
                   {item.type === 'sacrament' && data.meetingType === 'sacrament' && (
                     <>
                       {(data?.musicProgram?.sacramentHymnNumber || data?.musicProgram?.sacramentHymnTitle) && (
