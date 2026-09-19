@@ -87,7 +87,10 @@ export type AgendaItem =
   | { type: 'sacrament'; id: string }
   | { type: 'baby_blessing'; id: string; childName?: string; parentNames?: string }
   | { type: 'baptism_ordinance'; id: string; candidateName?: string; performedBy?: string }
-  | { type: 'confirmation'; id: string; candidateName?: string; performedBy?: string };
+  | { type: 'confirmation'; id: string; candidateName?: string; performedBy?: string }
+  // Free-form centered heading, e.g. "Primary Program" or "Christmas Program",
+  // for meetings where individual speakers/numbers are not listed.
+  | { type: 'program'; id: string; title: string; note?: string };
 
 export interface UnitLeadershipEntry {
   title: string;

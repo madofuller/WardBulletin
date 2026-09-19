@@ -474,7 +474,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
   const [showAddSection, setShowAddSection] = useState(false);
   const addSectionRef = useRef<HTMLDivElement>(null);
 
-  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing' | 'baptism_ordinance' | 'confirmation') => {
+  const handleAddSection = (type: 'speaker' | 'musical' | 'testimony' | 'sacrament' | 'baby_blessing' | 'baptism_ordinance' | 'confirmation' | 'program') => {
     if (type === 'speaker') {
       updateField('agenda', [
         ...data.agenda,
@@ -495,6 +495,8 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'baptism_ordinance', candidateName: '', performedBy: '' }]);
     } else if (type === 'confirmation') {
       updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'confirmation', candidateName: '', performedBy: '' }]);
+    } else if (type === 'program') {
+      updateField('agenda', [...data.agenda, { id: generateUniqueId(), type: 'program', title: t('bulletin.primaryProgram') }]);
     }
     setShowAddSection(false);
   };
@@ -1598,6 +1600,41 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
+                ) : item.type === 'program' ? (
+                  <div className="w-full space-y-2">
+                    <span className="block w-full text-center font-bold text-lg text-gray-700 py-2">{item.title || t('form.programTitleLabel')}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {[t('bulletin.primaryProgram'), t('bulletin.christmasProgram'), t('bulletin.easterProgram')].map(preset => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => updateAgendaItem(item.id, { title: preset })}
+                          className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                            item.title === preset
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      value={item.title || ''}
+                      onChange={e => updateAgendaItem(item.id, { title: e.target.value })}
+                      placeholder={t('form.programTitlePlaceholder')}
+                      aria-label={t('form.programTitleLabel')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      value={item.note || ''}
+                      onChange={e => updateAgendaItem(item.id, { note: e.target.value })}
+                      placeholder={t('form.programNotePlaceholder')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 ) : item.type === 'speaker' ? (
                   <>
                     <input type="text" value={item.name || ''} onChange={e => updateAgendaItem(item.id, { name: e.target.value })} placeholder={t('form.speakerName')} className="flex-1 min-w-[120px] max-w-xs px-3 py-2 border border-gray-300 rounded-lg" />
@@ -1797,6 +1834,13 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                 className="px-4 py-3 bg-teal-600 text-white rounded-lg text-base font-medium hover:bg-teal-700 transition-colors"
               >
                 {t('form.addConfirmation')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddSection('program')}
+                className="px-4 py-3 bg-indigo-600 text-white rounded-lg text-base font-medium hover:bg-indigo-700 transition-colors"
+              >
+                {t('form.addProgram')}
               </button>
             </div>
           </section>
