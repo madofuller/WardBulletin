@@ -554,10 +554,21 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
       await deleteCustomImage(imageId, userId);
       const images = await getAllImages(userId);
       setAllImages(images); // Refresh the images list
+      onImagesRefresh?.();
 
-      // If the deleted image was selected, reset to 'none'
-      if (data.imageId === imageId) {
-        updateField('imageId', 'none');
+      // Drop the deleted image from the header and any announcements in this bulletin
+      const headerUsesImage = data.imageId === imageId;
+      const announcementsUseImage = data.announcements.some(a => a.images?.some(img => img.imageId === imageId));
+      if (headerUsesImage || announcementsUseImage) {
+        onChange({
+          ...data,
+          ...(headerUsesImage ? { imageId: 'none', imageUrl: undefined } : {}),
+          announcements: data.announcements.map(a =>
+            a.images?.some(img => img.imageId === imageId)
+              ? { ...a, images: a.images.filter(img => img.imageId !== imageId) }
+              : a
+          ),
+        });
       }
 
       toast.success(t('form.customImageDeleted', 'Custom image deleted.'));
@@ -1036,8 +1047,9 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 e.stopPropagation();
                                 handleDeleteCustomImage(image.id);
                               }}
-                              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              title="Delete custom image"
+                              className="absolute top-0.5 right-0.5 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow"
+                              title={t('form.deleteImage', 'Delete Image')}
+                              aria-label={t('form.deleteImage', 'Delete Image')}
                             >
                               ×
                             </button>
@@ -2336,6 +2348,22 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                                 <span className="text-gray-500 text-xs">No Img</span>
                               </div>
                             )}
+
+                            {/* Delete button for custom images */}
+                            {'isCustom' in image && image.isCustom && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCustomImage(image.id);
+                                }}
+                                className="absolute top-0.5 right-0.5 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow"
+                                title={t('form.deleteImage', 'Delete Image')}
+                                aria-label={t('form.deleteImage', 'Delete Image')}
+                              >
+                                ×
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -3234,6 +3262,7 @@ function BulletinForm({ data, onChange, profileSlug, userId, allImages: external
                   <h3 className="text-lg leading-6 font-medium text-gray-900">{t('form.deleteImage')}</h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">{t('modals.thisActionCannotBeUndone')}</p>
+                    <p className="text-sm text-gray-500 mt-2">{t('form.deleteImageWarning', 'Any bulletin still using this image, including already published ones, will no longer show it.')}</p>
                   </div>
                 </div>
               </div>
