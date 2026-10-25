@@ -339,6 +339,15 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.85;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
+
+  // Announcements marked web-only never reach paper; everything below
+  // (column auto-fit, grouping, the section header) works off this list.
+  const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
+  const announcementCount = printableAnnouncements.length;
+  
+  // Deterministic announcement splitting based on character count and font scale
+  // Only trigger in Large/Extra Large modes with many announcements
+  const [announcementSplitIndex, setAnnouncementSplitIndex] = useState<number | null>(null);
   
   // Set font scale on html element for print (fallback for browsers without :has() support)
   // Older Safari, Firefox, and iPads need this explicit class for print font scaling
@@ -364,9 +373,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     }
   }, [fontScale]);
   
-  // Measure announcement heights and compute split index
-  // Only runs in Large/Extra Large with >5 announcements
-  // Stable key prevents recomputation loops: fontScale + announcement count + content hash
+  // Stable key for measurement: prevents recomputation loops
   const announcementsStableKey = useMemo(() => {
     if (!printableAnnouncements || printableAnnouncements.length === 0) {
       return `${fontScale}:0:`;
@@ -377,86 +384,48 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     return `${fontScale}:${printableAnnouncements.length}:${contentHash}`;
   }, [fontScale, announcementCount]);
   
+  // Compute split index deterministically based on character count and font scale
+  // Avoids render loops and measurement timing issues
   useEffect(() => {
-    // Only measure if Large/Extra Large with many announcements
+    // Only split if Large/Extra Large with many announcements
     if (!isLargeOrExtraLarge || printableAnnouncements.length <= 5) {
       setAnnouncementSplitIndex(null);
       return;
     }
     
-    const measureAndSplit = async () => {
-      // Wait for fonts to load
-      if (typeof document !== 'undefined' && document.fonts) {
-        await document.fonts.ready;
+    // Estimate based on character count
+    // Available lines in announcement panel: ~40 lines at fontScale=1.0, scales down with larger fonts
+    const BASE_LINES_PER_PANEL = 40;
+    const availableLines = Math.floor(BASE_LINES_PER_PANEL / fontScale);
+    const CHARS_PER_LINE = 80; // Average characters per line
+    const CHARS_PER_PANEL = availableLines * CHARS_PER_LINE;
+    
+    let cumulative = 0;
+    let splitIdx = 0;
+    
+    for (let i = 0; i < printableAnnouncements.length; i++) {
+      const ann = printableAnnouncements[i];
+      const titleChars = (ann.title || '').length;
+      const contentChars = (ann.content || '').length;
+      const totalChars = titleChars + contentChars + 20; // +20 for spacing/formatting
+      
+      if (cumulative + totalChars > CHARS_PER_PANEL && i > 0) {
+        // This announcement pushes us over, split here
+        splitIdx = i;
+        break;
       }
       
-      const container = measureContainerRef.current;
-      if (!container) return;
-      
-      // Measure each announcement's height
-      const announcementElements = container.querySelectorAll('[data-announcement-index]');
-      const heights: number[] = [];
-      
-      announcementElements.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        heights.push(rect.height);
-      });
-      
-      // Available height in announcements panel (8.5in - top padding - header)
-      // Use conservative estimate: 7.5in content area ≈ 1125px at 150 DPI
-      const PANEL_HEIGHT_PX = 1080; // ~7.2in to be conservative
-      
-      // Fill page 2 panel until next announcement won't fit
-      let page2Height = 0;
-      let splitIndex = 0;
-      
-      for (let i = 0; i < heights.length; i++) {
-        if (page2Height + heights[i] > PANEL_HEIGHT_PX) {
-          // This announcement doesn't fit
-          if (i === 0) {
-            // First announcement is too large - allow it alone and let it break
-            splitIndex = 1;
-          } else {
-            splitIndex = i;
-          }
-          break;
-        }
-        page2Height += heights[i];
-        splitIndex = i + 1;
-      }
-      
-      // If we fit everything, no split needed
-      if (splitIndex >= printableAnnouncements.length) {
-        setAnnouncementSplitIndex(null);
-      } else {
-        setAnnouncementSplitIndex(splitIndex);
-      }
-    };
-    
-    measureAndSplit();
-    
-    // Re-measure on beforeprint
-    const handleBeforePrint = () => {
-      measureAndSplit();
-    };
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeprint', handleBeforePrint);
-      return () => {
-        window.removeEventListener('beforeprint', handleBeforePrint);
-      };
+      cumulative += totalChars;
+      splitIdx = i + 1;
     }
-  }, [announcementsStableKey, isLargeOrExtraLarge, printableAnnouncements.length]);
-
-  // Announcements marked web-only never reach paper; everything below
-  // (column auto-fit, grouping, the section header) works off this list.
-  const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
-  const announcementCount = printableAnnouncements.length;
-  
-  // Measurement-based announcement splitting: Measure actual heights and split when panel is full
-  // Only trigger in Large/Extra Large modes with many announcements
-  const [announcementSplitIndex, setAnnouncementSplitIndex] = useState<number | null>(null);
-  const measureContainerRef = useRef<HTMLDivElement>(null);
+    
+    // If we fit everything, no split needed
+    if (splitIdx >= printableAnnouncements.length) {
+      setAnnouncementSplitIndex(null);
+    } else {
+      setAnnouncementSplitIndex(splitIdx);
+    }
+  }, [announcementsStableKey, isLargeOrExtraLarge, printableAnnouncements.length, fontScale]);
   const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
   const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
   // Debounce the content key so the auto-fit measure/shrink loop (forced
@@ -1226,57 +1195,6 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             })()}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Hidden measuring container for announcement height calculation */}
-      {isLargeOrExtraLarge && printableAnnouncements.length > 5 && (
-        <div
-          ref={measureContainerRef}
-          style={{
-            position: 'absolute',
-            left: '-9999px',
-            top: 0,
-            width: '5.5in', // Half of 11in landscape page
-            visibility: 'hidden',
-            pointerEvents: 'none'
-          }}
-          data-font-scale={fontScale.toString()}
-          className="print:!text-xl print:!text-black"
-        >
-          {printableAnnouncements.map((announcement: any, idx: number) => {
-            const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
-            const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
-            const baseContent = Math.round((tight ? 12 : 14) * densityScale);
-            const titleFontSize = scalePx(Math.round(baseTitle));
-            const contentFontSize = scalePx(Math.round(baseContent));
-            
-            return (
-              <div
-                key={announcement.id}
-                data-announcement-index={idx}
-                style={{ marginBottom: tight ? '0.25rem' : '0.5rem' }}
-              >
-                <h3
-                  className="font-bold print:!text-base print:!text-black"
-                  style={{ fontSize: titleFontSize, marginBottom: tight ? '0.125rem' : '0.25rem' }}
-                >
-                  {announcement.title}
-                </h3>
-                <p
-                  className="print:!text-sm print:!text-black"
-                  style={{
-                    fontSize: contentFontSize,
-                    lineHeight: tight ? 1.3 : 1.5,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  {announcement.content}
-                </p>
-              </div>
-            );
-          })}
         </div>
       )}
 
