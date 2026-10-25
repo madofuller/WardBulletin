@@ -953,15 +953,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ 
+              <h2 className="text-3xl font-bold mb-1 print:!text-xl print:!text-black" style={{ 
                 wordWrap: 'break-word', 
-                overflowWrap: 'break-word', 
+                overflowWrap: 'anywhere', 
+                wordBreak: 'break-word',
                 hyphens: 'auto', 
                 maxWidth: '100%',
-                lineHeight: '1.2'
+                lineHeight: '1.15'
               }}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
-              <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
-              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black" style={{ wordWrap: 'break-word' }}>{formatDate(data.date, i18n.language)}</p>
+              <h3 className="text-2xl font-bold mb-0.5 print:!text-lg print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
+              <p className="italic text-lg mb-2 print:!text-sm print:!text-black" style={{ wordWrap: 'break-word' }}>{formatDate(data.date, i18n.language)}</p>
             </>
           )}
 
@@ -971,7 +972,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </p>
           )}
 
-          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
+          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.08em', width: '100%', tableLayout: 'fixed' }}>
             <tbody>
               <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />
               <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
@@ -1211,7 +1212,7 @@ function ProgramTableRow({ label, value, extra, extra2 }: { label: string, value
   return (
     <>
       <tr>
-        <td colSpan={3} className="py-[2px] print:!text-base print:!text-black" style={wrap}>
+        <td colSpan={3} className="py-0 print:!text-base print:!text-black" style={wrap}>
           <div className="flex justify-between w-full min-w-0 gap-2">
             <span className="text-left print:!text-base print:!text-black min-w-0" style={wrap}>{label}</span>
             <span className="text-right text-[0.9rem] print:!text-base print:!text-black min-w-0" style={wrap}>{value}</span>
