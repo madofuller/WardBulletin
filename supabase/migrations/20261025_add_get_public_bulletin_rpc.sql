@@ -32,19 +32,21 @@ BEGIN
   END IF;
 
   -- Step 2: Get bulletin ID (active or latest)
+  -- SECURITY: Only return 'active' status bulletins (published to public)
   IF user_record.active_bulletin_id IS NOT NULL THEN
     SELECT *
     INTO bulletin_record
     FROM bulletins
     WHERE id = user_record.active_bulletin_id
+      AND status = 'active'  -- Only published bulletins
     LIMIT 1;
   ELSE
-    -- Get latest bulletin for this profile
+    -- Get latest published bulletin for this profile
     SELECT *
     INTO bulletin_record
     FROM bulletins
-    WHERE created_by = user_record.id
-       OR profile_slug = profile_slug_param
+    WHERE (created_by = user_record.id OR profile_slug = profile_slug_param)
+      AND status = 'active'  -- Only published bulletins
     ORDER BY created_at DESC
     LIMIT 1;
   END IF;
@@ -57,12 +59,15 @@ BEGIN
 
   -- Step 3: Get all tokens for this bulletin in one query
   -- Build the complete result with embedded tokens
+  -- SECURITY: Only return bulletin content fields, not user emails/passwords/etc.
   SELECT jsonb_build_object(
     'id', bulletin_record.id,
     'slug', bulletin_record.slug,
     'created_at', bulletin_record.created_at,
     'created_by', bulletin_record.created_by,
     'profile_slug', bulletin_record.profile_slug,
+    'meeting_date', bulletin_record.meeting_date,
+    'meeting_type', bulletin_record.meeting_type,
     'profile_unit_type', user_record.unit_type,
     'profile_language', user_record.language,
     'tokens', (
@@ -73,7 +78,6 @@ BEGIN
       FROM tokens
       WHERE key LIKE 'bulletin-' || bulletin_slug_val || '-%'
         AND (created_by = bulletin_record.created_by OR created_by = user_record.id)
-      ORDER BY created_at DESC
     )
   ) INTO result;
 
