@@ -43,26 +43,27 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Group React and router together
+          // Editor and PDF - these should ONLY load for editor routes
+          // Check before react to avoid circular dependencies
+          if (id.includes('react-quill') || id.includes('quill')) {
+            return 'editor';
+          }
+          
+          if (id.includes('html2canvas') || id.includes('jspdf')) {
+            return 'pdf';
+          }
+          
+          // React and router - core dependencies
           if (id.includes('node_modules/react') || 
               id.includes('node_modules/react-dom') || 
-              id.includes('node_modules/react-router')) {
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/scheduler')) {
             return 'react-vendor';
           }
           
           // Supabase client
           if (id.includes('@supabase/supabase-js')) {
             return 'supabase';
-          }
-          
-          // Editor - only loaded for editor routes
-          if (id.includes('react-quill') || id.includes('quill')) {
-            return 'editor';
-          }
-          
-          // PDF generation - only for print/PDF features
-          if (id.includes('html2canvas') || id.includes('jspdf')) {
-            return 'pdf';
           }
           
           // i18n core
