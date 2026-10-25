@@ -42,15 +42,28 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
-  /* Scale root font-size based on printFontScale for rem-based Tailwind classes */
-  html:has(.print-layout[data-font-scale="1"]) {
+  /* Scale root font-size based on printFontScale for rem-based Tailwind classes
+     Uses both :has() (modern browsers) and direct attribute (fallback for older Safari/Firefox/iPads)
+     Direct attribute is set via JS in beforeprint event and component mount */
+  html[data-print-font-scale="1"] {
     font-size: 16px !important; /* Normal: 100% */
   }
-  html:has(.print-layout[data-font-scale="1.4"]) {
+  html[data-print-font-scale="1.4"] {
     font-size: 22.4px !important; /* Large: 140% */
   }
-  html:has(.print-layout[data-font-scale="1.8"]) {
+  html[data-print-font-scale="1.8"] {
     font-size: 28.8px !important; /* Extra Large: 180% */
+  }
+  
+  /* Fallback using :has() for browsers that support it but where JS hasn't run yet */
+  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1"]) {
+    font-size: 16px !important;
+  }
+  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1.4"]) {
+    font-size: 22.4px !important;
+  }
+  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1.8"]) {
+    font-size: 28.8px !important;
   }
 
   /* Hide everything by default */

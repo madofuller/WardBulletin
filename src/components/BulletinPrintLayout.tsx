@@ -339,6 +339,30 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.85;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
+  
+  // Set font scale on html element for print (fallback for browsers without :has() support)
+  // Older Safari, Firefox, and iPads need this explicit class for print font scaling
+  useEffect(() => {
+    const setHtmlFontScale = () => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-print-font-scale', fontScale.toString());
+      }
+    };
+    
+    setHtmlFontScale();
+    
+    // Also set on beforeprint event for print dialogs
+    const handleBeforePrint = () => {
+      setHtmlFontScale();
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeprint', handleBeforePrint);
+      return () => {
+        window.removeEventListener('beforeprint', handleBeforePrint);
+      };
+    }
+  }, [fontScale]);
 
   // Announcements marked web-only never reach paper; everything below
   // (column auto-fit, grouping, the section header) works off this list.
