@@ -71,6 +71,28 @@ async function renderBulletin() {
     await document.fonts.ready;
     console.log('[Print Test] Fonts ready');
     
+    // Wait for SessionProvider to load profile (needed for QR codes)
+    // Profile loads async from userService, so poll for it
+    const waitForProfile = async () => {
+      const maxWait = 3000;
+      const startTime = Date.now();
+      
+      while (Date.now() - startTime < maxWait) {
+        // Check if any text about scanning appears (indicates QR sections rendered)
+        const portalText = portalElement.textContent || '';
+        if (portalText.toLowerCase().includes('scan')) {
+          console.log('[Print Test] Profile loaded (QR sections visible)');
+          return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      console.warn('[Print Test] Profile timeout - QR codes may not render');
+      return false;
+    };
+    
+    await waitForProfile();
+    
     // Wait for QR codes to actually render (they use useEffect -> async QRCode.toCanvas)
     // Poll for canvas elements with actual content
     const waitForQR = async () => {
