@@ -70,6 +70,55 @@
     overflow: hidden !important;
     flex-shrink: 0 !important;
     box-sizing: border-box !important;
+    padding: 0.3in !important;
+  }
+
+  .print-source-portal .print-panel table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .print-source-portal .print-panel td,
+  .print-source-portal .print-panel th,
+  .print-source-portal .print-panel h1,
+  .print-source-portal .print-panel h2,
+  .print-source-portal .print-panel h3,
+  .print-source-portal .print-panel p,
+  .print-source-portal .print-panel span {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  /* Scale glyphs only (pt), never rem/padding. Large ≥10pt, Extra Large ≥14pt. */
+  .print-layout[data-font-scale="1.4"] .print-page,
+  .print-layout[data-font-scale="1.4"] .print-page :not(canvas):not(img) {
+    font-size: 10.5pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-page h1 {
+    font-size: 18pt !important;
+    line-height: 1.15 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-page h2,
+  .print-layout[data-font-scale="1.4"] .print-page h3 {
+    font-size: 14pt !important;
+  }
+
+  .print-layout[data-font-scale="1.8"] .print-page,
+  .print-layout[data-font-scale="1.8"] .print-page :not(canvas):not(img) {
+    font-size: 14pt !important;
+    line-height: 1.15 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-page h1 {
+    font-size: 20pt !important;
+    line-height: 1.1 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-page h2,
+  .print-layout[data-font-scale="1.8"] .print-page h3 {
+    font-size: 16pt !important;
   }
 
   /* Preserve colors and backgrounds for intentional design elements */

@@ -550,9 +550,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                      <tbody>
                        {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
                          <tr key={idx}>
-                           <td className="py-1 font-bold text-xs pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
-                           <td className="py-1 text-xs font-normal pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
-                           <td className="py-1 text-right text-xs font-normal whitespace-nowrap" style={{ width: '25%' }}>
+                           <td className="py-1 font-bold text-xs pr-2" style={{ width: '45%', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{leader.title}</td>
+                           <td className="py-1 text-xs font-normal pr-2" style={{ width: '30%', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{leader.name}</td>
+                           <td className="py-1 text-right text-xs font-normal" style={{ width: '25%', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                              {leader.phone || ''}
                            </td>
                          </tr>
@@ -1202,24 +1202,30 @@ function PrintQRCode({ profileSlug, size = 128 }: { profileSlug: string; size?: 
 export default React.memo(BulletinPrintLayout);
 
 function ProgramTableRow({ label, value, extra, extra2 }: { label: string, value?: string, extra?: string, extra2?: string }) {
+  const wrap: React.CSSProperties = {
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
+    whiteSpace: 'normal',
+    maxWidth: '100%',
+  };
   return (
     <>
       <tr>
-        <td colSpan={3} className="py-[2px] print:!text-base print:!text-black">
-          <div className="flex justify-between w-full">
-            <span className="text-left mr-2 whitespace-nowrap print:!text-base print:!text-black">{label}</span>
-            <span className="text-right ml-2 whitespace-nowrap text-[0.9rem] print:!text-base print:!text-black">{value}</span>
+        <td colSpan={3} className="py-[2px] print:!text-base print:!text-black" style={wrap}>
+          <div className="flex justify-between w-full min-w-0 gap-2">
+            <span className="text-left print:!text-base print:!text-black min-w-0" style={wrap}>{label}</span>
+            <span className="text-right text-[0.9rem] print:!text-base print:!text-black min-w-0" style={wrap}>{value}</span>
           </div>
         </td>
       </tr>
       {extra && (
         <tr>
-          <td colSpan={3} className="pt-0 text-center italic text-black text-sm print:!text-base print:!text-black">{extra}</td>
+          <td colSpan={3} className="pt-0 text-center italic text-black text-sm print:!text-base print:!text-black" style={wrap}>{extra}</td>
         </tr>
       )}
       {extra2 && (
         <tr>
-          <td colSpan={3} className="pt-0 text-center italic text-black text-sm print:!text-base print:!text-black">{extra2}</td>
+          <td colSpan={3} className="pt-0 text-center italic text-black text-sm print:!text-base print:!text-black" style={wrap}>{extra2}</td>
         </tr>
       )}
     </>

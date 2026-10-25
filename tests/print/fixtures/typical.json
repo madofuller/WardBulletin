@@ -1,0 +1,118 @@
+{
+  "wardName": "SunRiver 2nd Ward",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Come Unto Christ",
+  "userTheme": "default",
+  "bishopricMessage": "Brothers and sisters, we are grateful for your faith and dedication.",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Ward Temple Night",
+      "content": "Join us this Friday at 7 PM for a ward temple night. We will meet at the temple.",
+      "category": "activity",
+      "audience": "ward"
+    },
+    {
+      "id": "2",
+      "title": "Youth Activity",
+      "content": "Youth aged 12-18 are invited to a service project Saturday morning at 9 AM.",
+      "category": "activity",
+      "audience": "youth"
+    },
+    {
+      "id": "3",
+      "title": "Relief Society Meeting",
+      "content": "All sisters are invited to join us for Relief Society meeting on Tuesday at 7 PM.",
+      "category": "general",
+      "audience": "relief_society"
+    },
+    {
+      "id": "4",
+      "title": "Elders Quorum Service",
+      "content": "Brothers, we need volunteers to help with yard work for elderly members this Saturday.",
+      "category": "service",
+      "audience": "elders_quorum"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Emily Johnson",
+      "speakerType": "youth"
+    },
+    {
+      "type": "sacrament",
+      "id": "2"
+    },
+    {
+      "type": "speaker",
+      "id": "3",
+      "name": "Brother James Wilson",
+      "speakerType": "adult"
+    },
+    {
+      "type": "speaker",
+      "id": "4",
+      "name": "Sister Mary Thompson",
+      "speakerType": "adult"
+    }
+  ],
+  "prayers": {
+    "opening": "John Smith",
+    "closing": "Jane Doe",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man"
+  },
+  "leadership": {
+    "presiding": "Bishop Williams",
+    "conducting": "President Thompson",
+    "chorister": "Sister Anderson",
+    "organist": "Brother Martinez"
+  },
+  "wardLeadership": [
+    {
+      "title": "Bishop",
+      "name": "John Williams",
+      "phone": "555-0101"
+    },
+    {
+      "title": "1st Counselor",
+      "name": "Michael Davis",
+      "phone": "555-0102"
+    },
+    {
+      "title": "2nd Counselor",
+      "name": "Robert Garcia",
+      "phone": "555-0103"
+    }
+  ],
+  "missionaries": [
+    {
+      "name": "Elder Johnson",
+      "phone": "555-0201"
+    },
+    {
+      "name": "Elder Smith",
+      "phone": "555-0202"
+    }
+  ],
+  "wardMissionaries": [],
+  "serviceMissionaries": [],
+  "showQRCodeOnPrint": true,
+  "printFontScale": 1
+}
