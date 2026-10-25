@@ -1429,7 +1429,10 @@ export const bulletinService = {
 
       // On ANY RPC failure (PGRST202, 404, network error, malformed payload), fall back
       if (error) {
-        console.warn('[RPC fallback] RPC error, using legacy path:', error.code || error.message);
+        if (!(globalThis as any).__rpcFallbackLogged) {
+          (globalThis as any).__rpcFallbackLogged = true;
+          console.warn('[RPC fallback] RPC error, using legacy path:', error.code || error.message);
+        }
         return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
       }
 

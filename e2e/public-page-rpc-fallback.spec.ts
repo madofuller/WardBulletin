@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * CRITICAL: Proves deployment is safe before migration
- * Tests RPC fallback to legacy 3-query path on any failure
+ * CRITICAL: proves deploy is safe before the RPC migration is applied.
+ * Routes must be registered on the context before goto. The Supabase URL in
+ * the test build is https://<project>.supabase.co, so match /rest/v1/... only.
  */
 
 const mockRpcData = {
@@ -62,40 +63,74 @@ const mockLegacyTokens = [
   { key: 'bulletin-test-ward-serviceMissionaries', value: '[]', created_by: 'user-123' },
 ];
 
-test('RPC success case: single query path', async ({ browser }) => {
-  const context = await browser.newContext();
-  let rpcCalled = false;
-  let usersQueryCalled = false;
-
-  // Set up routes at context level BEFORE creating page
-  await context.route('**/rest/v1/rpc/get_public_bulletin_by_slug*', async (route) => {
-    rpcCalled = true;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockRpcData),
-    });
-  });
-
-  await context.route('**/rest/v1/users*', async (route) => {
-    usersQueryCalled = true;
+async function installPublicRoutes(
+  context: import('@playwright/test').BrowserContext,
+  handlers: {
+    rpc: (route: import('@playwright/test').Route) => Promise<void> | void;
+    users?: (route: import('@playwright/test').Route) => Promise<void> | void;
+    bulletins?: (route: import('@playwright/test').Route) => Promise<void> | void;
+    tokens?: (route: import('@playwright/test').Route) => Promise<void> | void;
+  },
+) {
+  await context.route('**/rest/v1/rpc/**', handlers.rpc);
+  await context.route('**/rest/v1/users**', handlers.users ?? (async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify([mockLegacyUser]),
     });
+  }));
+  await context.route('**/rest/v1/bulletins**', handlers.bulletins ?? (async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([mockLegacyBulletin]),
+    });
+  }));
+  await context.route('**/rest/v1/tokens**', handlers.tokens ?? (async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockLegacyTokens),
+    });
+  }));
+}
+
+test('RPC success case: single query path', async ({ browser }) => {
+  const context = await browser.newContext();
+  let rpcCalled = false;
+  let usersQueryCalled = false;
+
+  await installPublicRoutes(context, {
+    rpc: async (route) => {
+      rpcCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockRpcData),
+      });
+    },
+    users: async (route) => {
+      usersQueryCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([mockLegacyUser]),
+      });
+    },
   });
 
   const page = await context.newPage();
-  await page.goto('/test-ward');
+  const requested: string[] = [];
+  page.on('request', (req) => {
+    if (req.url().includes('/rest/v1/')) requested.push(req.url());
+  });
 
-  // Wait for bulletin to render
+  await page.goto('/test-ward');
   await page.waitForSelector('h1:has-text("First Ward")', { timeout: 15000 });
 
-  // Verify RPC was used (not legacy)
-  expect(rpcCalled).toBe(true);
+  expect(rpcCalled, `RPC not seen. rest requests: ${requested.join(', ')}`).toBe(true);
   expect(usersQueryCalled).toBe(false);
-
   await expect(page.locator('h1:has-text("First Ward")')).toBeVisible();
   await context.close();
 });
@@ -107,61 +142,59 @@ test('RPC fallback: 404 triggers legacy 3-query path', async ({ browser }) => {
   let bulletinsQueryCalled = false;
   let tokensQueryCalled = false;
 
-  // RPC returns 404 (function not found)
-  await context.route('**/rest/v1/rpc/get_public_bulletin_by_slug*', async (route) => {
-    rpcCalled = true;
-    await route.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'PGRST202',
-        message: 'Could not find the function',
-        details: null,
-        hint: null,
-      }),
-    });
-  });
-
-  // Mock legacy 3-query path
-  await context.route('**/rest/v1/users*', async (route) => {
-    usersQueryCalled = true;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([mockLegacyUser]),
-    });
-  });
-
-  await context.route('**/rest/v1/bulletins*', async (route) => {
-    bulletinsQueryCalled = true;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockLegacyBulletin),
-    });
-  });
-
-  await context.route('**/rest/v1/tokens*', async (route) => {
-    tokensQueryCalled = true;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockLegacyTokens),
-    });
+  await installPublicRoutes(context, {
+    rpc: async (route) => {
+      rpcCalled = true;
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'PGRST202',
+          message: 'Could not find the function',
+          details: null,
+          hint: null,
+        }),
+      });
+    },
+    users: async (route) => {
+      usersQueryCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([mockLegacyUser]),
+      });
+    },
+    bulletins: async (route) => {
+      bulletinsQueryCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([mockLegacyBulletin]),
+      });
+    },
+    tokens: async (route) => {
+      tokensQueryCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockLegacyTokens),
+      });
+    },
   });
 
   const page = await context.newPage();
-  await page.goto('/test-ward');
+  const requested: string[] = [];
+  page.on('request', (req) => {
+    if (req.url().includes('/rest/v1/')) requested.push(`${req.method()} ${req.url()}`);
+  });
 
-  // Wait for bulletin to render with fallback data
+  await page.goto('/test-ward');
   await page.waitForSelector('h1:has-text("First Ward Fallback")', { timeout: 15000 });
 
-  // Verify RPC was attempted, then fell back to legacy
-  expect(rpcCalled).toBe(true);
+  expect(rpcCalled, `RPC not seen. rest requests: ${requested.join(', ')}`).toBe(true);
   expect(usersQueryCalled).toBe(true);
   expect(bulletinsQueryCalled).toBe(true);
   expect(tokensQueryCalled).toBe(true);
-
   await expect(page.locator('h1:has-text("First Ward Fallback")')).toBeVisible();
   await context.close();
 });
@@ -171,45 +204,26 @@ test('RPC fallback: network error triggers legacy path', async ({ browser }) => 
   let rpcCalled = false;
   let usersQueryCalled = false;
 
-  // RPC network failure
-  await context.route('**/rest/v1/rpc/get_public_bulletin_by_slug*', async (route) => {
-    rpcCalled = true;
-    await route.abort('failed');
-  });
-
-  // Mock legacy path
-  await context.route('**/rest/v1/users*', async (route) => {
-    usersQueryCalled = true;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([mockLegacyUser]),
-    });
-  });
-
-  await context.route('**/rest/v1/bulletins*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockLegacyBulletin),
-    });
-  });
-
-  await context.route('**/rest/v1/tokens*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockLegacyTokens),
-    });
+  await installPublicRoutes(context, {
+    rpc: async (route) => {
+      rpcCalled = true;
+      await route.abort('failed');
+    },
+    users: async (route) => {
+      usersQueryCalled = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([mockLegacyUser]),
+      });
+    },
   });
 
   const page = await context.newPage();
   await page.goto('/test-ward');
-
   await page.waitForSelector('h1:has-text("First Ward Fallback")', { timeout: 15000 });
 
   expect(rpcCalled).toBe(true);
   expect(usersQueryCalled).toBe(true);
-
   await context.close();
 });
