@@ -6,9 +6,8 @@
     "scale": 1,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.23in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -55,9 +54,8 @@
     "scale": 1.15,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.30in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -73,19 +71,19 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "9.5pt"
+        "value": "10.5pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "38.0pt"
+        "value": "10.5pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
         "pass": true,
@@ -104,9 +102,8 @@
     "scale": 1.25,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.29in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -122,23 +119,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "12.0pt"
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "48.5pt"
+        "value": "14.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
-        "pass": false,
-        "value": "13 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
         "pass": true,
@@ -146,7 +143,7 @@
       },
       "mode_scale": {
         "pass": true,
-        "value": "1.85×"
+        "value": "2.15×"
       }
     }
   },
@@ -157,9 +154,8 @@
     "scale": 1,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.27in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -182,12 +178,12 @@
         "value": "27.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
         "pass": true,
@@ -206,9 +202,8 @@
     "scale": 1.15,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.46in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -224,23 +219,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "9.5pt"
+        "value": "10.5pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "37.0pt"
+        "value": "10.5pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
-        "pass": false,
-        "value": "10 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
         "pass": true,
@@ -255,9 +250,8 @@
     "scale": 1.25,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.41in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -273,31 +267,31 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "11.0pt"
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "44.5pt"
+        "value": "14.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
-        "pass": false,
-        "value": "36 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
-        "pass": false,
-        "value": "10 words"
+        "pass": true,
+        "value": "None"
       },
       "mode_scale": {
         "pass": true,
-        "value": "1.69×"
+        "value": "2.15×"
       }
     }
   },
@@ -308,9 +302,8 @@
     "scale": 1,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.23in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -357,9 +350,8 @@
     "scale": 1.15,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.12in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -375,15 +367,15 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "9.5pt"
+        "value": "10.5pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "38.0pt"
+        "value": "10.5pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
@@ -394,8 +386,8 @@
         "value": "None"
       },
       "fold": {
-        "pass": false,
-        "value": "2 words"
+        "pass": true,
+        "value": "None"
       }
     }
   },
@@ -406,9 +398,8 @@
     "scale": 1.25,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.49in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -424,31 +415,31 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "12.0pt"
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "48.5pt"
+        "value": "14.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
         "value": "3"
       },
       "overlap": {
-        "pass": false,
-        "value": "5 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
-        "pass": false,
-        "value": "4 words"
+        "pass": true,
+        "value": "None"
       },
       "mode_scale": {
         "pass": true,
-        "value": "1.85×"
+        "value": "2.15×"
       }
     }
   },
@@ -459,9 +450,8 @@
     "scale": 1,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.20in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -484,12 +474,12 @@
         "value": "27.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
         "pass": true,
@@ -508,9 +498,8 @@
     "scale": 1.15,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.41in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -526,27 +515,27 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "9.0pt"
+        "value": "10.5pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "34.0pt"
+        "value": "10.5pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
-        "pass": false,
-        "value": "17 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
-        "pass": false,
-        "value": "7 words"
+        "pass": true,
+        "value": "None"
       }
     }
   },
@@ -557,9 +546,8 @@
     "scale": 1.25,
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.15in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -575,31 +563,31 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "10.0pt"
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "40.0pt"
+        "value": "14.0pt"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
-        "value": "3"
+        "value": "2"
       },
       "overlap": {
-        "pass": false,
-        "value": "34 overlaps"
+        "pass": true,
+        "value": "None"
       },
       "fold": {
-        "pass": false,
-        "value": "16 words"
+        "pass": true,
+        "value": "None"
       },
       "mode_scale": {
         "pass": true,
-        "value": "1.54×"
+        "value": "2.15×"
       }
     }
   }
