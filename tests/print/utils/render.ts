@@ -149,12 +149,18 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
     }
     
     pdfPath = join(outputDir, `${fixture}-${browserType}-${pageSize}.pdf`);
+    
+    // Log what we're generating
+    console.log(`    Generating PDF: ${dims.width}in x ${dims.height}in (${pageSize} landscape)`);
+    
+    // Use string dimensions with units (Playwright accepts "11in" format)
     await page.pdf({
       path: pdfPath,
-      format: pageSize === 'letter' ? 'Letter' : 'A4',
-      landscape: true,
+      width: `${dims.width}in`,
+      height: `${dims.height}in`,
       printBackground: true,
-      preferCSSPageSize: false,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      scale: 1,
     });
     console.log(`    PDF saved: ${pdfPath}`);
     
