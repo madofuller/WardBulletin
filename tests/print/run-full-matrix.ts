@@ -51,14 +51,17 @@ interface TestResult {
 
 async function degradeImage(inputPath: string, outputPath: string): Promise<void> {
   const image = await Jimp.read(inputPath);
-  image
+  const width = image.bitmap.width;
+  const height = image.bitmap.height;
+  
+  await image
     .greyscale()
     .blur(1)
     .brightness(-0.05)
     .contrast(0.05)
     .rotate(1.5)
-    .resize(Math.floor(image.getWidth() * 0.7), Jimp.AUTO);
-  await image.writeAsync(outputPath);
+    .resize(Math.floor(width * 0.7), Jimp.AUTO)
+    .writeAsync(outputPath);
 }
 
 async function checkQRCode(pngPath: string, degraded: boolean = false): Promise<{ found: boolean; url?: string }> {
