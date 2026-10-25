@@ -465,12 +465,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   // Pack announcements so a panel never clips mid-sentence. Long items split
   // on a word boundary; shorter ones move whole to the next page.
-  const announcementPages = useMemo(() => {
-    const cols = fontScale >= 1.4
-      ? 1
-      : (printableAnnouncements.length >= 6 ? 3 : printableAnnouncements.length <= 2 ? 1 : 2);
-    return paginateAnnouncements(printableAnnouncements, printMode, cols);
-  }, [printMode, fontScale, announcementCount, printableAnnouncements]);
+  const announcementPages = useMemo(
+    () => paginateAnnouncements(printableAnnouncements, printMode, 1),
+    [printMode, announcementCount, printableAnnouncements]
+  );
   const programPages = useMemo(
     () => paginateProgram(buildProgramBlocks(data, t, unitTypeOverride), printMode),
     [data, t, unitTypeOverride, printMode]
@@ -491,10 +489,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   // In Large/Extra Large modes, use single column for better readability.
   // In Normal mode, use conservative column count that escalates only on overflow.
-  const defaultCols = isLargeOrExtraLarge 
-    ? 1 
-    : (announcementCount <= 2 || isLightContent ? 1 : (announcementCount >= 6 || isHeavyContent) ? 3 : 2);
-  const announceColumnCount = Math.max(autoColumns, defaultCols);
+  // Pagination is 1-column; extra columns would clip text the packer thought fit.
+  const defaultCols = 1;
+  const announceColumnCount = 1;
 
   useEffect(() => {
     setAnnounceFitScale(1);
@@ -886,7 +883,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       </div>
 
       {/* Page 2: Inside (landscape) */}
-      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black" style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}>
+      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-black" style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}>
         {/* Announcements (left) - blank for baptism */}
         {data.meetingType === 'baptism' ? (
           <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
@@ -1105,7 +1102,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         return (
         <div
           key={`continuation-${pageIdx}`}
-          className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black"
+          className="print-page landscape w-[11in] h-[8.5in] flex print:!text-black"
           style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakBefore: 'always', pageBreakAfter: 'always', boxSizing: 'border-box' }}
         >
           <div

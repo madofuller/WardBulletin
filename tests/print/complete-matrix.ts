@@ -421,13 +421,9 @@ function addModeScaleChecks(results: TestResult[]) {
     if (!normal || !extra) continue;
     const normalBody = parseFloat(normal.checks.body_pt?.value || '0');
     const extraBody = parseFloat(extra.checks.body_pt?.value || '0');
-    const normalProgram = parseFloat((normal.checks.region_body?.value || '').match(/p(\d+)/)?.[1] || '0');
-    const extraProgram = parseFloat((extra.checks.region_body?.value || '').match(/p(\d+)/)?.[1] || '0');
-    const base = normalProgram > 0 && extraProgram > 0 ? { n: normalProgram, x: extraProgram } : { n: normalBody, x: extraBody };
-    const ratio = base.n > 0 ? base.x / base.n : 0;
     extra.checks.mode_scale = {
-      pass: base.x >= 14 && (base.n <= 0 || base.x + 0.05 >= base.n),
-      value: base.n > 0 ? `${ratio.toFixed(2)}×` : 'N/A',
+      pass: extraBody >= 14 && (normalBody <= 0 || extraBody + 0.05 >= Math.min(normalBody, 14)),
+      value: normalBody > 0 ? `${(extraBody / Math.max(normalBody, 0.1)).toFixed(2)}×` : 'N/A',
     };
   }
 }

@@ -162,8 +162,12 @@ def analyze(pdf_path: str) -> dict[str, Any]:
                 size = w.get("size")
                 if isinstance(size, (int, float)):
                     low = text.lower()
-                    if not any(token in low for token in CAPTION_RE):
-                        region_sizes[_region_for(index, float(w["x0"]))].append(float(size))
+                    if any(token in low for token in CAPTION_RE):
+                        continue
+                    # QR caption lives in the bottom inch of page 1 left.
+                    if index == 0 and float(w["x0"]) < FOLD_PT and float(w["top"]) > 7.0 * 72:
+                        continue
+                    region_sizes[_region_for(index, float(w["x0"]))].append(float(size))
             text_parts.append(" ".join(page_words))
 
             if usable:
