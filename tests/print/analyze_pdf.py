@@ -46,6 +46,8 @@ def _classify_sizes(sizes: list[float]) -> dict[str, float]:
             "max_pt": 0.0,
         }
 
+    from collections import Counter
+
     rounded = [round(s * 2) / 2 for s in sizes if 4.0 <= s <= 80.0]
     if not rounded:
         return {
@@ -56,22 +58,23 @@ def _classify_sizes(sizes: list[float]) -> dict[str, float]:
             "max_pt": 0.0,
         }
 
-    max_pt = max(rounded)
-    # Headings are the largest character sizes (ward name / section titles).
-    heading_cut = max(14.0, max_pt * 0.7)
-    headings = [s for s in rounded if s >= heading_cut]
-    bodies = [s for s in rounded if s < heading_cut]
-
-    # If almost everything is "heading", treat the modal size as body.
-    if not bodies:
-        bodies = [s for s in rounded if s <= statistics.median(rounded)]
-        headings = [s for s in rounded if s > statistics.median(rounded)] or [max_pt]
+    counts = Counter(rounded)
+    # Ignore 1–2 glyph artifacts when picking min/max.
+    frequent = sorted(size for size, n in counts.items() if n >= 8) or sorted(counts)
+    max_pt = max(frequent)
+    # Body: smallest frequent size below the heading band. Many Tailwind
+    # classes do not honor printFontScale, but scalePx() text does — that
+    # cluster is the one that must grow in Extra Large.
+    body_band = [size for size in frequent if size < 14.0] or frequent
+    heading_band = [size for size in frequent if size >= 16.0] or [max_pt]
+    bodies = [size for size in rounded if size < 14.0] or rounded
+    headings = [size for size in rounded if size >= 16.0] or [max_pt]
 
     return {
-        "body_pt": min(bodies) if bodies else 0.0,
-        "heading_pt": min(headings) if headings else max_pt,
-        "body_median_pt": statistics.median(bodies) if bodies else 0.0,
-        "heading_median_pt": statistics.median(headings) if headings else max_pt,
+        "body_pt": min(body_band),
+        "heading_pt": max(heading_band),
+        "body_median_pt": statistics.median(bodies),
+        "heading_median_pt": statistics.median(headings),
         "max_pt": max_pt,
     }
 

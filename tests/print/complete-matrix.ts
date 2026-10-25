@@ -256,8 +256,8 @@ async function runCase(
     result.checks.qr_margin = qr.inside;
 
     result.checks.body_pt = {
-      pass: analysis.body_median_pt > 0,
-      value: analysis.body_median_pt > 0 ? `${analysis.body_median_pt.toFixed(1)}pt` : 'N/A',
+      pass: analysis.body_pt > 0,
+      value: analysis.body_pt > 0 ? `${analysis.body_pt.toFixed(1)}pt` : 'N/A',
     };
     result.checks.heading_pt = {
       pass: analysis.heading_pt > 0,
