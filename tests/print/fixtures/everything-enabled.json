@@ -1,0 +1,183 @@
+{
+  "wardName": "Comprehensive Test Ward",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Testing All Features",
+  "userTheme": "default",
+  "bishopricMessage": "This bulletin tests every optional section enabled at once.",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Ward Activity",
+      "content": "Join us for the ward activity this Saturday at 5 PM.",
+      "category": "activity",
+      "audience": "ward"
+    },
+    {
+      "id": "2",
+      "title": "Youth Event",
+      "content": "Youth activity on Friday evening.",
+      "category": "activity",
+      "audience": "youth"
+    },
+    {
+      "id": "3",
+      "title": "Relief Society",
+      "content": "Sisters meeting on Tuesday.",
+      "category": "general",
+      "audience": "relief_society"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Youth Speaker",
+      "speakerType": "youth"
+    },
+    {
+      "type": "musical",
+      "id": "2",
+      "label": "Special Musical Number",
+      "songName": "I Believe in Christ",
+      "performers": "Ward Choir"
+    },
+    {
+      "type": "sacrament",
+      "id": "3"
+    },
+    {
+      "type": "baby_blessing",
+      "id": "4",
+      "childName": "Emma Grace Wilson",
+      "parentNames": "James and Sarah Wilson"
+    },
+    {
+      "type": "speaker",
+      "id": "5",
+      "name": "High Council Speaker",
+      "speakerType": "highCouncil"
+    }
+  ],
+  "prayers": {
+    "opening": "Brother Smith",
+    "closing": "Sister Jones",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man"
+  },
+  "leadership": {
+    "presiding": "Bishop Williams",
+    "conducting": "President Thompson",
+    "chorister": "Sister Anderson",
+    "organist": "Brother Martinez",
+    "interpreter": "Sister Garcia",
+    "preludeMusic": "Meditation on Amazing Grace"
+  },
+  "wardLeadership": [
+    {
+      "title": "Bishop",
+      "name": "John Williams",
+      "phone": "555-0101"
+    },
+    {
+      "title": "1st Counselor",
+      "name": "Michael Davis",
+      "phone": "555-0102"
+    },
+    {
+      "title": "2nd Counselor",
+      "name": "Robert Garcia",
+      "phone": "555-0103"
+    },
+    {
+      "title": "Ward Clerk",
+      "name": "David Johnson",
+      "phone": "555-0104"
+    },
+    {
+      "title": "Executive Secretary",
+      "name": "Thomas Anderson",
+      "phone": "555-0105"
+    },
+    {
+      "title": "Relief Society President",
+      "name": "Mary Thompson",
+      "phone": "555-0106"
+    },
+    {
+      "title": "Elders Quorum President",
+      "name": "James Wilson",
+      "phone": "555-0107"
+    },
+    {
+      "title": "Young Men President",
+      "name": "Christopher Lee",
+      "phone": "555-0108"
+    },
+    {
+      "title": "Young Women President",
+      "name": "Jennifer Martinez",
+      "phone": "555-0109"
+    },
+    {
+      "title": "Primary President",
+      "name": "Sarah Brown",
+      "phone": "555-0110"
+    }
+  ],
+  "missionaries": [
+    {
+      "name": "Elder Johnson",
+      "phone": "555-0201"
+    },
+    {
+      "name": "Elder Smith",
+      "phone": "555-0202"
+    },
+    {
+      "name": "Sister Williams",
+      "phone": "555-0203"
+    },
+    {
+      "name": "Sister Davis",
+      "phone": "555-0204"
+    }
+  ],
+  "wardMissionaries": [
+    {
+      "name": "Elder David Thompson",
+      "mission": "Tokyo Japan Mission",
+      "email": "thompson@missionary.org"
+    },
+    {
+      "name": "Sister Emma Wilson",
+      "mission": "Brazil São Paulo Mission",
+      "email": "wilson@missionary.org"
+    }
+  ],
+  "serviceMissionaries": [
+    {
+      "name": "Elder and Sister Jones",
+      "serviceName": "Family History Consultants"
+    },
+    {
+      "name": "Brother Martinez",
+      "serviceName": "Addiction Recovery Program"
+    }
+  ],
+  "showQRCodeOnPrint": true,
+  "printFontScale": 1
+}

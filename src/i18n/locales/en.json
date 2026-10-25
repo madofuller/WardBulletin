@@ -854,7 +854,14 @@
     "print": "Print",
     "printNow": "Print now",
     "duplexHint": "This bulletin is designed to be printed double-sided (flip on short edge), then folded in half.",
-    "scanForFullAnnouncements": "Scan for full announcements"
+    "bookletHint": "Booklet mode prints two nested duplex sheets. Place the inner sheet inside the outer sheet, then fold in half.",
+    "scanForFullAnnouncements": "Scan for full announcements",
+    "moreAnnouncementsScanQr": "More announcements: scan the QR code",
+    "omittedAnnouncementsWarning": "These announcements will not print at this size. They remain in the digital bulletin (QR code):",
+    "bookletSuggestion": "Switch to Booklet to print more announcements on two nested sheets.",
+    "bookletMode": "Booklet (2 sheets)",
+    "singleSheet": "One sheet",
+    "bookletModeTooltip": "Print as a nested 8-panel booklet so more announcements fit. Fold the inner sheet inside the outer sheet."
   },
   "languages": {
     "en": "English",

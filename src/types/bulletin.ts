@@ -155,6 +155,8 @@ export interface BulletinData {
   printFontScale?: number;
   /** Use tighter margins on print to fit more announcements. */
   printTightMargins?: boolean;
+  /** Default is one duplex bifold. Booklet is two nested sheets with saddle imposition. */
+  printOutputMode?: 'single' | 'booklet';
   // Scheduling fields
   id?: string;
   status?: BulletinStatus;

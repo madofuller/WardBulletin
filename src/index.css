@@ -7,6 +7,11 @@
    When the browser prints, hide everything except the dedicated
    print source container (.print-source-container) which holds
    the BulletinPrintLayout used for both browser print and PDF.
+
+   Do NOT change html { font-size } here. Tailwind rem utilities
+   (padding, print:!text-*) are rooted on html; scaling html
+   inflates the bifold and stacks pages on top of each other.
+   Text size for Large/Extra Large is applied in px via scalePx().
    ============================================================ */
 @media print {
   @page {
@@ -18,9 +23,12 @@
     margin: 0 !important;
     padding: 0 !important;
     width: 11in !important;
-    height: 8.5in !important;
+    height: auto !important;
     overflow: visible !important;
     background: white !important;
+    font-size: 16px !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Hide everything by default */
@@ -46,15 +54,154 @@
   }
 
   .print-source-portal .print-page {
+    width: 11in !important;
+    height: 8.5in !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
     page-break-after: always;
     page-break-inside: avoid;
+    break-after: page;
+    break-inside: avoid;
   }
 
-  /* Preserve colors and backgrounds */
+  .print-source-portal .print-panel {
+    width: 5.5in !important;
+    height: 8.5in !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    padding: 0.3in !important;
+  }
+
+  .print-source-portal .print-panel table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .print-source-portal .print-panel td,
+  .print-source-portal .print-panel th,
+  .print-source-portal .print-panel h1,
+  .print-source-portal .print-panel h2,
+  .print-source-portal .print-panel h3,
+  .print-source-portal .print-panel p,
+  .print-source-portal .print-panel span {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  /*
+    Scale by region, never via html rem. Body sizes strictly increase
+    Normal (8pt) < Large (11pt) < Extra Large (14pt). Cover subtitles
+    in Extra Large are at least 14pt (date, church name, meeting, QR caption).
+  */
+  .print-layout[data-font-scale="1"] .print-body,
+  .print-layout[data-font-scale="1"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1"] .print-region-announcements .print-body {
+    font-size: 8pt !important;
+    line-height: 1.25 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-heading,
+  .print-layout[data-font-scale="1"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1"] .print-page h3.print-heading {
+    font-size: 12pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-announce-title {
+    font-size: 9.5pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-cover-name,
+  .print-layout[data-font-scale="1"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1"] .print-page h2.print-cover-name {
+    font-size: 22pt !important;
+    line-height: 1.1 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-cover-sub {
+    font-size: 10pt !important;
+    line-height: 1.25 !important;
+  }
+
+  .print-layout[data-font-scale="1.4"] .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-announcements .print-body {
+    font-size: 11pt !important;
+    line-height: 1.25 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-heading,
+  .print-layout[data-font-scale="1.4"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1.4"] .print-page h3.print-heading {
+    font-size: 15pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-announce-title {
+    font-size: 13pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-cover-name,
+  .print-layout[data-font-scale="1.4"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1.4"] .print-page h2.print-cover-name {
+    font-size: 28pt !important;
+    line-height: 1.1 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-cover-sub {
+    font-size: 12pt !important;
+    line-height: 1.25 !important;
+  }
+
+  .print-layout[data-font-scale="1.8"] .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-announcements .print-body {
+    font-size: 14pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-heading,
+  .print-layout[data-font-scale="1.8"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1.8"] .print-page h3.print-heading {
+    font-size: 18pt !important;
+    line-height: 1.15 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-announce-title {
+    font-size: 16pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-cover-name,
+  .print-layout[data-font-scale="1.8"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1.8"] .print-page h2.print-cover-name {
+    font-size: 36pt !important;
+    line-height: 1.05 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-cover-sub {
+    font-size: 14pt !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Preserve colors and backgrounds for intentional design elements */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
+  }
+
+  /* Force high-contrast black text for print (seniors need readability) */
+  .print-layout,
+  .print-page,
+  .print-layout *:not(.qr-code-canvas):not(canvas) {
+    color: #000 !important;
+  }
+  
+  /* Ensure links and gray text are also black for copier friendliness */
+  .print-layout a,
+  .print-layout .text-gray-600,
+  .print-layout .text-gray-700,
+  .print-layout .text-gray-400,
+  .print-layout .text-gray-500 {
+    color: #000 !important;
   }
 
   img {
