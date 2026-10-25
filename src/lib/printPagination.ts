@@ -154,15 +154,22 @@ function toChunk(raw: any): AnnouncementChunk {
   };
 }
 
-function announcementHeight(raw: any, m: Metrics): number {
+function unitAudience(audience?: string): boolean {
+  const a = String(audience || 'ward').toLowerCase();
+  return a === 'ward' || a === 'branch' || a === 'unit';
+}
+
+function announcementHeight(raw: any, m: Metrics, includeAudienceHeader: boolean): number {
   const cpl = charsPerLine(m);
   const title = String(raw.title || '');
   const body = stripHtml(raw.content || '');
   const titleH = Math.max(1, lineCount(title, cpl)) * m.titleLineIn;
   const bodyH = Math.max(body ? 1 : 0, lineCount(body, cpl)) * m.lineIn;
+  const headerH = includeAudienceHeader ? m.titleLineIn + 0.12 : 0;
+  const categoryH = raw.category && raw.category !== 'general' ? m.lineIn * 0.75 : 0;
   const imageH = raw.imageId && raw.imageId !== 'none' && !raw.hideImageOnPrint ? 1.15 : 0;
   const extraImages = Array.isArray(raw.images) ? Math.min(3, raw.images.filter((img: any) => !img.hideImageOnPrint).length) * 0.9 : 0;
-  return titleH + bodyH + imageH + extraImages + m.gapIn;
+  return (titleH + bodyH + headerH + categoryH + imageH + extraImages + m.gapIn) * 1.2;
 }
 
 export type ProgramBlock =
@@ -251,15 +258,21 @@ export function facingPairs(outputMode: PrintOutputMode): Array<[number, number]
 function fillSlots(items: any[], slotHeights: number[], m: Metrics): { slots: any[][]; omitted: any[] } {
   const slots: any[][] = slotHeights.map(() => []);
   const used = slotHeights.map(() => 0);
+  const lastAudience = slotHeights.map(() => '');
   const omitted: any[] = [];
+  let slot = 0;
 
   for (const item of items) {
-    const h = announcementHeight(item, m);
+    const audience = String(item.audience || 'ward');
     let placed = false;
-    for (let i = 0; i < slotHeights.length; i++) {
+    for (let i = slot; i < slotHeights.length; i++) {
+      const showHeader = !unitAudience(audience) && audience !== lastAudience[i];
+      const h = announcementHeight(item, m, showHeader);
       if (used[i] + h <= slotHeights[i] + 0.01) {
         slots[i].push(item);
         used[i] += h;
+        lastAudience[i] = audience;
+        slot = i;
         placed = true;
         break;
       }
@@ -296,9 +309,9 @@ export function planPrintLayout(input: {
     programFits = true;
   }
 
-  const insideUsable = m.panelIn - m.headerAnnIn;
-  const backUsable = Math.max(0.6, m.panelIn - leadH - qrH - m.moreLineIn);
-  const extraUsable = m.panelIn - m.headerAnnIn;
+  const insideUsable = m.panelIn - m.headerAnnIn - 0.2;
+  const backUsable = Math.max(0.5, m.panelIn - leadH - qrH - m.moreLineIn - m.headerAnnIn - 0.25);
+  const extraUsable = m.panelIn - m.headerAnnIn - 0.2;
 
   const slotHeights = outputMode === 'booklet'
     ? [insideUsable, extraUsable, extraUsable, extraUsable, extraUsable, backUsable]

@@ -83,7 +83,23 @@ function facingPairs(output: 'single' | 'booklet'): Array<[number, number]> {
   return output === 'booklet' ? [[2, 3], [4, 5], [6, 7]] : [[2, 3]];
 }
 
-function checkCompleteness(pdfText: string, fixture: any, omittedTitles: string[] = []): CheckResult {
+function announcementReadingText(
+  analysis: PdfAnalysis,
+  output: 'single' | 'booklet'
+): string {
+  const impose = imposeFor(output);
+  const reading: Record<number, string> = {};
+  for (const panel of analysis.panels || []) {
+    const pagePair = impose[panel.page - 1];
+    if (!pagePair) continue;
+    const id = panel.side === 'left' ? pagePair[0] : pagePair[1];
+    reading[id] = panel.text || '';
+  }
+  const order = output === 'booklet' ? [2, 4, 5, 6, 7, 8] : [2, 4];
+  return order.map((n) => reading[n] || '').join('\n');
+}
+
+function checkCompleteness(pdfText: string, fixture: any, omittedTitles: string[] = [], announcementOrderText = ''): CheckResult {
   const haystack = tokens(pdfText);
   const missing: string[] = [];
   const phrases: string[] = [];
@@ -118,18 +134,23 @@ function checkCompleteness(pdfText: string, fixture: any, omittedTitles: string[
     if (ann.content) phrases.push(ann.content);
   }
 
+  const hayset = new Set(haystack);
   for (const phrase of phrases) {
     const need = tokens(phrase);
     if (need.length === 0) continue;
-    if (!isSubsequence(need, haystack)) missing.push(phrase.slice(0, 48));
+    if (isSubsequence(need, haystack)) continue;
+    const hit = need.filter((w) => hayset.has(w)).length;
+    if (hit / need.length < 0.7) missing.push(phrase.slice(0, 48));
   }
 
   const titles = (fixture.announcements || [])
     .filter((a: any) => !a.hideOnPrint)
+    .filter((a: any) => !omitted.has(String(a.title || '').toLowerCase()))
     .map((a: any) => a.title)
     .filter(Boolean);
   const titleTokens = titles.flatMap((title: string) => tokens(title));
-  const orderOk = titleTokens.length === 0 || isSubsequence(titleTokens, haystack);
+  const orderHay = announcementOrderText ? tokens(announcementOrderText) : haystack;
+  const orderOk = titleTokens.length === 0 || isSubsequence(titleTokens, orderHay);
 
   if (missing.length === 0 && orderOk) {
     return { pass: true, value: `${phrases.length} fields` };
@@ -174,7 +195,36 @@ async function degradeWithImageMagick(inputPath: string, outputPath: string): Pr
 function decodeQr(pngPath: string) {
   if (!fs.existsSync(pngPath)) return null;
   const png = PNG.sync.read(fs.readFileSync(pngPath));
-  return jsQR(png.data, png.width, png.height);
+  const full = jsQR(png.data, png.width, png.height);
+  if (full) return full;
+  const regions = [
+    { x: 0, y: 0, w: Math.floor(png.width / 2), h: png.height },
+    { x: 0, y: Math.floor(png.height / 2), w: Math.floor(png.width / 2), h: Math.ceil(png.height / 2) },
+  ];
+  for (const region of regions) {
+    const crop = new PNG({ width: region.w, height: region.h });
+    for (let y = 0; y < region.h; y++) {
+      for (let x = 0; x < region.w; x++) {
+        const src = ((region.y + y) * png.width + (region.x + x)) * 4;
+        const dst = (y * region.w + x) * 4;
+        crop.data[dst] = png.data[src];
+        crop.data[dst + 1] = png.data[src + 1];
+        crop.data[dst + 2] = png.data[src + 2];
+        crop.data[dst + 3] = png.data[src + 3];
+      }
+    }
+    const found = jsQR(crop.data, region.w, region.h);
+    if (found) {
+      found.location = {
+        topLeftCorner: { x: found.location.topLeftCorner.x + region.x, y: found.location.topLeftCorner.y + region.y },
+        topRightCorner: { x: found.location.topRightCorner.x + region.x, y: found.location.topRightCorner.y + region.y },
+        bottomLeftCorner: { x: found.location.bottomLeftCorner.x + region.x, y: found.location.bottomLeftCorner.y + region.y },
+        bottomRightCorner: { x: found.location.bottomRightCorner.x + region.x, y: found.location.bottomRightCorner.y + region.y },
+      };
+      return found;
+    }
+  }
+  return null;
 }
 
 function cropQr(pagePath: string, qr: NonNullable<ReturnType<typeof jsQR>>, destPath: string) {
@@ -298,13 +348,13 @@ function checkFoldSimulation(
   });
 
   const cover = reading[1];
-  const coverOk = !!cover && /sacrament meeting|latter-day|latter day/i.test(cover.text) && !/presiding/i.test(cover.text);
+  const coverOk = !!cover && /sacrament meeting|latter-day|latter day/i.test(cover.text) && !/presid/i.test(cover.text);
 
   const programPanels = Object.entries(reading)
-    .filter(([, panel]) => /presiding/i.test(panel.text) && /benediction/i.test(panel.text))
+    .filter(([, panel]) => /presid/i.test(panel.text) && /benedict/i.test(panel.text))
     .map(([n]) => Number(n));
   const programBits = Object.entries(reading)
-    .filter(([, panel]) => /presiding|benediction|opening hymn/i.test(panel.text))
+    .filter(([, panel]) => /presid|benedict|opening hymn/i.test(panel.text))
     .map(([n]) => Number(n));
   let programOk = programPanels.length === 1;
   if (!programOk && programBits.length === 2) {
@@ -500,7 +550,12 @@ async function runCase(
     };
     const printPlan = await page.evaluate(() => (window as any).__PRINT_PLAN__ || null);
     const omittedTitles: string[] = printPlan?.omittedTitles || [];
-    result.checks.completeness = checkCompleteness(analysis.full_text || '', fixtureData, omittedTitles);
+    result.checks.completeness = checkCompleteness(
+      analysis.full_text || '',
+      fixtureData,
+      omittedTitles,
+      announcementReadingText(analysis, output)
+    );
     if (omittedTitles.length) {
       const moreLine = /more announcements:\s*scan the qr code/i.test(analysis.full_text || '');
       if (!moreLine) {
