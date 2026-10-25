@@ -17,6 +17,7 @@ HARNESS_FILES=(
 )
 
 BRANCHES=(
+  "main|main"
   "cursor/print-layout-fixes-f7ea|cursor-print-layout-fixes-f7ea"
   "cursor/pdf-qr-fixes-aaec|cursor-pdf-qr-fixes-aaec"
   "cursor/public-page-performance-e836|cursor-public-page-performance-e836"

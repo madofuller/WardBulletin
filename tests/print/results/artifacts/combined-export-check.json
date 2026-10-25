@@ -1,0 +1,26 @@
+{
+  "exportUsesWindowPrint": true,
+  "pages": 2,
+  "pageSizePt": [
+    792,
+    612
+  ],
+  "landscapeLetter": true,
+  "vectorText": true,
+  "fonts": [
+    "name                                 type              encoding         emb sub uni object ID",
+    "------------------------------------ ----------------- ---------------- --- --- --- ---------",
+    "AAAAAA+NotoSans-Bold                 CID TrueType      Identity-H       yes yes yes      4  0",
+    "BAAAAA+NotoSans-Regular              CID TrueType      Identity-H       yes yes yes      5  0",
+    "CAAAAA+NotoSans-Regular              CID TrueType      Identity-H       yes yes yes      8  0",
+    "DAAAAA+NotoSans-Bold                 CID TrueType      Identity-H       yes yes yes     11  0",
+    "EAAAAA+NotoSans-Italic               CID TrueType      Identity-H       yes yes yes     12  0"
+  ],
+  "wordCount": 269,
+  "overlap": 0,
+  "foldCross": 0,
+  "qrClean": true,
+  "qrDegraded": true,
+  "bodyPt": 14,
+  "headingPt": 36
+}
