@@ -373,6 +373,18 @@ async function runCase(
       }
       if (pt + 0.05 < minBody) smallRegions.push(`${name} ${pt.toFixed(1)}pt`);
     }
+    result.checks.region_body = {
+      pass: missingRegions.length === 0 && smallRegions.length === 0,
+      value: smallRegions.length
+        ? smallRegions.join(', ')
+        : missingRegions.length
+          ? `missing ${missingRegions.join(',')}`
+          : Object.entries(regions)
+              .filter(([name]) => expectedRegion[name as keyof typeof expectedRegion] !== false)
+              .map(([k, v]) => `${k[0]}${Number(v).toFixed(0)}`)
+              .join(' '),
+    };
+    result.checks.completeness = checkCompleteness(analysis.full_text || '', fixtureData);
     result.checks.clipping = {
       pass: !analysis.clipping,
       value: analysis.clipping ? 'Yes' : 'None',
