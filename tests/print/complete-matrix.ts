@@ -15,7 +15,7 @@ const require = createRequire(path.join(here, 'package.json'));
 const { PNG } = require('pngjs') as typeof import('pngjs');
 const jsQR = require('jsqr') as typeof import('jsqr');
 
-const FIXTURES = ['typical', 'special-musical-number', 'many-announcements', 'long-names'];
+const FIXTURES = ['typical', 'special-musical-number', 'many-announcements', 'long-names', 'bishops-exact-case'];
 
 interface CheckResult {
   pass: boolean;
@@ -38,6 +38,7 @@ interface PdfAnalysis {
   margin_pass: boolean;
   body_pt: number;
   heading_pt: number;
+  heading_gt_body?: boolean;
   body_median_pt: number;
   heading_median_pt: number;
   max_pt: number;
@@ -46,6 +47,81 @@ interface PdfAnalysis {
   overlap_samples: Array<{ a: string; b: string; page: number }>;
   fold_cross_count: number;
   fold_samples: Array<{ text: string; page: number }>;
+  full_text?: string;
+  region_fonts?: Record<string, number>;
+}
+
+function tokens(value: string): string[] {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1 || /^\d+$/.test(w));
+}
+
+function isSubsequence(needles: string[], haystack: string[]): boolean {
+  let i = 0;
+  for (const word of haystack) {
+    if (i < needles.length && word === needles[i]) i += 1;
+  }
+  return i === needles.length;
+}
+
+function checkCompleteness(pdfText: string, fixture: any): CheckResult {
+  const haystack = tokens(pdfText);
+  const missing: string[] = [];
+  const phrases: string[] = [];
+
+  if (fixture.wardName) phrases.push(fixture.wardName);
+  for (const leader of fixture.wardLeadership || []) {
+    if (leader.name) phrases.push(leader.name);
+    if (leader.title) phrases.push(leader.title);
+  }
+  const lead = fixture.leadership || {};
+  for (const key of ['presiding', 'conducting', 'chorister', 'organist']) {
+    if (lead[key]) phrases.push(lead[key]);
+  }
+  const music = fixture.musicProgram || {};
+  for (const key of ['openingHymnTitle', 'sacramentHymnTitle', 'closingHymnTitle', 'openingHymnNumber', 'sacramentHymnNumber', 'closingHymnNumber']) {
+    if (music[key]) phrases.push(String(music[key]));
+  }
+  const prayers = fixture.prayers || {};
+  if (prayers.opening) phrases.push(prayers.opening);
+  if (prayers.closing) phrases.push(prayers.closing);
+  for (const item of fixture.agenda || []) {
+    if (item.name) phrases.push(item.name);
+    if (item.songName) phrases.push(item.songName);
+    if (item.performers) phrases.push(item.performers);
+    if (item.hymnTitle) phrases.push(item.hymnTitle);
+    if (item.title) phrases.push(item.title);
+  }
+  for (const ann of (fixture.announcements || []).filter((a: any) => !a.hideOnPrint)) {
+    if (ann.title) phrases.push(ann.title);
+    if (ann.content) phrases.push(ann.content);
+  }
+
+  for (const phrase of phrases) {
+    const need = tokens(phrase);
+    if (need.length === 0) continue;
+    if (!isSubsequence(need, haystack)) missing.push(phrase.slice(0, 48));
+  }
+
+  const titles = (fixture.announcements || [])
+    .filter((a: any) => !a.hideOnPrint)
+    .map((a: any) => a.title)
+    .filter(Boolean);
+  const titleTokens = titles.flatMap((title: string) => tokens(title));
+  const orderOk = titleTokens.length === 0 || isSubsequence(titleTokens, haystack);
+
+  if (missing.length === 0 && orderOk) {
+    return { pass: true, value: `${phrases.length} fields` };
+  }
+  const bits = [
+    missing.length ? `missing ${missing.slice(0, 3).join(' | ')}` : '',
+    orderOk ? '' : 'order',
+  ].filter(Boolean);
+  return { pass: false, value: bits.join('; ').slice(0, 80) };
 }
 
 function parseScales(): { scale: number; label: string }[] {
@@ -255,14 +331,50 @@ async function runCase(
     result.checks.qr_degraded = qr.degraded;
     result.checks.qr_margin = qr.inside;
 
+    const minBody = mode.label === 'Extra Large' ? 14 : mode.label === 'Large' ? 10 : 6.5;
     result.checks.body_pt = {
-      pass: analysis.body_pt > 0,
+      pass: analysis.body_pt >= minBody,
       value: analysis.body_pt > 0 ? `${analysis.body_pt.toFixed(1)}pt` : 'N/A',
     };
     result.checks.heading_pt = {
-      pass: analysis.heading_pt > 0,
+      pass: analysis.heading_pt > analysis.body_pt + 0.4,
       value: analysis.heading_pt > 0 ? `${analysis.heading_pt.toFixed(1)}pt` : 'N/A',
     };
+    result.checks.heading_gt_body = {
+      pass: analysis.heading_gt_body === true,
+      value: analysis.heading_gt_body ? `${analysis.heading_pt.toFixed(1)}>${analysis.body_pt.toFixed(1)}` : `${analysis.heading_pt.toFixed(1)}<=${analysis.body_pt.toFixed(1)}`,
+    };
+
+    const regions = analysis.region_fonts || {};
+    const regionNames = ['program', 'announcements', 'leadership', 'cover'] as const;
+    const missingRegions: string[] = [];
+    const smallRegions: string[] = [];
+    for (const name of regionNames) {
+      const pt = Number(regions[name] || 0);
+      if (pt <= 0) {
+        missingRegions.push(name);
+        continue;
+      }
+      if (pt + 0.05 < minBody) smallRegions.push(`${name} ${pt.toFixed(1)}pt`);
+    }
+    result.checks.region_body = {
+      pass: missingRegions.length === 0 && smallRegions.length === 0,
+      value: smallRegions.length
+        ? smallRegions.join(', ')
+        : missingRegions.length
+          ? `missing ${missingRegions.join(',')}`
+          : Object.entries(regions).map(([k, v]) => `${k[0]}${Number(v).toFixed(0)}`).join(' '),
+    };
+
+    const fixturePath = path.join(here, 'fixtures', `${fixture}.json`);
+    let fixtureData: any = {};
+    try {
+      fixtureData = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+    } catch {
+      fixtureData = {};
+    }
+    const completeness = checkCompleteness(analysis.full_text || '', fixtureData);
+    result.checks.completeness = completeness;
     result.checks.clipping = {
       pass: !analysis.clipping,
       value: analysis.clipping ? 'Yes' : 'None',
