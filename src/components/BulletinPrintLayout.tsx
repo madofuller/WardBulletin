@@ -316,7 +316,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
   // Auto-fit: first add columns, then shrink fonts as a last resort
-  const MIN_FIT_SCALE = 0.65;
+  // MIN_FIT_SCALE sets the minimum readable size for senior ward members (55+).
+  // 0.85 ensures text remains legible; below this, encourage web-only announcements.
+  const MIN_FIT_SCALE = 0.85;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
 
@@ -460,7 +462,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       ref={ref}
       className="print-layout font-sans"
       style={{
-        fontFamily: selectedTheme ? selectedTheme.fontFamily : 'sans-serif',
+        // Use system fonts that render consistently across platforms and printers
+        fontFamily: selectedTheme ? selectedTheme.fontFamily : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
         fontSize: `${fontScale * 100}%`
       }}
     >
@@ -484,8 +487,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             <div className="w-1/2" />
           ) : (
           <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`}>
-           {/* Scrollable content area - reserves space for QR code if enabled */}
-           <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
+           {/* Scrollable content area - reserves space for QR code if enabled
+                QR space calculation accounts for font scaling in Extra Large mode */}
+           <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ 
+             maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) 
+               ? `calc(100% - ${Math.round(200 * fontScale)}px)` 
+               : '100%' 
+           }}>
               {/* Unit Leadership Table */}
               {filteredWardLeadership.length > 0 && (
                 <div className={`w-full ${pad.sectionMb}`}>
@@ -682,13 +690,19 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-2xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
-              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h1>
+              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%' }}>{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h1>
               <p className="text-lg mb-4 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
             </>
           ) : (
             <>
-              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
-              <p className="text-lg mb-1 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+              <h1 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ 
+                wordWrap: 'break-word', 
+                overflowWrap: 'break-word', 
+                hyphens: 'auto', 
+                maxWidth: '100%',
+                lineHeight: '1.2'
+              }}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
+              <p className="text-lg mb-1 print:!text-2xl print:!text-black" style={{ wordWrap: 'break-word' }}>{formatDate(data.date, i18n.language)}</p>
               <p className="text-base mb-1 print:!text-xl print:!text-black">{t('bulletin.churchName')}</p>
               <p className="text-base mb-4 print:!text-xl print:!text-black">{t('bulletin.sacramentMeeting')}</p>
             </>
@@ -884,14 +898,20 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
-              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h2>
+              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', lineHeight: '1.2' }}>{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h2>
               <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
+              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ 
+                wordWrap: 'break-word', 
+                overflowWrap: 'break-word', 
+                hyphens: 'auto', 
+                maxWidth: '100%',
+                lineHeight: '1.2'
+              }}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
               <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
-              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black" style={{ wordWrap: 'break-word' }}>{formatDate(data.date, i18n.language)}</p>
             </>
           )}
 

@@ -7,11 +7,16 @@
    When the browser prints, hide everything except the dedicated
    print source container (.print-source-container) which holds
    the BulletinPrintLayout used for both browser print and PDF.
+   
+   PRINT MARGINS: Most home printers and copiers cannot print to
+   the edge of the paper. Typical unprintable margins are 0.25in
+   (6mm) on all sides. We use 0.3in to be conservative.
    ============================================================ */
 @media print {
   @page {
     size: 11in 8.5in landscape;
-    margin: 0;
+    /* Safe margins for home printers and copiers - 0.3in minimum */
+    margin: 0.3in;
   }
 
   html, body {
@@ -21,6 +26,9 @@
     height: 8.5in !important;
     overflow: visible !important;
     background: white !important;
+    /* Ensure text renders consistently */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Hide everything by default */
@@ -50,11 +58,27 @@
     page-break-inside: avoid;
   }
 
-  /* Preserve colors and backgrounds */
+  /* Preserve colors and backgrounds for intentional design elements */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
+  }
+
+  /* Force high-contrast black text for print (seniors need readability) */
+  .print-layout,
+  .print-page,
+  .print-layout *:not(.qr-code-canvas):not(canvas) {
+    color: #000 !important;
+  }
+  
+  /* Ensure links and gray text are also black for copier friendliness */
+  .print-layout a,
+  .print-layout .text-gray-600,
+  .print-layout .text-gray-700,
+  .print-layout .text-gray-400,
+  .print-layout .text-gray-500 {
+    color: #000 !important;
   }
 
   img {
