@@ -68,9 +68,7 @@ commit_progress() {
     tests/print/complete-matrix.ts \
     tests/print/build-comparison.ts \
     tests/print/run-all-branches-simple.sh \
-    tests/print/results/*-results.json \
     tests/print/results/COMPARISON.md \
-    tests/print/results/artifacts \
     src/print-test-entry.tsx \
     src/lib/supabase.test-stub.ts \
     vite.config.ts \
