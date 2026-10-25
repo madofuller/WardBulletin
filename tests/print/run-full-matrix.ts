@@ -18,6 +18,7 @@ const TEST_MATRIX = {
     { name: 'cursor/print-layout-fixes-f7ea', pr: 173 },
     { name: 'cursor/pdf-qr-fixes-aaec', pr: 171 },
     { name: 'cursor/public-page-performance-e836', pr: 174 },
+    { name: 'cursor/print-regression-harness-d5a3', pr: 172 }, // Current branch
   ],
   fixtures: [
     { name: 'typical', label: 'Typical' },
@@ -317,7 +318,7 @@ async function main() {
         console.log(`  ${fixture.label} / ${fontMode.label}...`);
         
         try {
-          const result = await runTest(branch.name, fixture.name, fontMode, 5173);
+          const result = await runTest(branch.name, fixture.name, fontMode, port);
           allResults.push(result);
           
           const passed = Object.values(result.checks).filter(c => c.pass).length;
