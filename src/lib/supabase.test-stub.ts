@@ -23,10 +23,17 @@ export const supabase = {
   },
 };
 
-// Mock services
+// Mock services - provide mock profile for QR code generation
 export const userService = {
   updateProfileSlug: () => Promise.resolve({}),
-  getUserProfile: () => Promise.resolve([]),
+  getUserProfile: () => Promise.resolve([{
+    email: 'test@example.com',
+    profile_slug: 'test-ward',
+    role: 'user',
+    active_bulletin_id: null,
+    unit_type: 'ward',
+    language: 'en',
+  }]),
   updateActiveBulletinId: () => Promise.resolve({}),
 };
 
