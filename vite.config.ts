@@ -1,9 +1,38 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 5 * 60, // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
+      manifest: false, // Use existing dynamic manifest
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
   test: {
     exclude: ['node_modules', '.claude', 'dist', 'e2e/**'],
   },
@@ -13,13 +42,69 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase': ['@supabase/supabase-js'],
-          'editor': ['react-quill-new'],
-          'pdf': ['html2canvas', 'jspdf'],
-          'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
-          'ui-vendor': ['react-helmet-async', 'react-toastify', '@tanstack/react-query'],
+        manualChunks(id) {
+          // Group React and router together
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react-router')) {
+            return 'react-vendor';
+          }
+          
+          // Supabase client
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase';
+          }
+          
+          // Editor - only loaded for editor routes
+          if (id.includes('react-quill') || id.includes('quill')) {
+            return 'editor';
+          }
+          
+          // PDF generation - only for print/PDF features
+          if (id.includes('html2canvas') || id.includes('jspdf')) {
+            return 'pdf';
+          }
+          
+          // i18n core
+          if (id.includes('i18next') || id.includes('react-i18next')) {
+            return 'i18n-core';
+          }
+          
+          // i18n locale files - split per locale
+          if (id.includes('/locales/') && id.endsWith('.json')) {
+            const match = id.match(/locales\/([^/]+)\.json/);
+            if (match) {
+              return `i18n-${match[1]}`;
+            }
+          }
+          
+          // Hymn data files
+          if (id.includes('/data/hymns-')) {
+            const match = id.match(/hymns-([^.]+)\.ts/);
+            if (match) {
+              return `hymns-${match[1]}`;
+            }
+          }
+          
+          // Children's songbook data files
+          if (id.includes('/data/childrensSongbook-')) {
+            const match = id.match(/childrensSongbook-([^.]+)\.ts/);
+            if (match) {
+              return `songs-${match[1]}`;
+            }
+          }
+          
+          // UI vendor libraries
+          if (id.includes('react-helmet') || 
+              id.includes('react-toastify') || 
+              id.includes('@tanstack/react-query')) {
+            return 'ui-vendor';
+          }
+          
+          // Lucide icons
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
         },
       },
     },
