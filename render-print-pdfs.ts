@@ -193,7 +193,7 @@ async function renderPrintPDF(
   // Convert PDF to PNG using pdftoppm
   try {
     const pngPath = join(ARTIFACTS_DIR, `${branch}_${fixture.name}_${fontMode.name}`);
-    execSync(`pdftoppm -png -r 150 "${pdfPath}" "${pngPath}"`, { stdio: 'pipe' });
+    execSync(`pdftoppm -png -r 100 "${pdfPath}" "${pngPath}"`, { stdio: 'pipe' });
     console.log(`    ✓ PNG: ${pngPath}-*.png`);
   } catch (error) {
     console.log(`    ⚠ PNG conversion failed: ${error}`);
@@ -210,10 +210,26 @@ async function main() {
   
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem('selectedLanguage', 'en');
+    window.localStorage.setItem('selectedUnitType', 'ward');
+    (window as any).__TEST_SESSION__ = {
+      user: { id: 'test-user-id', email: 'test@example.com' },
+      profile: {
+        profile_slug: 'sunriver-2nd-ward',
+        email: 'test@example.com',
+        role: 'user',
+        active_bulletin_id: null,
+        unit_type: 'ward',
+        language: 'en'
+      }
+    };
+  });
   
   try {
-    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await page.waitForSelector('#form-ward-name', { timeout: 15000 });
+    await page.goto(BASE_URL, { waitUntil: 'load', timeout: 20000 });
+    await page.waitForSelector('#form-ward-name', { timeout: 20000 });
     
     console.log('\n--- Rendering on current branch ---\n');
     
