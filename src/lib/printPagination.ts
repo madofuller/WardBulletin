@@ -68,8 +68,8 @@ const METRICS: Record<PrintMode, Metrics> = {
     titleLineIn: 0.19,
     gapIn: 0.1,
     colIn: 4.75,
-    firstAnnIn: 6.2,
-    nextAnnIn: 6.9,
+    firstAnnIn: 5.2,
+    nextAnnIn: 6.3,
     firstProgIn: 6.5,
     nextProgIn: 7.0,
   },
@@ -128,7 +128,7 @@ export interface AnnouncementChunk {
 export function paginateAnnouncements(items: any[], mode: PrintMode, columns = 1): AnnouncementChunk[][] {
   const m = METRICS[mode];
   const cpl = charsPerLine(m);
-  const colFactor = Math.max(1, columns) * (columns > 1 ? 0.82 : 1);
+  const colFactor = Math.max(1, columns) * (columns > 1 ? 0.48 : 1);
   const pages: AnnouncementChunk[][] = [];
   let current: AnnouncementChunk[] = [];
   let used = 0;
@@ -182,6 +182,11 @@ export function paginateAnnouncements(items: any[], mode: PrintMode, columns = 1
       const room = usable() - used;
       if (current.length > 0 && fullH > room) {
         const minKeep = tH + m.lineIn + m.gapIn;
+        // Prefer moving the whole item unless it already started or almost all fits.
+        if (!continued && room < fullH * 0.8) {
+          pushPage();
+          continue;
+        }
         if (room >= minKeep && remaining) {
           const { fit, rest } = takeWords(remaining, room - tH - m.gapIn);
           if (fit) {

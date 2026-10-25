@@ -102,16 +102,18 @@ def _region_body_pt(sizes: list[float], region: str) -> float:
     if not rounded:
         return 0.0
     counts = Counter(rounded)
-    frequent = sorted(size for size, n in counts.items() if n >= 4) or sorted(counts)
+    frequent = sorted(size for size, n in counts.items() if n >= 3) or sorted(counts)
     if region == "cover":
-        # Ward name, not subtitles.
-        return max(frequent)
-    # Drop QR captions and other tiny clusters when a larger body exists.
+        # Ward name (largest), never the subtitle cluster.
+        return max(rounded)
+    # Prefer the real body cluster over QR captions / subtitles.
+    large = [s for s in frequent if s >= 13.5]
+    if large:
+        body_large = [s for s in large if s <= 16.5] or large
+        return Counter(s for s in rounded if s in set(body_large)).most_common(1)[0][0]
     bodyish = [s for s in frequent if s >= 8.0] or frequent
-    if len(bodyish) > 1:
-        top = max(bodyish)
-        bodyish = [s for s in bodyish if s <= top - 1.0] or bodyish
-        # Prefer the modal remaining size (program/leadership/announcements body).
+    if len(bodyish) > 1 and max(bodyish) - min(bodyish) >= 1.5:
+        bodyish = [s for s in bodyish if s >= max(bodyish) - 1.0]
     chosen = Counter(s for s in rounded if s in set(bodyish)).most_common(1)
     return chosen[0][0] if chosen else min(bodyish)
 

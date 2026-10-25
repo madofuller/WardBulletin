@@ -826,7 +826,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                <div className="mb-3">
                  <PrintQRCode profileSlug={profile.profile_slug} size={Math.max(96, Math.min(144, Math.round(96 * fontScale)))} />
                </div>
-               <p className="text-sm print:!text-base print:!text-black font-medium">
+               <p className="print-cover-sub text-sm print:!text-base print:!text-black font-medium" style={coverSubStyle}>
                  {t('qrCode.scanQrCodeToAccess')}
                </p>
              </div>
