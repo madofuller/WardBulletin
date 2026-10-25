@@ -6,11 +6,6 @@ import UnitTypeSelector from '../components/TerminologyToggle';
 import LanguageSelector from '../components/LanguageSelector';
 import { getCurrentUnitType, isUnloadWarningSuppressed } from '../lib/config';
 import { getUnitLabel, getDefaultLeadershipRoster } from '../lib/terminology';
-// Lazy-loaded at PDF export time to reduce initial bundle
-const loadPdfDeps = () => Promise.all([
-  import('jspdf'),
-  import('html2canvas'),
-] as const);
 import { supabase, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
 import { recurringAnnouncementsService } from '../lib/recurringAnnouncementsService';
 import BulletinForm from '../components/BulletinForm';
@@ -1505,170 +1500,16 @@ function EditorApp() {
   };
 
   const handleExportPDF = async () => {
-    if (printPage1Ref.current && printPage2Ref.current) {
-      try {
-        // Convert cross-origin image to base64 to bypass CORS restrictions
-        const convertImageToBase64 = async (img: HTMLImageElement): Promise<void> => {
-          // Skip if already a data URL or same origin
-          if (img.src.startsWith('data:') || img.src.startsWith(window.location.origin)) {
-            return;
-          }
-
-          try {
-            // Fetch the image through our origin to get around CORS
-            const response = await fetch(img.src);
-            const blob = await response.blob();
-
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                if (typeof reader.result === 'string') {
-                  img.src = reader.result; // Replace src with base64 data URL
-                }
-                resolve();
-              };
-              reader.onerror = () => resolve(); // Continue even on error
-              reader.readAsDataURL(blob);
-            });
-          } catch (error) {
-            // Continue without converting - html2canvas will try with useCORS
-          }
-        };
-
-        // Preload and convert images to ensure they're available for PDF generation
-        const preloadImages = async () => {
-          const imagePromises: Promise<void>[] = [];
-
-          // Get all images in the print layout
-          const images = printPage1Ref.current?.querySelectorAll('img') || [];
-          images.forEach((img) => {
-            // Convert cross-origin images to base64
-            if (img.src && img.src.includes('supabase.co')) {
-              imagePromises.push(convertImageToBase64(img));
-            } else if (img.src && !img.complete) {
-              const promise = new Promise<void>((resolve) => {
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // Continue even if image fails to load
-              });
-              imagePromises.push(promise);
-            }
-          });
-
-          const images2 = printPage2Ref.current?.querySelectorAll('img') || [];
-          images2.forEach((img) => {
-            // Convert cross-origin images to base64
-            if (img.src && img.src.includes('supabase.co')) {
-              imagePromises.push(convertImageToBase64(img));
-            } else if (img.src && !img.complete) {
-              const promise = new Promise<void>((resolve) => {
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // Continue even if image fails to load
-              });
-              imagePromises.push(promise);
-            }
-          });
-
-          // Wait for all images to load/convert (with timeout)
-          await Promise.race([
-            Promise.all(imagePromises),
-            new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout for conversions
-          ]);
-        };
-
-        // Wait for images to load and convert
-        await preloadImages();
-
-        // Small delay to ensure layout is fully rendered
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Optimized scale for better file size while maintaining quality
-        const scale = 1.5;
-        const marginX = 0; // extra horizontal margin handled by centering
-        const marginY = 10; // mm top/bottom padding
-
-        const [{ default: jsPDF }, { default: html2canvas }] = await loadPdfDeps();
-
-        // Render page 1
-        const canvas1 = await html2canvas(printPage1Ref.current, {
-          scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: printPage1Ref.current.scrollWidth,
-          height: printPage1Ref.current.scrollHeight,
-          logging: false,
-          removeContainer: true
-        });
-
-        // Render page 2
-        const canvas2 = await html2canvas(printPage2Ref.current, {
-          scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          width: printPage2Ref.current.scrollWidth,
-          height: printPage2Ref.current.scrollHeight,
-          logging: false,
-          removeContainer: true
-        });
-
-        // Convert to JPEG with compression for smaller file size
-        const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
-        const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
-
-        const pdf = new jsPDF({ 
-          orientation: 'landscape', 
-          unit: 'mm', 
-          format: 'letter',
-          compress: true
-        });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        // Page 1
-        const ratio1 = Math.min(
-          1,
-          (pdfWidth - marginX * 2) / canvas1.width,
-          (pdfHeight - marginY * 2) / canvas1.height
-        );
-        const imgX1 = (pdfWidth - canvas1.width * ratio1) / 2;
-        const imgY1 = marginY;
-        pdf.addImage(
-          imgData1,
-          'JPEG',
-          imgX1,
-          imgY1,
-          canvas1.width * ratio1,
-          canvas1.height * ratio1
-        );
-
-        // Page 2
-        pdf.addPage('letter', 'landscape');
-        const ratio2 = Math.min(
-          1,
-          (pdfWidth - marginX * 2) / canvas2.width,
-          (pdfHeight - marginY * 2) / canvas2.height
-        );
-        const imgX2 = (pdfWidth - canvas2.width * ratio2) / 2;
-        const imgY2 = marginY;
-        pdf.addImage(
-          imgData2,
-          'JPEG',
-          imgX2,
-          imgY2,
-          canvas2.width * ratio2,
-          canvas2.height * ratio2
-        );
-
-        pdf.setDocumentProperties({ title: 'WardBulletin' });
-        (pdf as any).viewerPreferences?.({ Duplex: 'DuplexFlipShortEdge' });
-        pdf.autoPrint();
-        pdf.save('Ward-Bulletin.pdf');
-      } catch (error) {
-        toast.error(t('errors.pdfGenerationFailed', 'There was an error generating the PDF. Please try again.'));
-      }
-    } else {
-      toast.error(t('errors.pdfMissingPageReferences', 'PDF export failed: Missing page references. Please try again.'));
+    // Modern vector PDF export using browser's native print-to-PDF.
+    // This produces sharp, selectable text and preserves Extra Large mode
+    // instead of rasterizing to a blurry JPEG image like the old html2canvas approach.
+    try {
+      // Trigger the browser's print dialog
+      // Users select "Save as PDF" or "Microsoft Print to PDF" as the destination
+      window.print();
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error(t('errors.pdfGenerationFailed', 'There was an error opening the print dialog. Please try again.'));
     }
   };
 

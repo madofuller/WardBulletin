@@ -16,6 +16,7 @@ const BulletinGuidePage = lazy(() => import('./pages/BulletinGuidePage'));
 const TemplateIdeasPage = lazy(() => import('./pages/TemplateIdeasPage'));
 const ProgramGuidePage = lazy(() => import('./pages/ProgramGuidePage'));
 const BaptismEditor = lazy(() => import('./pages/BaptismEditor'));
+const PrintTest = lazy(() => import('./pages/PrintTest'));
 
 // Loading fallback for i18n
 const LoadingFallback = () => (
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
+            <Route path="/print-test" element={<PrintTest />} />
             <Route path="/:slug" element={<PublicBulletinPage />} />
             </Routes>
           </NetworkErrorHandler>

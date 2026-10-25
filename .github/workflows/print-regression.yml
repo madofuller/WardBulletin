@@ -1,0 +1,101 @@
+name: Print Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - 'src/components/BulletinPrintLayout.tsx'
+      - 'src/components/PrintPreviewModal.tsx'
+      - 'src/components/QRCodeGenerator.tsx'
+      - 'tests/print/**'
+      - '.github/workflows/print-regression.yml'
+
+jobs:
+  print-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Install test dependencies
+        working-directory: tests/print
+        run: npm install
+      
+      - name: Run print regression tests (Chromium only)
+        working-directory: tests/print
+        env:
+          # Run only Chromium in CI for speed
+          BROWSERS: chromium
+        run: npm test || true
+        continue-on-error: true
+      
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: print-regression-report
+          path: tests/print/output/
+          retention-days: 30
+      
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const reportPath = path.join(process.cwd(), 'tests/print/output/reports/index.html');
+            
+            if (!fs.existsSync(reportPath)) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '⚠️ Print regression tests did not produce a report. Check the workflow logs.'
+              });
+              return;
+            }
+            
+            const reportHtml = fs.readFileSync(reportPath, 'utf8');
+            const totalMatch = reportHtml.match(/Total Tests<\/div>\s*<\/div>\s*<div class="stat passed">\s*<div class="stat-value">(\d+)/s);
+            const passedMatch = reportHtml.match(/<div class="stat passed">\s*<div class="stat-value">(\d+)/);
+            const failedMatch = reportHtml.match(/<div class="stat failed">\s*<div class="stat-value">(\d+)/);
+            const rateMatch = reportHtml.match(/<div class="stat rate">\s*<div class="stat-value">([0-9.]+)%/);
+            
+            const total = totalMatch ? totalMatch[1] : '?';
+            const passed = passedMatch ? passedMatch[1] : '?';
+            const failed = failedMatch ? failedMatch[1] : '?';
+            const rate = rateMatch ? rateMatch[1] : '?';
+            
+            const status = failed === '0' ? '✅ All tests passed!' : `⚠️ ${failed} test(s) failed`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📄 Print Regression Test Results
+              
+${status}
+
+**Summary:**
+- Total: ${total}
+- ✅ Passed: ${passed}
+- ❌ Failed: ${failed}
+- 📊 Success Rate: ${rate}%
+
+**Browsers Tested:** Chromium (full suite runs on \`main\`)
+
+📥 Download the full report with screenshots from the [workflow artifacts](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).
+`
+            });

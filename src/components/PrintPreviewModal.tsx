@@ -92,11 +92,12 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
                 <button
                   onClick={handleExportPDF}
                   disabled={isExporting}
+                  title={t('printPreview.savePdfTooltip', 'Opens the print dialog. Select "Save as PDF" or "Microsoft Print to PDF" as the destination to create a vector PDF with sharp text and QR codes.')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" />
                   <span className="hidden sm:inline">
-                    {isExporting ? t('common.exporting') : t('common.exportPdf')}
+                    {isExporting ? t('common.exporting') : t('common.savePdf', 'Save as PDF')}
                   </span>
                 </button>
               )}
@@ -171,11 +172,20 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
         </div>
 
         {/* Duplex printing hint */}
-        <div className="mx-4 sm:mx-5 mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-sm text-blue-800 flex-shrink-0">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-          </svg>
-          <span>{t('printPreview.duplexHint')}</span>
+        <div className="mx-4 sm:mx-5 mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex-shrink-0">
+          <div className="flex items-start gap-2 text-sm text-blue-800">
+            <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+            <div className="flex-1">
+              <p className="font-semibold mb-1">{t('printPreview.printTips', 'Printing Tips:')}</p>
+              <ul className="space-y-0.5 text-xs">
+                <li>• <strong>{t('printPreview.vectorPdfTip', 'For PDF:')}</strong> {t('printPreview.vectorPdfInstructions', 'Click "Save as PDF" and select "Print to PDF" or "Microsoft Print to PDF" as destination. This creates sharp, selectable text.')}</li>
+                <li>• <strong>{t('printPreview.duplexTip', 'For paper:')}</strong> {t('printPreview.duplexHint', 'Enable duplex/double-sided printing and flip on the short edge.')}</li>
+                <li>• {t('printPreview.extraLargeTip', 'Extra Large mode preserves font sizes in both PDF and paper output.')}</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* Preview area - wrapped in .print-preview so Tailwind print: utilities are replicated */}
