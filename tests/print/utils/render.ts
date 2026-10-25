@@ -111,8 +111,30 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
       console.log(`    ✓ Portal found`);
       
       // Wait for explicit readiness signal (fonts + QR codes loaded)
-      await page.waitForFunction(() => (window as any).__PRINT_READY__ === true, { timeout: 5000 });
+      await page.waitForFunction(() => (window as any).__PRINT_READY__ === true, { timeout: 10000 });
       console.log(`    ✓ Print ready`);
+      
+      // Additional wait for QR canvas/image to be fully rendered
+      await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+          // Check if QR canvas exists and has content
+          const checkQR = () => {
+            const canvas = document.querySelector('.print-source-portal canvas');
+            if (canvas && (canvas as HTMLCanvasElement).width > 0) {
+              return true;
+            }
+            return false;
+          };
+          
+          if (checkQR()) {
+            resolve();
+          } else {
+            // Wait a bit more for QR to render
+            setTimeout(() => resolve(), 500);
+          }
+        });
+      });
+      console.log(`    ✓ QR rendering complete`);
     } catch (e) {
       // Check what's on the page
       const bodyHTML = await page.evaluate(() => document.body.innerHTML);
