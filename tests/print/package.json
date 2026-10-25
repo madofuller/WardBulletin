@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx harness.ts"
+    "test": "tsx harness-real.ts",
+    "test:old": "tsx harness.ts"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
