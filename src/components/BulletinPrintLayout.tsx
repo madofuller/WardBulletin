@@ -314,7 +314,6 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const backCoverRef = useRef<HTMLDivElement>(null);
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
-  const [announcementSplitIndex, setAnnouncementSplitIndex] = useState<number | null>(null);
 
   // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large
   const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
@@ -334,6 +333,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // (column auto-fit, grouping, the section header) works off this list.
   const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
   const announcementCount = printableAnnouncements.length;
+  
+  // In Large/Extra Large with many announcements, split them across pages
+  // Use a conservative split: show 40% on main page, rest on continuation
+  const announcementSplitIndex = isLargeOrExtraLarge && printableAnnouncements.length > 5
+    ? Math.max(1, Math.ceil(printableAnnouncements.length * 0.4))
+    : null;
   const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
   const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
   // Debounce the content key so the auto-fit measure/shrink loop (forced
@@ -387,7 +392,6 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   }, [announceFitScale, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins, isLargeOrExtraLarge]);
 
   // Detect when content is still cut off after auto-fit (for the warning banner)
-  // In Large/Extra Large modes, also calculate split point for continuation page
   useEffect(() => {
     const check = () => {
       let backCover = false;
@@ -398,19 +402,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       }
       if (announcementsRef.current) {
         const el = announcementsRef.current;
-        const hasOverflow = el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2;
-        announcements = hasOverflow;
-        
-        // In Large/Extra Large modes, if there's overflow, split announcements
-        if (isLargeOrExtraLarge && hasOverflow && printableAnnouncements.length > 1) {
-          // Binary search to find how many fit
-          let fitCount = Math.floor(printableAnnouncements.length / 2);
-          // Simple heuristic: if overflowing, split at 60% of announcements
-          const splitAt = Math.max(1, Math.floor(printableAnnouncements.length * 0.6));
-          setAnnouncementSplitIndex(splitAt);
-        } else {
-          setAnnouncementSplitIndex(null);
-        }
+        announcements = el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2;
       }
       setOverflow(prev => (prev.backCover === backCover && prev.announcements === announcements) ? prev : { backCover, announcements });
     };
@@ -429,7 +421,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       cancelAnimationFrame(raf);
       ro?.disconnect();
     };
-  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale, isLargeOrExtraLarge, printableAnnouncements.length]);
+  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale]);
 
   const scalePx = (px: number) => `${Math.round(px * fontScale)}px`;
 
@@ -1068,88 +1060,48 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
       {/* Page 3: Announcements Continuation (only if needed in Large/Extra Large modes) */}
       {announcementSplitIndex !== null && announcementSplitIndex < printableAnnouncements.length && (
-        <div className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black" style={{ pageBreakBefore: 'always' }}>
-          <div className="w-full text-left print:!text-black p-8" style={{ display: 'flex', flexDirection: 'column' }}>
-            <h2 className="text-xl font-bold print:!text-2xl print:!text-black w-full text-center mb-4">{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              {(() => {
-                const continuationAnnouncements = printableAnnouncements.slice(announcementSplitIndex);
-                const grouped = continuationAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
-                  const isStandalone = announcement.audience === 'standalone' || announcement.audience?.startsWith('standalone_');
-                  const audienceLabel = isStandalone
-                    ? (announcement.customAudienceLabel || '')
-                    : getAudienceLabel(announcement.audience || getUnitLowercase(unitTypeOverride));
-                  if (!groups[audienceLabel]) groups[audienceLabel] = [];
-                  groups[audienceLabel].push(announcement);
-                  return groups;
-                }, {});
+        <div className="print-page landscape w-[11in] h-[8.5in] print:!text-xl print:!text-black" style={{ pageBreakBefore: 'always', padding: '1in', background: 'white' }}>
+          <h2 className="text-xl font-bold print:!text-2xl print:!text-black w-full text-center mb-4">{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
+          <div>
+            {(() => {
+              const continuationAnnouncements = printableAnnouncements.slice(announcementSplitIndex);
+              console.log('Continuation announcements:', continuationAnnouncements.length, 'from index', announcementSplitIndex);
+              
+              const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
+              const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
+              const baseContent = Math.round((tight ? 12 : 14) * densityScale);
+              const titleFontSize = scalePx(Math.round(baseTitle));
+              const contentFontSize = scalePx(Math.round(baseContent));
 
-                const columnCount = 1; // Always single column on continuation page
-                const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
-                const baseHeader = Math.round((tight ? 14 : 16) * densityScale);
-                const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
-                const baseContent = Math.round((tight ? 12 : 14) * densityScale);
-                const headerFontSize = scalePx(Math.round(baseHeader));
-                const titleFontSize = scalePx(Math.round(baseTitle));
-                const contentFontSize = scalePx(Math.round(baseContent));
-
-                return (
-                  <div style={{ columnCount, height: '100%' }}>
-                    {Object.entries(grouped).map(([audienceLabel, announcements], groupIdx) => (
-                      <div key={audienceLabel} style={{ marginBottom: groupIdx < Object.keys(grouped).length - 1 ? '1rem' : 0 }}>
-                        <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {(announcements as any[]).map((a: any, idx: number) => {
-                            const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
-                            const showHeader = idx === 0 && audienceLabel;
-                            return (
-                              <li key={idx} style={{ marginBottom: '0.5rem' }}>
-                                {showHeader && (
-                                  <div
-                                    className="font-bold print:!text-black border-b-2 border-black pb-0.5 mb-1"
-                                    style={{ fontSize: headerFontSize }}
-                                  >
-                                    {audienceLabel}
-                                  </div>
-                                )}
-                                <div
-                                  className="font-semibold print:!text-black leading-tight"
-                                  style={{ fontSize: titleFontSize }}
-                                >
-                                  {a.title}
-                                </div>
-                                <div
-                                  className="print:!text-black leading-tight [&_a]:underline [&_a]:break-all"
-                                  style={{
-                                    fontSize: contentFontSize,
-                                    wordWrap: 'break-word',
-                                    overflowWrap: 'break-word',
-                                  } as React.CSSProperties}
-                                  dangerouslySetInnerHTML={{
-                                    __html: decodedContent.replace(
-                                      /<ul>/g,
-                                      '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
-                                    ).replace(
-                                      /<ol>/g,
-                                      '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
-                                    ).replace(
-                                      /<li>/g,
-                                      '<li style="margin-left: 0; display: list-item;">'
-                                    ).replace(
-                                      /<p>/g,
-                                      '<p style="margin: 0 0 0.1rem 0;">'
-                                    )
-                                  }}
-                                />
-                              </li>
-                            );
-                          })}
-                        </ul>
+              return (
+                <div className="space-y-4">
+                  {continuationAnnouncements.map((a: any, idx: number) => {
+                    const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
+                    return (
+                      <div key={idx} className="mb-4">
+                        <div
+                          className="font-semibold print:!text-black leading-tight mb-1"
+                          style={{ fontSize: titleFontSize }}
+                        >
+                          {a.title}
+                        </div>
+                        <div
+                          className="print:!text-black leading-tight"
+                          style={{
+                            fontSize: contentFontSize,
+                            wordWrap: 'break-word',
+                            overflowWrap: 'break-word',
+                          } as React.CSSProperties}
+                          dangerouslySetInnerHTML={{
+                            __html: decodedContent
+                          }}
+                        />
                       </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
