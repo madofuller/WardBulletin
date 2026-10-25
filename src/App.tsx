@@ -5,7 +5,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import NetworkErrorHandler from './components/NetworkErrorHandler';
 
 const EditorApp = lazy(() => import('./pages/EditorApp'));
-const PublicBulletinPage = lazy(() => import('./pages/PublicBulletinPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const HowToUsePage = lazy(() => import('./pages/HowToUsePage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -23,6 +22,13 @@ const LoadingFallback = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
   </div>
 );
+
+function PublicBulletinReload() {
+  React.useEffect(() => {
+    window.location.reload();
+  }, []);
+  return <LoadingFallback />;
+}
 
 export default function App() {
   // Note: Scheduled bulletin activation is handled by SessionContext
@@ -47,7 +53,7 @@ export default function App() {
             <Route path="/invite/:token" element={<InvitePage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/submit/:slug" element={<AnnouncementSubmissionPage />} />
-            <Route path="/:slug" element={<PublicBulletinPage />} />
+            <Route path="/:slug" element={<PublicBulletinReload />} />
             </Routes>
           </NetworkErrorHandler>
         </ErrorBoundary>

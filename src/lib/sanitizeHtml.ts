@@ -1,4 +1,8 @@
-import DOMPurify from 'isomorphic-dompurify';
+import * as DOMPurifyModule from 'dompurify';
+
+const DOMPurify =
+  (DOMPurifyModule as { default?: { sanitize: typeof import('dompurify')['sanitize'] } }).default ??
+  (DOMPurifyModule as { sanitize: typeof import('dompurify')['sanitize'] });
 
 export function sanitizeHtml(content: string): string {
   return DOMPurify.sanitize(content, {
