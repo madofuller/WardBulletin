@@ -15,6 +15,9 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: isTest ? {
         // Stub Supabase for print tests
+        // Match the import paths used in the codebase
+        '@/lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
+        './supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
         './lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
         '../lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
       } : {},
