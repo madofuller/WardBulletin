@@ -1,0 +1,64 @@
+{
+  "user": {
+    "id": "user-123",
+    "active_bulletin_id": "bulletin-456",
+    "unit_type": "ward",
+    "language": "en"
+  },
+  "bulletin": {
+    "id": "bulletin-456",
+    "slug": "test-ward",
+    "created_by": "user-123",
+    "created_at": "2024-01-01T00:00:00Z",
+    "meeting_date": "2024-01-07",
+    "meeting_type": "Sacrament Meeting",
+    "status": "active",
+    "profile_slug": "test-ward"
+  },
+  "tokens": [
+    {
+      "key": "bulletin-test-ward-ward_name",
+      "value": "\"First Ward Test\"",
+      "created_by": "user-123"
+    },
+    {
+      "key": "bulletin-test-ward-theme",
+      "value": "\"Faith in Testing\"",
+      "created_by": "user-123"
+    },
+    {
+      "key": "bulletin-test-ward-announcements",
+      "value": "[]",
+      "created_by": "user-123"
+    },
+    {
+      "key": "bulletin-test-ward-agenda",
+      "value": "[]",
+      "created_by": "user-123"
+    }
+  ],
+  "rpc_response": {
+    "id": "bulletin-456",
+    "slug": "test-ward",
+    "created_by": "user-123",
+    "created_at": "2024-01-01T00:00:00Z",
+    "meeting_date": "2024-01-07",
+    "meeting_type": "Sacrament Meeting",
+    "profile_slug": "test-ward",
+    "profile_unit_type": "ward",
+    "profile_language": "en",
+    "tokens": {
+      "ward_name": "\"First Ward Test\"",
+      "theme": "\"Faith in Testing\"",
+      "announcements": "[]",
+      "agenda": "[]",
+      "music": "{}",
+      "prayers": "{}",
+      "leadership": "{}",
+      "wardLeadership": "[]",
+      "missionaries": "[]",
+      "wardMissionaries": "[]",
+      "serviceMissionaries": "[]"
+    }
+  }
+}
