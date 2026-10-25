@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
 import jsQR from 'jsqr';
-import Jimp from 'jimp';
+import { Jimp } from 'jimp';
 
 const execAsync = promisify(exec);
 
@@ -298,12 +298,17 @@ async function main() {
   
   const allResults: TestResult[] = [];
   
+  // Use port from environment or default
+  const port = parseInt(process.env.PORT || '5173');
+  const currentBranch = process.env.BRANCH_NAME || await execAsync('git branch --show-current').then(r => r.stdout.trim());
+  
   for (const branch of TEST_MATRIX.branches) {
     console.log(`\n## Testing ${branch.name}${branch.pr ? ` (PR #${branch.pr})` : ''} ##\n`);
     
-    // For now, test only current branch (would need worktree setup for others)
-    if (branch.name !== 'cursor/print-regression-harness-d5a3') {
-      console.log(`  (Skipping - requires worktree setup)\n`);
+    // Only test if this is the current branch or if we're running via the automation script
+    const isCurrentBranch = branch.name === currentBranch || branch.name === 'cursor/print-regression-harness-d5a3';
+    if (!isCurrentBranch && !process.env.PORT) {
+      console.log(`  (Skipping - use run-all-branches.sh for cross-branch testing)\n`);
       continue;
     }
     
