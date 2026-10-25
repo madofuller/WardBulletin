@@ -1,0 +1,82 @@
+{
+  "wardName": "The Church of Jesus Christ of Latter-day Saints - SunRiver 2nd Ward in the Beautiful Valley Stake",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Faith, Hope, and Charity: The Pure Love of Christ",
+  "userTheme": "default",
+  "bishopricMessage": "",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Ward Temple Night",
+      "content": "Join us Friday at 7 PM.",
+      "category": "activity",
+      "audience": "ward"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Brother Christopher Alexander Montgomery-Williamson III",
+      "speakerType": "adult"
+    },
+    {
+      "type": "sacrament",
+      "id": "2"
+    },
+    {
+      "type": "speaker",
+      "id": "3",
+      "name": "Sister Elizabeth Victoria Anastasia Thompson-Henderson",
+      "speakerType": "adult"
+    }
+  ],
+  "prayers": {
+    "opening": "Brother Jonathan David Richardson-Martinez Jr.",
+    "closing": "Sister Alexandra Catherine Montgomery-Williams",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God Like a Fire Is Burning",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man Who Communed with Jehovah"
+  },
+  "leadership": {
+    "presiding": "Bishop Alexander Christopher Montgomery-Williamson",
+    "conducting": "President Jonathan David Richardson-Martinez",
+    "chorister": "Sister Elizabeth Victoria Thompson-Henderson",
+    "organist": "Brother Christopher Michael Anderson-Rodriguez"
+  },
+  "wardLeadership": [
+    {
+      "title": "Bishop",
+      "name": "Alexander Christopher Montgomery-Williamson",
+      "phone": "555-0101"
+    },
+    {
+      "title": "1st Counselor",
+      "name": "Jonathan David Richardson-Martinez",
+      "phone": "555-0102"
+    },
+    {
+      "title": "Executive Secretary",
+      "name": "Brother Christopher Michael Anderson-Rodriguez Jr.",
+      "phone": "555-0103"
+    }
+  ],
+  "missionaries": [],
+  "wardMissionaries": [],
+  "serviceMissionaries": [],
+  "showQRCodeOnPrint": true,
+  "printFontScale": 1
+}

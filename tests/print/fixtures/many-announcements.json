@@ -1,0 +1,152 @@
+{
+  "wardName": "Test Ward",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Service",
+  "userTheme": "default",
+  "bishopricMessage": "",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Ward Temple Night This Friday",
+      "content": "Join us this Friday at 7 PM for a ward temple night. We will meet at the temple parking lot and carpool together. Please RSVP to the ward clerk.",
+      "category": "activity",
+      "audience": "ward"
+    },
+    {
+      "id": "2",
+      "title": "Youth Service Project",
+      "content": "Youth aged 12-18 are invited to a service project Saturday morning at 9 AM. We will be helping elderly members with yard work. Bring gloves and yard tools.",
+      "category": "activity",
+      "audience": "youth"
+    },
+    {
+      "id": "3",
+      "title": "Relief Society Meeting Tuesday",
+      "content": "All sisters are invited to join us for Relief Society meeting on Tuesday at 7 PM in the cultural hall. Sister Johnson will be speaking about strengthening families.",
+      "category": "general",
+      "audience": "relief_society"
+    },
+    {
+      "id": "4",
+      "title": "Elders Quorum Service Opportunity",
+      "content": "Brothers, we need volunteers to help with yard work for elderly members this Saturday from 9 AM to noon. Please sign up in the foyer.",
+      "category": "service",
+      "audience": "elders_quorum"
+    },
+    {
+      "id": "5",
+      "title": "Primary Presentation Practice",
+      "content": "Primary children will practice for the sacrament meeting presentation next Sunday. Practice will be Saturday at 10 AM in the chapel.",
+      "category": "general",
+      "audience": "primary"
+    },
+    {
+      "id": "6",
+      "title": "Ward Choir Rehearsal",
+      "content": "Ward choir rehearsal will be held every Wednesday at 7:30 PM in the chapel. All are welcome to join, no experience necessary!",
+      "category": "general",
+      "audience": "ward"
+    },
+    {
+      "id": "7",
+      "title": "Baptism This Saturday",
+      "content": "We are pleased to announce the baptism of Emma Williams this Saturday at 2 PM. All are invited to attend and support Emma as she takes this important step.",
+      "category": "baptism",
+      "audience": "ward"
+    },
+    {
+      "id": "8",
+      "title": "Ward Picnic Next Month",
+      "content": "Save the date! The annual ward picnic will be held on the last Saturday of next month at the park. More details to follow.",
+      "category": "activity",
+      "audience": "ward"
+    },
+    {
+      "id": "9",
+      "title": "Seminary Registration",
+      "content": "Youth entering 9th grade should register for seminary. Registration forms are available in the foyer or online on the ward website.",
+      "category": "general",
+      "audience": "youth"
+    },
+    {
+      "id": "10",
+      "title": "Food Drive for Local Shelter",
+      "content": "We are collecting non-perishable food items for the local homeless shelter. Please bring donations to the cultural hall before the end of the month.",
+      "category": "service",
+      "audience": "ward"
+    },
+    {
+      "id": "11",
+      "title": "Marriage and Family Night",
+      "content": "Couples are invited to a marriage enrichment evening on Friday, March 29th at 7 PM. Light refreshments will be served.",
+      "category": "activity",
+      "audience": "ward"
+    },
+    {
+      "id": "12",
+      "title": "Missionary Farewell",
+      "content": "Elder David Thompson will be speaking before leaving for his mission to Tokyo, Japan. Please join us in wishing him well on his missionary service.",
+      "category": "general",
+      "audience": "ward"
+    },
+    {
+      "id": "13",
+      "title": "Book Club Meeting",
+      "content": "The ward book club will meet on the first Thursday of next month to discuss 'The Hiding Place' by Corrie ten Boom. All sisters are welcome.",
+      "category": "activity",
+      "audience": "relief_society"
+    },
+    {
+      "id": "14",
+      "title": "Basketball League Signup",
+      "content": "Men's basketball league is starting soon! Sign up sheets are available in the gym. Games will be on Tuesday and Thursday evenings.",
+      "category": "activity",
+      "audience": "elders_quorum"
+    },
+    {
+      "id": "15",
+      "title": "Visiting Teaching Conference",
+      "content": "All Relief Society sisters are invited to attend the stake visiting teaching conference on Saturday morning at 9 AM at the stake center.",
+      "category": "general",
+      "audience": "relief_society"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    {
+      "type": "sacrament",
+      "id": "1"
+    }
+  ],
+  "prayers": {
+    "opening": "John Smith",
+    "closing": "Jane Doe",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man"
+  },
+  "leadership": {
+    "presiding": "Bishop Williams",
+    "conducting": "President Thompson",
+    "chorister": "Sister Anderson",
+    "organist": "Brother Martinez"
+  },
+  "wardLeadership": [],
+  "missionaries": [],
+  "wardMissionaries": [],
+  "serviceMissionaries": [],
+  "showQRCodeOnPrint": true,
+  "printFontScale": 1
+}

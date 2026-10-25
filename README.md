@@ -56,6 +56,27 @@ src/
 - `npm run lint` - Run ESLint
 - `npm run test` - Run tests
 
+### Print Regression Testing
+
+To ensure bulletin printing quality and prevent regressions:
+
+```bash
+cd tests/print
+npm install
+npm test
+```
+
+This runs automated checks for:
+- Content within printable margins (0.25" safety zone)
+- QR code scannability and photocopy resilience
+- Font sizes for senior (55+) readability
+- No unexpected overflow or blank pages
+- Text contrast for print quality
+
+View the full HTML report at `tests/print/output/reports/index.html`.
+
+See [tests/print/README.md](tests/print/README.md) for details.
+
 ### Key Technologies
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS

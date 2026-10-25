@@ -1,0 +1,54 @@
+{
+  "wardName": "Font Test Ward",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Large Font Test",
+  "userTheme": "default",
+  "bishopricMessage": "",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Test Announcement",
+      "content": "This bulletin tests large font size (115%). The text should be more readable for seniors.",
+      "category": "general",
+      "audience": "ward"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    {
+      "type": "sacrament",
+      "id": "1"
+    }
+  ],
+  "prayers": {
+    "opening": "John Smith",
+    "closing": "Jane Doe",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man"
+  },
+  "leadership": {
+    "presiding": "Bishop Williams",
+    "conducting": "President Thompson",
+    "chorister": "Sister Anderson",
+    "organist": "Brother Martinez"
+  },
+  "wardLeadership": [],
+  "missionaries": [],
+  "wardMissionaries": [],
+  "serviceMissionaries": [],
+  "showQRCodeOnPrint": true,
+  "printFontScale": 1.15
+}

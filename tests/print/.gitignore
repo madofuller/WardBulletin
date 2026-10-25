@@ -1,0 +1,6 @@
+output/
+node_modules/
+*.log
+results/**
+!results/COMPARISON.md
+__pycache__/
