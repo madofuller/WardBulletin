@@ -428,8 +428,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // Tighter margins to fit more announcements on the page
   const tight = !!data.printTightMargins;
   const pad = {
-    leftPanel: tight ? 'pl-2 pr-8 pt-2 pb-0' : isLightContent ? 'pl-4 pr-6 pt-3 pb-0' : 'pl-3 pr-12 pt-3 pb-0',
-    rightPanel: tight ? 'pl-8 pr-2 py-4' : 'pl-12 pr-3 py-6',
+    // Ensure >= 0.25in (24px) margins for printer safety zones
+    // pl/pr-6 = 24px = 0.25in minimum for safe printing
+    leftPanel: tight ? 'pl-6 pr-8 pt-6 pb-0' : isLightContent ? 'pl-6 pr-6 pt-6 pb-0' : 'pl-6 pr-12 pt-6 pb-0',
+    rightPanel: tight ? 'pl-8 pr-6 py-6' : 'pl-12 pr-6 py-6',
     announcementsGap: tight ? 'gap-2' : 'gap-4',
     announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
     sectionMb: tight ? 'mb-0.5' : 'mb-1'
