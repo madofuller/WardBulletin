@@ -59,24 +59,80 @@ def _classify_sizes(sizes: list[float]) -> dict[str, float]:
         }
 
     counts = Counter(rounded)
-    # Ignore 1–2 glyph artifacts when picking min/max.
     frequent = sorted(size for size, n in counts.items() if n >= 8) or sorted(counts)
     max_pt = max(frequent)
-    # Body: smallest frequent size below the heading band. Many Tailwind
-    # classes do not honor printFontScale, but scalePx() text does — that
-    # cluster is the one that must grow in Extra Large.
-    body_band = [size for size in frequent if size < 14.0] or frequent
-    heading_band = [size for size in frequent if size >= 16.0] or [max_pt]
-    bodies = [size for size in rounded if size < 14.0] or rounded
-    headings = [size for size in rounded if size >= 16.0] or [max_pt]
+    heading_pt = max_pt
+    body_candidates = [size for size in frequent if size < heading_pt - 0.4]
+    if not body_candidates:
+        body_pt = counts.most_common(1)[0][0]
+    else:
+        body_counts = Counter(s for s in rounded if s in set(body_candidates) and s >= 6.0)
+        body_pt = body_counts.most_common(1)[0][0] if body_counts else min(body_candidates)
+    bodies = [size for size in rounded if size <= body_pt + 0.6] or rounded
+    headings = [size for size in rounded if size >= heading_pt - 0.6] or [max_pt]
 
     return {
-        "body_pt": min(body_band),
-        "heading_pt": max(heading_band),
+        "body_pt": body_pt,
+        "heading_pt": heading_pt,
         "body_median_pt": statistics.median(bodies),
         "heading_median_pt": statistics.median(headings),
         "max_pt": max_pt,
     }
+
+
+CAPTION_RE = ("scan", "qr")
+
+
+def _region_body_pt(sizes: list[float], region: str) -> float:
+    if not sizes:
+        return 0.0
+    from collections import Counter
+
+    rounded = [round(s * 2) / 2 for s in sizes if 4.0 <= s <= 80.0]
+    if not rounded:
+        return 0.0
+    counts = Counter(rounded)
+    frequent = sorted(size for size, n in counts.items() if n >= 3) or sorted(counts)
+    if region == "cover":
+        # Date / church / "Sacrament Meeting" — not the ward-name heading.
+        top = max(frequent)
+        subs = [s for s in frequent if s <= top - 2.0]
+        if subs:
+            return Counter(s for s in rounded if s in set(subs)).most_common(1)[0][0]
+        return min(frequent)
+    top = max(frequent)
+    bodyish = [s for s in frequent if s <= top - 1.5] or [min(frequent)]
+    chosen = Counter(s for s in rounded if s in set(bodyish))
+    return chosen.most_common(1)[0][0] if chosen else min(bodyish)
+
+
+def _score_panel_role(text: str) -> str:
+    low = text.lower()
+    scores = {
+        "program": 0,
+        "cover": 0,
+        "leadership": 0,
+        "announcements": 0,
+    }
+    for token in ("presiding", "conducting", "invocation", "benediction", "opening hymn", "sacrament hymn"):
+        if token in low:
+            scores["program"] += 3
+    if "latter-day" in low or "latter day" in low:
+        scores["cover"] += 3
+    if "sacrament meeting" in low and scores["program"] == 0:
+        scores["cover"] += 2
+    if "ward leadership" in low or "branch leadership" in low:
+        scores["leadership"] += 4
+    if "scan this qr" in low or "scan the qr" in low:
+        scores["leadership"] += 1
+    if "announcements" in low:
+        scores["announcements"] += 3
+    if "more announcements" in low:
+        scores["announcements"] += 2
+    role = max(scores, key=lambda k: scores[k])
+    if scores[role] == 0:
+        return "announcements"
+    return role
 
 
 def analyze(pdf_path: str) -> dict[str, Any]:
@@ -87,6 +143,14 @@ def analyze(pdf_path: str) -> dict[str, Any]:
     clipped = False
     word_count = 0
     page_count = 0
+    region_sizes: dict[str, list[float]] = {
+        "leadership": [],
+        "cover": [],
+        "announcements": [],
+        "program": [],
+    }
+    text_parts: list[str] = []
+    panels: list[dict[str, Any]] = []
 
     with pdfplumber.open(pdf_path) as pdf:
         page_count = len(pdf.pages)
@@ -109,6 +173,26 @@ def analyze(pdf_path: str) -> dict[str, Any]:
                 if str(w.get("text", "")).strip() and (w["x1"] - w["x0"]) > 1.0
             ]
             word_count += len(usable)
+            page_words: list[str] = []
+            halves: dict[str, list[str]] = {"left": [], "right": []}
+            half_sizes: dict[str, list[float]] = {"left": [], "right": []}
+            for w in usable:
+                text = str(w.get("text", "")).strip()
+                page_words.append(text)
+                side = "left" if float(w["x0"]) < FOLD_PT else "right"
+                halves[side].append(text)
+                size = w.get("size")
+                if isinstance(size, (int, float)):
+                    low = text.lower()
+                    if any(token in low for token in CAPTION_RE):
+                        continue
+                    half_sizes[side].append(float(size))
+            text_parts.append(" ".join(page_words))
+            for side in ("left", "right"):
+                half_text = " ".join(halves[side])
+                role = _score_panel_role(half_text)
+                panels.append({"page": index + 1, "side": side, "role": role, "text": half_text})
+                region_sizes[role].extend(half_sizes[side])
 
             if usable:
                 x0 = min(w["x0"] for w in usable)
@@ -148,6 +232,7 @@ def analyze(pdf_path: str) -> dict[str, Any]:
 
     fonts = _classify_sizes(all_sizes)
     margin_in = (min_edge_pt / 72.0) if min_edge_pt is not None else None
+    region_fonts = {name: _region_body_pt(vals, name) for name, vals in region_sizes.items()}
 
     return {
         "pages": page_count,
@@ -156,6 +241,7 @@ def analyze(pdf_path: str) -> dict[str, Any]:
         "margin_pass": margin_in is not None and margin_in >= 0.25,
         "body_pt": round(fonts["body_pt"], 2),
         "heading_pt": round(fonts["heading_pt"], 2),
+        "heading_gt_body": fonts["heading_pt"] > fonts["body_pt"] + 0.4,
         "body_median_pt": round(fonts["body_median_pt"], 2),
         "heading_median_pt": round(fonts["heading_median_pt"], 2),
         "max_pt": round(fonts["max_pt"], 2),
@@ -165,6 +251,9 @@ def analyze(pdf_path: str) -> dict[str, Any]:
         "fold_cross_count": len(fold_crosses),
         "fold_samples": fold_crosses[:8],
         "unique_sizes": sorted({round(s * 2) / 2 for s in all_sizes}),
+        "full_text": "\n".join(text_parts),
+        "region_fonts": {k: round(v, 2) for k, v in region_fonts.items()},
+        "panels": panels,
     }
 
 

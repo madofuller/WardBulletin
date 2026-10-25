@@ -15,7 +15,7 @@ const require = createRequire(path.join(here, 'package.json'));
 const { PNG } = require('pngjs') as typeof import('pngjs');
 const jsQR = require('jsqr') as typeof import('jsqr');
 
-const FIXTURES = ['typical', 'special-musical-number', 'many-announcements', 'long-names'];
+const FIXTURES = ['typical', 'special-musical-number', 'many-announcements', 'long-names', 'bishops-exact-case'];
 
 interface CheckResult {
   pass: boolean;
@@ -28,7 +28,10 @@ interface TestResult {
   fixture: string;
   mode: string;
   scale: number;
+  output: 'single' | 'booklet';
   checks: Record<string, CheckResult>;
+  regionFonts?: Record<string, number>;
+  panelMap?: string;
 }
 
 interface PdfAnalysis {
@@ -38,6 +41,7 @@ interface PdfAnalysis {
   margin_pass: boolean;
   body_pt: number;
   heading_pt: number;
+  heading_gt_body?: boolean;
   body_median_pt: number;
   heading_median_pt: number;
   max_pt: number;
@@ -46,6 +50,116 @@ interface PdfAnalysis {
   overlap_samples: Array<{ a: string; b: string; page: number }>;
   fold_cross_count: number;
   fold_samples: Array<{ text: string; page: number }>;
+  full_text?: string;
+  region_fonts?: Record<string, number>;
+  panels?: Array<{ page: number; side: string; role: string; text: string }>;
+}
+
+function tokens(value: string): string[] {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1 || /^\d+$/.test(w));
+}
+
+function isSubsequence(needles: string[], haystack: string[]): boolean {
+  let i = 0;
+  for (const word of haystack) {
+    if (i < needles.length && word === needles[i]) i += 1;
+  }
+  return i === needles.length;
+}
+
+function imposeFor(output: 'single' | 'booklet'): Array<[number, number]> {
+  if (output === 'booklet') {
+    return [[8, 1], [2, 7], [6, 3], [4, 5]];
+  }
+  return [[4, 1], [2, 3]];
+}
+
+function facingPairs(output: 'single' | 'booklet'): Array<[number, number]> {
+  return output === 'booklet' ? [[2, 3], [4, 5], [6, 7]] : [[2, 3]];
+}
+
+function announcementReadingText(
+  analysis: PdfAnalysis,
+  output: 'single' | 'booklet'
+): string {
+  const impose = imposeFor(output);
+  const reading: Record<number, string> = {};
+  for (const panel of analysis.panels || []) {
+    const pagePair = impose[panel.page - 1];
+    if (!pagePair) continue;
+    const id = panel.side === 'left' ? pagePair[0] : pagePair[1];
+    reading[id] = panel.text || '';
+  }
+  const order = output === 'booklet' ? [2, 4, 5, 6, 7, 8] : [2, 4];
+  return order.map((n) => reading[n] || '').join('\n');
+}
+
+function checkCompleteness(pdfText: string, fixture: any, omittedTitles: string[] = [], announcementOrderText = ''): CheckResult {
+  const haystack = tokens(pdfText);
+  const missing: string[] = [];
+  const phrases: string[] = [];
+
+  if (fixture.wardName) phrases.push(fixture.wardName);
+  for (const leader of fixture.wardLeadership || []) {
+    if (leader.name) phrases.push(leader.name);
+    if (leader.title) phrases.push(leader.title);
+  }
+  const lead = fixture.leadership || {};
+  for (const key of ['presiding', 'conducting', 'chorister', 'organist']) {
+    if (lead[key]) phrases.push(lead[key]);
+  }
+  const music = fixture.musicProgram || {};
+  for (const key of ['openingHymnTitle', 'sacramentHymnTitle', 'closingHymnTitle', 'openingHymnNumber', 'sacramentHymnNumber', 'closingHymnNumber']) {
+    if (music[key]) phrases.push(String(music[key]));
+  }
+  const prayers = fixture.prayers || {};
+  if (prayers.opening) phrases.push(prayers.opening);
+  if (prayers.closing) phrases.push(prayers.closing);
+  for (const item of fixture.agenda || []) {
+    if (item.name) phrases.push(item.name);
+    if (item.songName) phrases.push(item.songName);
+    if (item.performers) phrases.push(item.performers);
+    if (item.hymnTitle) phrases.push(item.hymnTitle);
+    if (item.title) phrases.push(item.title);
+  }
+  const omitted = new Set(omittedTitles.map((t) => t.toLowerCase()));
+  for (const ann of (fixture.announcements || []).filter((a: any) => !a.hideOnPrint)) {
+    if (omitted.has(String(ann.title || '').toLowerCase())) continue;
+    if (ann.title) phrases.push(ann.title);
+    if (ann.content) phrases.push(ann.content);
+  }
+
+  const hayset = new Set(haystack);
+  for (const phrase of phrases) {
+    const need = tokens(phrase);
+    if (need.length === 0) continue;
+    if (isSubsequence(need, haystack)) continue;
+    const hit = need.filter((w) => hayset.has(w)).length;
+    if (hit / need.length < 0.7) missing.push(phrase.slice(0, 48));
+  }
+
+  const titles = (fixture.announcements || [])
+    .filter((a: any) => !a.hideOnPrint)
+    .filter((a: any) => !omitted.has(String(a.title || '').toLowerCase()))
+    .map((a: any) => a.title)
+    .filter(Boolean);
+  const titleTokens = titles.flatMap((title: string) => tokens(title));
+  const orderHay = announcementOrderText ? tokens(announcementOrderText) : haystack;
+  const orderOk = titleTokens.length === 0 || isSubsequence(titleTokens, orderHay);
+
+  if (missing.length === 0 && orderOk) {
+    return { pass: true, value: `${phrases.length} fields` };
+  }
+  const bits = [
+    missing.length ? `missing ${missing.slice(0, 3).join(' | ')}` : '',
+    orderOk ? '' : 'order',
+  ].filter(Boolean);
+  return { pass: false, value: bits.join('; ').slice(0, 80) };
 }
 
 function parseScales(): { scale: number; label: string }[] {
@@ -81,7 +195,36 @@ async function degradeWithImageMagick(inputPath: string, outputPath: string): Pr
 function decodeQr(pngPath: string) {
   if (!fs.existsSync(pngPath)) return null;
   const png = PNG.sync.read(fs.readFileSync(pngPath));
-  return jsQR(png.data, png.width, png.height);
+  const full = jsQR(png.data, png.width, png.height);
+  if (full) return full;
+  const regions = [
+    { x: 0, y: 0, w: Math.floor(png.width / 2), h: png.height },
+    { x: 0, y: Math.floor(png.height / 2), w: Math.floor(png.width / 2), h: Math.ceil(png.height / 2) },
+  ];
+  for (const region of regions) {
+    const crop = new PNG({ width: region.w, height: region.h });
+    for (let y = 0; y < region.h; y++) {
+      for (let x = 0; x < region.w; x++) {
+        const src = ((region.y + y) * png.width + (region.x + x)) * 4;
+        const dst = (y * region.w + x) * 4;
+        crop.data[dst] = png.data[src];
+        crop.data[dst + 1] = png.data[src + 1];
+        crop.data[dst + 2] = png.data[src + 2];
+        crop.data[dst + 3] = png.data[src + 3];
+      }
+    }
+    const found = jsQR(crop.data, region.w, region.h);
+    if (found) {
+      found.location = {
+        topLeftCorner: { x: found.location.topLeftCorner.x + region.x, y: found.location.topLeftCorner.y + region.y },
+        topRightCorner: { x: found.location.topRightCorner.x + region.x, y: found.location.topRightCorner.y + region.y },
+        bottomLeftCorner: { x: found.location.bottomLeftCorner.x + region.x, y: found.location.bottomLeftCorner.y + region.y },
+        bottomRightCorner: { x: found.location.bottomRightCorner.x + region.x, y: found.location.bottomRightCorner.y + region.y },
+      };
+      return found;
+    }
+  }
+  return null;
 }
 
 function cropQr(pagePath: string, qr: NonNullable<ReturnType<typeof jsQR>>, destPath: string) {
@@ -184,23 +327,120 @@ async function checkQrPages(outputDir: string, pageFiles: string[]): Promise<{
   };
 }
 
+function checkFoldSimulation(
+  analysis: PdfAnalysis,
+  output: 'single' | 'booklet'
+): { fold: CheckResult; continued: CheckResult; pages: CheckResult; map: string } {
+  const pages = analysis.pages || 0;
+  const pageOk = output === 'booklet' ? pages >= 4 && pages % 4 === 0 : pages === 2;
+  const impose = imposeFor(output);
+  const byPage = new Map<string, { role: string; text: string }>();
+  for (const panel of analysis.panels || []) {
+    byPage.set(`${panel.page}:${panel.side}`, { role: panel.role, text: panel.text || '' });
+  }
+  const reading: Record<number, { role: string; text: string; pdf: string }> = {};
+  impose.forEach(([left, right], index) => {
+    const page = index + 1;
+    const L = byPage.get(`${page}:left`) || { role: 'empty', text: '' };
+    const R = byPage.get(`${page}:right`) || { role: 'empty', text: '' };
+    reading[left] = { ...L, pdf: `p${page}L` };
+    reading[right] = { ...R, pdf: `p${page}R` };
+  });
+
+  const cover = reading[1];
+  const coverOk = !!cover && /sacrament meeting|latter-day|latter day/i.test(cover.text) && !/presid/i.test(cover.text);
+
+  const programPanels = Object.entries(reading)
+    .filter(([, panel]) => /presid/i.test(panel.text) && /benedict/i.test(panel.text))
+    .map(([n]) => Number(n));
+  const programBits = Object.entries(reading)
+    .filter(([, panel]) => /presid|benedict|opening hymn/i.test(panel.text))
+    .map(([n]) => Number(n));
+  let programOk = programPanels.length === 1;
+  if (!programOk && programBits.length === 2) {
+    const [a, b] = programBits.slice().sort((x, y) => x - y);
+    programOk = facingPairs(output).some(([l, r]) => l === a && r === b);
+  }
+
+  const full = analysis.full_text || '';
+  const continuedOk = !/\(continued\)|\bcontinued\)/i.test(full);
+
+  const bits: string[] = [];
+  if (!coverOk) bits.push('cover≠p1');
+  if (!programOk) bits.push(`program@${programBits.join(',') || 'none'}`);
+  const map = Object.keys(reading)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map((n) => `${n}:${reading[n].role}/${reading[n].pdf}`)
+    .join(' ');
+
+  return {
+    fold: {
+      pass: coverOk && programOk,
+      value: bits.length ? bits.join('; ') : map,
+    },
+    continued: {
+      pass: continuedOk,
+      value: continuedOk ? 'None' : 'Continued',
+    },
+    pages: {
+      pass: pageOk,
+      value: String(pages),
+    },
+    map,
+  };
+}
+
+async function buildFoldStrip(
+  outputDir: string,
+  pageFiles: string[],
+  output: 'single' | 'booklet',
+  destName: string
+): Promise<string | undefined> {
+  const impose = imposeFor(output);
+  const crops: string[] = [];
+  try {
+    for (let i = 0; i < impose.length; i++) {
+      const file = pageFiles[i];
+      if (!file) continue;
+      const full = path.join(outputDir, file);
+      const leftOut = path.join(outputDir, `fold-p${i + 1}-L.png`);
+      const rightOut = path.join(outputDir, `fold-p${i + 1}-R.png`);
+      await execFileAsync('convert', [full, '-crop', '825x1275+0+0', '+repage', leftOut]);
+      await execFileAsync('convert', [full, '-crop', '825x1275+825+0', '+repage', rightOut]);
+      const [leftId, rightId] = impose[i];
+      crops[leftId - 1] = leftOut;
+      crops[rightId - 1] = rightOut;
+    }
+    const ordered = crops.filter(Boolean);
+    if (ordered.length === 0) return undefined;
+    const dest = path.join(outputDir, destName);
+    await execFileAsync('convert', [...ordered, '+append', dest]);
+    return dest;
+  } catch {
+    return undefined;
+  }
+}
+
 async function runCase(
   browser: Browser,
   branch: string,
   fixture: string,
-  mode: { scale: number; label: string },
+  mode: { scale: number; label: string; output?: 'single' | 'booklet' },
   port: number,
   outputBase: string
 ): Promise<TestResult> {
-  const testId = `${slug(branch)}_${fixture}_${slug(mode.label)}`;
+  const output = mode.output === 'booklet' ? 'booklet' : 'single';
+  const testId = `${slug(branch)}_${fixture}_${slug(mode.label)}${output === 'booklet' ? '_booklet' : ''}`;
   const outputDir = path.join(outputBase, testId);
   fs.mkdirSync(outputDir, { recursive: true });
 
   const result: TestResult = {
     branch,
     fixture,
-    mode: mode.label,
+    mode: output === 'booklet' ? `${mode.label} booklet` : mode.label,
     scale: mode.scale,
+    output,
     checks: {},
   };
 
@@ -210,7 +450,7 @@ async function runCase(
   page.on('pageerror', (err) => logs.push(`[pageerror] ${err.message}`));
 
   try {
-    const url = `http://127.0.0.1:${port}/print-test.html?fixture=${fixture}&fontScale=${mode.scale}`;
+    const url = `http://127.0.0.1:${port}/print-test.html?fixture=${fixture}&fontScale=${mode.scale}&output=${output}`;
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     try {
       await page.waitForFunction(() => (window as any).__PRINT_READY__ === true, { timeout: 20000 });
@@ -255,22 +495,88 @@ async function runCase(
     result.checks.qr_degraded = qr.degraded;
     result.checks.qr_margin = qr.inside;
 
+    const minBody = mode.label === 'Extra Large' ? 14 : mode.label === 'Large' ? 10 : 6.5;
     result.checks.body_pt = {
-      pass: analysis.body_pt > 0,
+      pass: analysis.body_pt >= minBody,
       value: analysis.body_pt > 0 ? `${analysis.body_pt.toFixed(1)}pt` : 'N/A',
     };
     result.checks.heading_pt = {
-      pass: analysis.heading_pt > 0,
+      pass: analysis.heading_pt > analysis.body_pt + 0.4,
       value: analysis.heading_pt > 0 ? `${analysis.heading_pt.toFixed(1)}pt` : 'N/A',
     };
+    result.checks.heading_gt_body = {
+      pass: analysis.heading_gt_body === true,
+      value: analysis.heading_gt_body ? `${analysis.heading_pt.toFixed(1)}>${analysis.body_pt.toFixed(1)}` : `${analysis.heading_pt.toFixed(1)}<=${analysis.body_pt.toFixed(1)}`,
+    };
+
+    const regions = analysis.region_fonts || {};
+    const regionNames = ['program', 'announcements', 'leadership', 'cover'] as const;
+
+    const fixturePath = path.join(here, 'fixtures', `${fixture}.json`);
+    let fixtureData: any = {};
+    try {
+      fixtureData = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+    } catch {
+      fixtureData = {};
+    }
+
+    const expectedRegion: Record<(typeof regionNames)[number], boolean> = {
+      leadership: (fixtureData.wardLeadership || []).some((e: any) => e?.name || e?.phone),
+      cover: !!(fixtureData.wardName || fixtureData.date),
+      announcements: (fixtureData.announcements || []).some((a: any) => !a.hideOnPrint),
+      program: true,
+    };
+    const missingRegions: string[] = [];
+    const smallRegions: string[] = [];
+    for (const name of regionNames) {
+      if (!expectedRegion[name]) continue;
+      const pt = Number(regions[name] || 0);
+      if (pt <= 0) {
+        missingRegions.push(name);
+        continue;
+      }
+      if (pt + 0.05 < minBody) smallRegions.push(`${name} ${pt.toFixed(1)}pt`);
+    }
+    result.checks.region_body = {
+      pass: missingRegions.length === 0 && smallRegions.length === 0,
+      value: smallRegions.length
+        ? smallRegions.join(', ')
+        : missingRegions.length
+          ? `missing ${missingRegions.join(',')}`
+          : Object.entries(regions)
+              .filter(([name]) => expectedRegion[name as keyof typeof expectedRegion] !== false)
+              .map(([k, v]) => `${k[0]}${Number(v).toFixed(0)}`)
+              .join(' '),
+    };
+    const printPlan = await page.evaluate(() => (window as any).__PRINT_PLAN__ || null);
+    const omittedTitles: string[] = printPlan?.omittedTitles || [];
+    result.checks.completeness = checkCompleteness(
+      analysis.full_text || '',
+      fixtureData,
+      omittedTitles,
+      announcementReadingText(analysis, output)
+    );
+    if (omittedTitles.length) {
+      const moreLine = /more announcements:\s*scan the qr code/i.test(analysis.full_text || '');
+      if (!moreLine) {
+        result.checks.completeness = { pass: false, value: 'missing omit QR line' };
+      }
+    }
     result.checks.clipping = {
       pass: !analysis.clipping,
       value: analysis.clipping ? 'Yes' : 'None',
     };
-    result.checks.pages = {
-      pass: analysis.pages > 0,
-      value: String(analysis.pages || pageFiles.length),
-    };
+    const foldSim = checkFoldSimulation(analysis, output);
+    result.checks.pages = foldSim.pages;
+    result.checks.fold_sim = foldSim.fold;
+    result.checks.no_continued = foldSim.continued;
+    result.panelMap = foldSim.map;
+    result.regionFonts = analysis.region_fonts || {};
+    const stripFixtures = new Set(['bishops-exact-case', 'many-announcements']);
+    const stripModes = new Set(['Normal', 'Extra Large']);
+    if (stripFixtures.has(fixture) && stripModes.has(mode.label)) {
+      await buildFoldStrip(outputDir, pageFiles, output, 'folded-order.png');
+    }
     result.checks.overlap = {
       pass: analysis.overlap_count === 0,
       value: analysis.overlap_count === 0 ? 'None' : `${analysis.overlap_count} overlaps`,
@@ -298,22 +604,60 @@ async function runCase(
 function addModeScaleChecks(results: TestResult[]) {
   const groups = new Map<string, TestResult[]>();
   for (const result of results) {
+    if (result.output === 'booklet') continue;
     const key = `${result.branch}::${result.fixture}`;
     const list = groups.get(key) || [];
     list.push(result);
     groups.set(key, list);
   }
+  const regions = ['program', 'announcements', 'leadership', 'cover'] as const;
   for (const group of groups.values()) {
     const normal = group.find((r) => r.mode === 'Normal');
+    const large = group.find((r) => r.mode === 'Large');
     const extra = group.find((r) => r.mode === 'Extra Large');
     if (!normal || !extra) continue;
     const normalBody = parseFloat(normal.checks.body_pt?.value || '0');
     const extraBody = parseFloat(extra.checks.body_pt?.value || '0');
-    const ratio = normalBody > 0 ? extraBody / normalBody : 0;
+    const ratio = extraBody / Math.max(normalBody, 0.1);
     extra.checks.mode_scale = {
-      pass: extraBody > 0 && ratio >= 1.15,
+      pass: extraBody >= 14 && normalBody > 0 && ratio + 0.001 >= 1.15,
       value: normalBody > 0 ? `${ratio.toFixed(2)}×` : 'N/A',
     };
+
+    const fails: string[] = [];
+    for (const region of regions) {
+      const n = Number(normal.regionFonts?.[region] || 0);
+      const l = Number(large?.regionFonts?.[region] || 0);
+      const x = Number(extra.regionFonts?.[region] || 0);
+      const present = [n, l, x].filter((v) => v > 0);
+      if (present.length < 2) continue;
+      if (n > 0 && l > 0 && !(n < l)) fails.push(`${region} N≥L`);
+      if (l > 0 && x > 0 && !(l < x)) fails.push(`${region} L≥XL`);
+      if (n > 0 && x > 0 && !(n < x)) fails.push(`${region} N≥XL`);
+    }
+    extra.checks.region_scale = {
+      pass: fails.length === 0,
+      value: fails.length ? fails.join(', ') : 'N<L<XL',
+    };
+  }
+}
+
+function printTable(results: TestResult[]) {
+  const keys = [
+    'margin', 'qr_clean', 'body_pt', 'heading_pt', 'region_body', 'completeness',
+    'pages', 'fold_sim', 'no_continued', 'mode_scale', 'region_scale',
+  ];
+  console.log('\n| fixture | mode | pages | body | regions | fold | scale | result |');
+  console.log('|---------|------|-------|------|---------|------|-------|--------|');
+  for (const result of results) {
+    const failed = Object.entries(result.checks).filter(([, c]) => !c.pass).map(([k]) => k);
+    const pages = result.checks.pages?.value || '?';
+    const body = result.checks.body_pt?.value || '?';
+    const regions = result.checks.region_body?.value || '?';
+    const fold = result.checks.fold_sim?.value || '?';
+    const scale = result.checks.mode_scale?.value || result.checks.region_scale?.value || '';
+    const mark = failed.length ? `FAIL ${failed.join(',')}` : 'PASS';
+    console.log(`| ${result.fixture} | ${result.mode} | ${pages} | ${body} | ${regions} | ${fold} | ${scale} | ${mark} |`);
   }
 }
 
@@ -341,11 +685,34 @@ async function main() {
         console.log(`${passed}/${total}${err ? ` (${err})` : ''}`);
       }
     }
+
+    const bookletCases: Array<{ fixture: string; scale: number; label: string }> = [
+      { fixture: 'many-announcements', scale: 1.25, label: 'Extra Large' },
+      { fixture: 'bishops-exact-case', scale: 1.25, label: 'Extra Large' },
+    ];
+    for (const extra of bookletCases) {
+      if (only && !only.includes(extra.fixture)) continue;
+      process.stdout.write(`  ${extra.fixture} / ${extra.label} booklet... `);
+      const result = await runCase(
+        browser,
+        branch,
+        extra.fixture,
+        { scale: extra.scale, label: extra.label, output: 'booklet' },
+        port,
+        outputBase
+      );
+      allResults.push(result);
+      const passed = Object.values(result.checks).filter((c) => c.pass).length;
+      const total = Object.values(result.checks).length;
+      const err = result.checks.error?.value;
+      console.log(`${passed}/${total}${err ? ` (${err})` : ''}`);
+    }
   } finally {
     await browser.close();
   }
 
   addModeScaleChecks(allResults);
+  printTable(allResults);
   const resultsFile = path.join(outputBase, `${slug(branch)}-results.json`);
   fs.writeFileSync(resultsFile, JSON.stringify(allResults, null, 2));
   console.log(`Results saved to ${resultsFile}`);

@@ -184,14 +184,19 @@ for spec in "${BRANCHES[@]}"; do
   wait "$VITE_PID" 2>/dev/null || true
   kill_port
 
-  if [ "$SLUG" = "main" ] || [ "$SLUG" = "cursor-print-layout-fixes-f7ea" ]; then
-    src="$RESULTS/${SLUG}_special-musical-number_Extra-Large"
-    if [ -d "$src" ]; then
-      tag="main"
-      [ "$SLUG" = "cursor-print-layout-fixes-f7ea" ] && tag="173"
-      cp -f "$src/page-1.png" "$RESULTS/artifacts/${tag}-special-musical-number-ExtraLarge-page-1.png" 2>/dev/null || true
-      cp -f "$src/page-2.png" "$RESULTS/artifacts/${tag}-special-musical-number-ExtraLarge-page-2.png" 2>/dev/null || true
-    fi
+  tag=""
+  [ "$SLUG" = "main" ] && tag="main"
+  [ "$SLUG" = "cursor-print-layout-fixes-f7ea" ] && tag="173"
+  [ "$SLUG" = "cursor-pdf-qr-fixes-aaec" ] && tag="171"
+  [ "$SLUG" = "cursor-public-page-performance-e836" ] && tag="174"
+  if [ -n "$tag" ]; then
+    for fixture in special-musical-number bishops-exact-case; do
+      src="$RESULTS/${SLUG}_${fixture}_Extra-Large"
+      if [ -d "$src" ]; then
+        cp -f "$src/page-1.png" "$RESULTS/artifacts/${tag}-${fixture}-ExtraLarge-page-1.png" 2>/dev/null || true
+        cp -f "$src/page-2.png" "$RESULTS/artifacts/${tag}-${fixture}-ExtraLarge-page-2.png" 2>/dev/null || true
+      fi
+    done
   fi
 
   restore_tree
