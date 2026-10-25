@@ -132,11 +132,11 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
     
     const dims = PAGE_SIZES[pageSize];
     
-    // Set high-resolution viewport for print (2x for better quality)
-    const scale = 2;
+    // Set viewport to match page dimensions (no scaling - screenshot at natural resolution)
+    const scale = 1; // No scaling
     await page.setViewportSize({
-      width: Math.round(dims.width * 96 * scale),
-      height: Math.round(dims.height * 96 * scale),
+      width: Math.round(dims.width * 96),
+      height: Math.round(dims.height * 96),
     });
     
     // Get page layout info from DOM BEFORE print emulation (dimensions become 0 after)
@@ -174,10 +174,9 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
       throw new Error('No .print-page elements found in DOM');
     }
     
-    // NOW emulate print media for proper styling
-    await page.emulateMedia({ media: 'print' });
-    
-    // Take full-page screenshot with print media applied
+    // Take full-page screenshot WITHOUT print media emulation
+    // (print media makes everything 0×0 and invisible)
+    // The test page CSS already styles the portal correctly
     const fullPagePath = join(outputDir, `${fixture}-${browserType}-${pageSize}-fullpage.png`);
     await page.screenshot({
       path: fullPagePath,
