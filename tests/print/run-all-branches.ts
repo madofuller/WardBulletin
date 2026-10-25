@@ -38,9 +38,10 @@ async function setupBranch(branch: string): Promise<void> {
   const worktreePath = `/tmp/print-test-${branch.replace(/\//g, '-')}`;
   try {
     await execAsync(`rm -rf ${worktreePath}`);
+    await execAsync(`cd /workspace && git worktree prune`);
   } catch {}
   
-  await execAsync(`git worktree add ${worktreePath} ${branch}`);
+  await execAsync(`cd /workspace && git worktree add ${worktreePath} ${branch}`);
   
   // Copy test harness files into worktree
   const testFiles = [
