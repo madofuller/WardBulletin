@@ -12,7 +12,17 @@ export const supabase = {
     delete: () => Promise.resolve({ data: null, error: null }),
   }),
   auth: {
-    getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    getSession: () => Promise.resolve({ 
+      data: { 
+        session: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+          },
+        } 
+      }, 
+      error: null 
+    }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
   },
   storage: {
