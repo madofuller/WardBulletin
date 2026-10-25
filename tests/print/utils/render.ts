@@ -54,12 +54,42 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
   try {
     const page = await browser.newPage();
     
-    // Load fixture data from the test-fixtures directory in the app
-    const fixtureUrl = `${appUrl}/print-test?fixture=${fixture}`;
+    // Capture console messages, errors, and failed requests
+    const logs: string[] = [];
+    const errors: string[] = [];
+    
+    page.on('console', msg => {
+      const text = `[${msg.type()}] ${msg.text()}`;
+      logs.push(text);
+      if (msg.type() === 'error') {
+        console.log(`      Browser console error: ${text}`);
+        errors.push(text);
+      }
+    });
+    
+    page.on('pageerror', err => {
+      const text = `Page error: ${err.message}`;
+      console.log(`      ${text}`);
+      errors.push(text);
+    });
+    
+    page.on('requestfailed', request => {
+      const text = `Failed request: ${request.url()} - ${request.failure()?.errorText}`;
+      console.log(`      ${text}`);
+      errors.push(text);
+    });
+    
+    // Use standalone print test page (no Supabase/auth required)
+    const fixtureUrl = `${appUrl}/print-test.html?fixture=${fixture}`;
     
     // Navigate to the test route
     console.log(`    Navigating to ${fixtureUrl}...`);
-    await page.goto(fixtureUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    const response = await page.goto(fixtureUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    console.log(`    Response status: ${response?.status()}`);
+    
+    if (response && response.status() >= 400) {
+      throw new Error(`HTTP ${response.status()}: ${response.statusText()}`);
+    }
     
     // Take a debug screenshot to see what's actually rendered
     const debugPath = join(outputDir, `debug-${fixture}-${browserType}.png`);
@@ -79,13 +109,19 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
     try {
       await page.waitForSelector('.print-source-portal', { timeout: 10000, state: 'attached' });
       console.log(`    ✓ Portal found`);
+      
+      // Wait for explicit readiness signal (fonts + QR codes loaded)
+      await page.waitForFunction(() => (window as any).__PRINT_READY__ === true, { timeout: 5000 });
+      console.log(`    ✓ Print ready`);
     } catch (e) {
       // Check what's on the page
       const bodyHTML = await page.evaluate(() => document.body.innerHTML);
-      console.log(`    Portal not found. Body content length: ${bodyHTML.length}`);
-      throw new Error(`Print portal not found. Check ${debugPath} for what rendered.`);
+      console.log(`    Portal not found or not ready. Body content length: ${bodyHTML.length}`);
+      if (errors.length > 0) {
+        console.log(`    Errors: ${errors.join(', ')}`);
+      }
+      throw new Error(`Print portal not found or not ready. Check ${debugPath}. Errors: ${errors.join('; ')}`);
     }
-    await page.waitForTimeout(2000); // Extra time for QR codes and rendering
     
     // Get the bulletin data from the page
     const bulletinData = await page.evaluate(() => {

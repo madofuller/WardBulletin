@@ -46,6 +46,12 @@ async function startDevServer(): Promise<{ server: ChildProcess; url: string }> 
     const server = spawn('npm', ['run', 'dev'], {
       cwd: join(process.cwd(), '../..'),
       stdio: 'pipe',
+      env: {
+        ...process.env,
+        // Mock Supabase for testing
+        VITE_SUPABASE_URL: 'https://test.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'test_anon_key_for_print_regression_testing_only',
+      },
     });
     
     let output = '';
