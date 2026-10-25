@@ -58,11 +58,34 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
     const fixtureUrl = `${appUrl}/print-test?fixture=${fixture}`;
     
     // Navigate to the test route
-    await page.goto(fixtureUrl, { waitUntil: 'networkidle' });
+    console.log(`    Navigating to ${fixtureUrl}...`);
+    await page.goto(fixtureUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    
+    // Take a debug screenshot to see what's actually rendered
+    const debugPath = join(outputDir, `debug-${fixture}-${browserType}.png`);
+    await page.screenshot({ path: debugPath, fullPage: true });
+    console.log(`    Debug screenshot: ${debugPath}`);
+    
+    // Check if there's an error on the page
+    const errorText = await page.evaluate(() => {
+      const error = document.querySelector('[role="alert"], .error, .text-red-600');
+      return error ? error.textContent : null;
+    });
+    if (errorText) {
+      console.log(`    Page error: ${errorText}`);
+    }
     
     // Wait for bulletin data to load and render
-    await page.waitForSelector('.print-source-portal', { timeout: 10000 });
-    await page.waitForTimeout(1000); // Extra time for QR codes to generate
+    try {
+      await page.waitForSelector('.print-source-portal', { timeout: 10000, state: 'attached' });
+      console.log(`    ✓ Portal found`);
+    } catch (e) {
+      // Check what's on the page
+      const bodyHTML = await page.evaluate(() => document.body.innerHTML);
+      console.log(`    Portal not found. Body content length: ${bodyHTML.length}`);
+      throw new Error(`Print portal not found. Check ${debugPath} for what rendered.`);
+    }
+    await page.waitForTimeout(2000); // Extra time for QR codes and rendering
     
     // Get the bulletin data from the page
     const bulletinData = await page.evaluate(() => {

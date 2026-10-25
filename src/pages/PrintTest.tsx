@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import { BulletinData } from '../types/bulletin';
@@ -14,7 +14,20 @@ export default function PrintTest() {
   const [searchParams] = useSearchParams();
   const [bulletinData, setBulletinData] = useState<BulletinData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const fixtureName = searchParams.get('fixture');
+
+  // Create portal container on mount
+  useEffect(() => {
+    const container = document.createElement('div');
+    container.className = 'print-source-portal';
+    document.body.appendChild(container);
+    setPortalContainer(container);
+
+    return () => {
+      document.body.removeChild(container);
+    };
+  }, []);
 
   useEffect(() => {
     if (!fixtureName) {
@@ -82,15 +95,13 @@ export default function PrintTest() {
       </div>
 
       {/* Print portal - hidden on screen, shown on print */}
-      {createPortal(
-        <div className="print-source-portal">
-          <BulletinPrintLayout
-            data={bulletinData}
-            // @ts-ignore - passing mock profile for test
-            profile={mockProfile}
-          />
-        </div>,
-        document.body
+      {portalContainer && bulletinData && createPortal(
+        <BulletinPrintLayout
+          data={bulletinData}
+          // @ts-ignore - passing mock profile for test
+          profile={mockProfile}
+        />,
+        portalContainer
       )}
     </>
   );
