@@ -65,6 +65,44 @@ const FIXTURES = [
     }
   },
   {
+    name: 'bishops-exact-case',
+    description: "Bishop's exact complaint: SunRiver + Extra Large + full program + musical + announcements",
+    data: {
+      wardName: 'SunRiver 2nd Ward',
+      date: '2026-10-25',
+      leadership: { presiding: 'Bishop Mark Perkins', conducting: 'Bishop Mark Perkins', chorister: 'Sister Emily Johnson', organist: 'Brother David Smith' },
+      musicProgram: { 
+        openingHymnNumber: '2', 
+        openingHymnTitle: 'The Spirit of God',
+        sacramentHymnNumber: '169',
+        sacramentHymnTitle: 'As Now We Take the Sacrament', 
+        closingHymnNumber: '152',
+        closingHymnTitle: 'God Be with You Till We Meet Again'
+      },
+      prayers: { opening: 'Brother James Anderson', closing: 'Sister Maria Martinez' },
+      agenda: [
+        { type: 'speaker', id: 'sp0', name: 'Sister Rebecca Thompson' },
+        { type: 'sacrament', id: 's1' },
+        { type: 'musical', id: 'm1', label: 'Special Musical Number', songName: 'How Great Thou Art', performers: 'The Johnson Family Choir with Friends from the Portland Oregon Stake Combined Choirs and Community Members' },
+        { type: 'speaker', id: 'sp1', name: 'Elder Michael Roberts from the Stake High Council' },
+        { type: 'speaker', id: 'sp2', name: 'Bishop Mark Perkins' }
+      ],
+      announcements: [
+        { id: 'a1', title: 'Stake Temple Trip', content: 'The stake is organizing a temple trip to the Boise Idaho Temple next Saturday. The bus will leave from the stake center at 5:30am and return by 8pm.', audience: 'ward' },
+        { id: 'a2', title: 'Ward Christmas Party', content: 'Save the date for our annual ward Christmas party on December 20th. Sign up to help with decorations or bring a side dish.', audience: 'ward' },
+        { id: 'a3', title: 'Youth Activity', content: 'All youth ages 12-18 are invited to a special activity this Friday evening from 7-9pm in the cultural hall.', audience: 'ward' },
+        { id: 'a4', title: 'Relief Society Meeting', content: 'Relief Society will meet this Tuesday at 7pm to work on service projects for the local homeless shelter.', audience: 'ward' },
+        { id: 'a5', title: 'Primary Program Practice', content: 'Primary children should attend practice this Saturday at 10am. Parents please help your children memorize their parts.', audience: 'ward' }
+      ],
+      wardLeadership: [
+        { title: 'Bishop', name: 'Mark Perkins', phone: '555-0101' },
+        { title: 'First Counselor', name: 'John Davis', phone: '555-0102' },
+        { title: 'Second Counselor', name: 'Robert Wilson', phone: '555-0103' }
+      ],
+      showQRCodeOnPrint: true
+    }
+  },
+  {
     name: 'heavy-announcements',
     description: '15 long announcements',
     data: {
