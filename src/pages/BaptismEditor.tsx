@@ -11,11 +11,6 @@ import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import Logo from '../components/Logo';
 import { LDS_IMAGES } from '../data/images';
 
-const loadPdfDeps = () => Promise.all([
-  import('jspdf'),
-  import('html2canvas'),
-]);
-
 function generateId() {
   return crypto.randomUUID();
 }
@@ -246,47 +241,15 @@ export default function BaptismEditor() {
     setActiveHymnSearch(null);
   };
 
-  // PDF export
+  // PDF export - using browser's native print-to-PDF for vector output
   const handleExportPDF = async () => {
-    if (!printPage1Ref.current || !printPage2Ref.current) {
-      toast.error(t('errors.pdfExportFailed', 'PDF export failed. Please try again.'));
-      return;
-    }
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const scale = 1.5;
-      const marginY = 10;
-      const [{ default: jsPDF }, { default: html2canvas }] = await loadPdfDeps();
-
-      const canvas1 = await html2canvas(printPage1Ref.current, {
-        scale, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, removeContainer: true,
-        width: printPage1Ref.current.scrollWidth, height: printPage1Ref.current.scrollHeight,
-      });
-      const canvas2 = await html2canvas(printPage2Ref.current, {
-        scale, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, removeContainer: true,
-        width: printPage2Ref.current.scrollWidth, height: printPage2Ref.current.scrollHeight,
-      });
-
-      const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
-      const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
-
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter', compress: true });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const ratio1 = Math.min(1, (pdfWidth) / canvas1.width, (pdfHeight - marginY * 2) / canvas1.height);
-      pdf.addImage(imgData1, 'JPEG', (pdfWidth - canvas1.width * ratio1) / 2, marginY, canvas1.width * ratio1, canvas1.height * ratio1);
-
-      pdf.addPage('letter', 'landscape');
-      const ratio2 = Math.min(1, (pdfWidth) / canvas2.width, (pdfHeight - marginY * 2) / canvas2.height);
-      pdf.addImage(imgData2, 'JPEG', (pdfWidth - canvas2.width * ratio2) / 2, marginY, canvas2.width * ratio2, canvas2.height * ratio2);
-
-      const candidateName = data.agenda.find(i => i.type === 'baptism_ordinance')?.candidateName || 'Baptism';
-      pdf.setDocumentProperties({ title: `${candidateName} - Baptism Program` });
-      pdf.autoPrint();
-      pdf.save(`Baptism-Program-${candidateName.replace(/\s+/g, '-')}.pdf`);
-    } catch {
-      toast.error(t('errors.pdfGenerationFailed', 'There was an error generating the PDF. Please try again.'));
+      // Trigger the browser's print dialog
+      // Users select "Save as PDF" or "Microsoft Print to PDF" as the destination
+      window.print();
+    } catch (error) {
+      console.error('Print error:', error);
+      toast.error(t('errors.pdfGenerationFailed', 'There was an error opening the print dialog. Please try again.'));
     }
   };
 
