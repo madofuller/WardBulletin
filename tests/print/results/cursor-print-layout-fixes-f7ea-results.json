@@ -23,11 +23,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "6.5pt"
+        "value": "15.0pt"
       },
       "heading_pt": {
         "pass": true,
         "value": "27.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "27.0>15.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l9 c27 a15 p15"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -75,7 +87,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "10.5pt"
+        "value": "30.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "30.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c30 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -123,7 +147,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "14.0pt"
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c36 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -131,7 +167,7 @@
       },
       "pages": {
         "pass": true,
-        "value": "2"
+        "value": "3"
       },
       "overlap": {
         "pass": true,
@@ -143,7 +179,7 @@
       },
       "mode_scale": {
         "pass": true,
-        "value": "2.15×"
+        "value": "0.93×"
       }
     }
   },
@@ -171,11 +207,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "6.5pt"
+        "value": "12.0pt"
       },
       "heading_pt": {
         "pass": true,
         "value": "27.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "27.0>12.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l9 c27 a15 p15"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
       },
       "clipping": {
         "pass": true,
@@ -223,7 +271,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "10.5pt"
+        "value": "30.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "30.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l11 c30 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
       },
       "clipping": {
         "pass": true,
@@ -271,7 +331,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "14.0pt"
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c36 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
       },
       "clipping": {
         "pass": true,
@@ -279,7 +351,7 @@
       },
       "pages": {
         "pass": true,
-        "value": "2"
+        "value": "3"
       },
       "overlap": {
         "pass": true,
@@ -291,7 +363,7 @@
       },
       "mode_scale": {
         "pass": true,
-        "value": "2.15×"
+        "value": "1.17×"
       }
     }
   },
@@ -319,11 +391,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "6.5pt"
+        "value": "10.5pt"
       },
       "heading_pt": {
         "pass": true,
         "value": "27.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "27.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c27 a11 p15"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "43 fields"
       },
       "clipping": {
         "pass": true,
@@ -331,7 +415,7 @@
       },
       "pages": {
         "pass": true,
-        "value": "2"
+        "value": "4"
       },
       "overlap": {
         "pass": true,
@@ -371,7 +455,203 @@
       },
       "heading_pt": {
         "pass": true,
+        "value": "30.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "30.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c30 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "43 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "5"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "many-announcements",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "14.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c36 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "43 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "7"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.33×"
+      }
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "long-names",
+    "mode": "Normal",
+    "scale": 1,
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "12.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "27.0>12.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l9 c27 a15 p15"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "23 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "long-names",
+    "mode": "Large",
+    "scale": 1.15,
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
         "value": "10.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "30.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "30.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l11 c30 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "23 fields"
       },
       "clipping": {
         "pass": true,
@@ -393,7 +673,7 @@
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "many-announcements",
+    "fixture": "long-names",
     "mode": "Extra Large",
     "scale": 1.25,
     "checks": {
@@ -419,7 +699,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "14.0pt"
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c36 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "23 fields"
       },
       "clipping": {
         "pass": true,
@@ -439,13 +731,13 @@
       },
       "mode_scale": {
         "pass": true,
-        "value": "2.15×"
+        "value": "1.17×"
       }
     }
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "long-names",
+    "fixture": "bishops-exact-case",
     "mode": "Normal",
     "scale": 1,
     "checks": {
@@ -467,11 +759,23 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "6.5pt"
+        "value": "15.0pt"
       },
       "heading_pt": {
         "pass": true,
         "value": "27.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "27.0>15.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l9 c27 a15 p15"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "34 fields"
       },
       "clipping": {
         "pass": true,
@@ -493,7 +797,7 @@
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "long-names",
+    "fixture": "bishops-exact-case",
     "mode": "Large",
     "scale": 1.15,
     "checks": {
@@ -519,7 +823,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "10.5pt"
+        "value": "30.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "30.0>10.5"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l11 c30 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "34 fields"
       },
       "clipping": {
         "pass": true,
@@ -527,7 +843,7 @@
       },
       "pages": {
         "pass": true,
-        "value": "2"
+        "value": "3"
       },
       "overlap": {
         "pass": true,
@@ -541,7 +857,7 @@
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "long-names",
+    "fixture": "bishops-exact-case",
     "mode": "Extra Large",
     "scale": 1.25,
     "checks": {
@@ -567,7 +883,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "14.0pt"
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c36 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "34 fields"
       },
       "clipping": {
         "pass": true,
@@ -575,7 +903,7 @@
       },
       "pages": {
         "pass": true,
-        "value": "2"
+        "value": "3"
       },
       "overlap": {
         "pass": true,
@@ -587,7 +915,7 @@
       },
       "mode_scale": {
         "pass": true,
-        "value": "2.15×"
+        "value": "0.93×"
       }
     }
   }
