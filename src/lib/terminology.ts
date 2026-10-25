@@ -1,5 +1,5 @@
 import { getCurrentUnitType, getTerminologyForUnitType, UnitType } from './config';
-import { TFunction } from 'i18next';
+import type { TFunction } from 'i18next';
 
 // Helper function to get terminology based on optional override.
 // Reads the current unit type live so labels are correct after the cloud
