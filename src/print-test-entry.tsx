@@ -50,12 +50,6 @@ async function renderBulletin() {
     // Expose for test inspection
     (window as any).__BULLETIN_DATA__ = bulletinData;
     
-    // Wait for fonts
-    await document.fonts.ready;
-    
-    // Wait a bit more for QR codes
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     // Render bulletin into portal
     const portalElement = document.getElementById('print-portal')!;
     const portalRoot = createRoot(portalElement);
@@ -69,6 +63,48 @@ async function renderBulletin() {
         />
       </React.StrictMode>
     );
+    
+    // Wait for fonts
+    await document.fonts.ready;
+    console.log('[Print Test] Fonts ready');
+    
+    // Wait for QR codes to actually render (they use useEffect -> async QRCode.toCanvas)
+    // Poll for canvas elements with actual content
+    const waitForQR = async () => {
+      const maxWait = 5000;
+      const startTime = Date.now();
+      
+      while (Date.now() - startTime < maxWait) {
+        const canvases = Array.from(portalElement.querySelectorAll('canvas'));
+        
+        if (canvases.length > 0) {
+          // Check if all canvases have been drawn (width > 0 means sized, but check if drawn)
+          const allReady = canvases.every(canvas => {
+            const ctx = (canvas as HTMLCanvasElement).getContext('2d');
+            if (!ctx || (canvas as HTMLCanvasElement).width === 0) return false;
+            
+            // Check if canvas has non-white pixels (QR code is black on white)
+            const imageData = ctx.getImageData(0, 0, (canvas as HTMLCanvasElement).width, (canvas as HTMLCanvasElement).height);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+              if (imageData.data[i] < 200) return true; // Found dark pixel
+            }
+            return false;
+          });
+          
+          if (allReady) {
+            console.log('[Print Test] QR codes ready:', canvases.length);
+            return true;
+          }
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      console.warn('[Print Test] QR code timeout - proceeding anyway');
+      return false;
+    };
+    
+    await waitForQR();
     
     // Update screen UI to show ready
     rootRoot.render(<ScreenUI fixtureName={fixtureName} ready={true} />);
