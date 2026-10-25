@@ -26,8 +26,8 @@
 @media print {
   @page {
     size: 11in 8.5in landscape;
-    /* Safe margins for home printers and copiers - 0.3in minimum */
-    margin: 0.3in;
+    /* No @page margin - component uses internal padding for printer safety */
+    margin: 0;
   }
 
   html, body {
