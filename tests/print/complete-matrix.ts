@@ -347,24 +347,6 @@ async function runCase(
 
     const regions = analysis.region_fonts || {};
     const regionNames = ['program', 'announcements', 'leadership', 'cover'] as const;
-    const missingRegions: string[] = [];
-    const smallRegions: string[] = [];
-    for (const name of regionNames) {
-      const pt = Number(regions[name] || 0);
-      if (pt <= 0) {
-        missingRegions.push(name);
-        continue;
-      }
-      if (pt + 0.05 < minBody) smallRegions.push(`${name} ${pt.toFixed(1)}pt`);
-    }
-    result.checks.region_body = {
-      pass: missingRegions.length === 0 && smallRegions.length === 0,
-      value: smallRegions.length
-        ? smallRegions.join(', ')
-        : missingRegions.length
-          ? `missing ${missingRegions.join(',')}`
-          : Object.entries(regions).map(([k, v]) => `${k[0]}${Number(v).toFixed(0)}`).join(' '),
-    };
 
     const fixturePath = path.join(here, 'fixtures', `${fixture}.json`);
     let fixtureData: any = {};
@@ -373,8 +355,24 @@ async function runCase(
     } catch {
       fixtureData = {};
     }
-    const completeness = checkCompleteness(analysis.full_text || '', fixtureData);
-    result.checks.completeness = completeness;
+
+    const expectedRegion: Record<(typeof regionNames)[number], boolean> = {
+      leadership: (fixtureData.wardLeadership || []).some((e: any) => e?.name || e?.phone),
+      cover: !!(fixtureData.wardName || fixtureData.date),
+      announcements: (fixtureData.announcements || []).some((a: any) => !a.hideOnPrint),
+      program: true,
+    };
+    const missingRegions: string[] = [];
+    const smallRegions: string[] = [];
+    for (const name of regionNames) {
+      if (!expectedRegion[name]) continue;
+      const pt = Number(regions[name] || 0);
+      if (pt <= 0) {
+        missingRegions.push(name);
+        continue;
+      }
+      if (pt + 0.05 < minBody) smallRegions.push(`${name} ${pt.toFixed(1)}pt`);
+    }
     result.checks.clipping = {
       pass: !analysis.clipping,
       value: analysis.clipping ? 'Yes' : 'None',

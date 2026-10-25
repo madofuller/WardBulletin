@@ -899,19 +899,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               {(() => {
                 const displayAnnouncements = announcementPages[0] || [];
                 const unitAudience = getUnitLabel(unitTypeOverride);
-                const grouped = displayAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
-                  const isStandalone = announcement.audience === 'standalone' || announcement.audience?.startsWith('standalone_');
-                  const audienceLabel = isStandalone
-                    ? (announcement.customAudienceLabel || '')
-                    : getAudienceLabel(announcement.audience || getUnitLowercase(unitTypeOverride));
-                  // Skip the default "Ward" bucket — it collides with the panel title.
-                  const key = audienceLabel === unitAudience ? '' : audienceLabel;
-                  if (!groups[key]) groups[key] = [];
-                  groups[key].push(announcement);
-                  return groups;
-                }, {});
-
-                const columnCount = isLargeOrExtraLarge ? 1 : announceColumnCount;
+                const columnCount = 1;
                 const gap = tight ? '0.35rem' : '0.5rem';
 
                 const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
@@ -921,13 +909,21 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 const contentFontSize = announceBodyStyle.fontSize || scalePx(Math.round(baseContent * announceFitScale));
 
                 return (
-                  <div style={{ columnCount, columnGap: gap, columnFill: 'balance', height: '100%' }}>
-                    {Object.entries(grouped).map(([audienceLabel, announcements], groupIdx) => (
-                      <div key={audienceLabel || `group-${groupIdx}`} style={{ marginBottom: groupIdx < Object.keys(grouped).length - 1 ? (isLightContent ? '1rem' : tight ? '0.125rem' : '0.25rem') : 0 }}>
-                        <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
-                          {(announcements as any[]).map((a: any, idx: number) => {
+                  <div style={{ columnCount, columnGap: gap, columnFill: 'auto', height: '100%' }}>
+                    <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
+                      {displayAnnouncements.map((a: any, idx: number) => {
                             const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
-                            const showHeader = idx === 0 && !!audienceLabel;
+                            const isStandalone = a.audience === 'standalone' || a.audience?.startsWith('standalone_');
+                            const audienceLabel = isStandalone
+                              ? (a.customAudienceLabel || '')
+                              : getAudienceLabel(a.audience || getUnitLowercase(unitTypeOverride));
+                            const prev = displayAnnouncements[idx - 1];
+                            const prevLabel = prev
+                              ? (prev.audience === 'standalone' || prev.audience?.startsWith('standalone_')
+                                ? (prev.customAudienceLabel || '')
+                                : getAudienceLabel(prev.audience || getUnitLowercase(unitTypeOverride)))
+                              : '';
+                            const showHeader = !!audienceLabel && audienceLabel !== unitAudience && audienceLabel !== prevLabel;
                             return (
                               <li key={`${a.id || idx}-${a.continued ? 'cont' : 'full'}`} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
                                 {showHeader && (
@@ -1022,9 +1018,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                               </li>
                             );
                           })}
-                        </ul>
-                      </div>
-                    ))}
+                    </ul>
                   </div>
                 );
               })()}
@@ -1042,7 +1036,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         )}
 
         {/* Program (right) */}
-        <div className={`print-panel print-region-program w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start' : 'justify-start'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
+        <div className={`print-panel print-region-program w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start' : 'justify-start'} flex flex-col items-center text-center print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="print-cover-sub text-lg mb-1 print:!text-xl print:!text-black uppercase" style={coverSubStyle}>{t('bulletin.theBaptismOf')}</p>
