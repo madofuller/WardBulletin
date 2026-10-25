@@ -315,10 +315,17 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
-  // Auto-fit: first add columns, then shrink fonts as a last resort
-  // MIN_FIT_SCALE sets the minimum readable size for senior ward members (55+).
-  // 0.85 ensures text remains legible; below this, encourage web-only announcements.
-  const MIN_FIT_SCALE = 0.85;
+  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large
+  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
+    ? data.printFontScale
+    : 1;
+
+  // In Large/Extra Large modes (fontScale >= 1.15), disable auto-shrinking entirely.
+  // Text must remain at full scale for senior readability. Overflow flows to a
+  // continuation page instead of shrinking.
+  const isLargeOrExtraLarge = fontScale >= 1.15;
+  const MIN_FONT_SIZE_PT = 12; // Absolute minimum in points
+  const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.85;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
 
@@ -340,10 +347,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const isHeavyContent = announcementTotalChars > 2000;
   const isLightContent = announcementTotalChars < 800;
 
-  // Conservative starting guess; the auto-fit effect below adds columns one at
-  // a time only when content actually overflows, so short lists keep fewer,
-  // wider columns instead of always spreading across four.
-  const defaultCols = announcementCount <= 2 || isLightContent ? 1 : (announcementCount >= 6 || isHeavyContent) ? 3 : 2;
+  // In Large/Extra Large modes, use single column for better readability.
+  // In Normal mode, use conservative column count that escalates only on overflow.
+  const defaultCols = isLargeOrExtraLarge 
+    ? 1 
+    : (announcementCount <= 2 || isLightContent ? 1 : (announcementCount >= 6 || isHeavyContent) ? 3 : 2);
   const announceColumnCount = Math.max(autoColumns, defaultCols);
 
   useEffect(() => {
@@ -359,19 +367,23 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       const overflowH = el.scrollWidth - el.clientWidth;
       if (overflowV <= 2 && overflowH <= 2) return;
 
+      // In Large/Extra Large modes, do NOT auto-shrink or add columns.
+      // Let content overflow; it will flow to a continuation page.
+      if (isLargeOrExtraLarge) return;
+
       // Step 1: add columns one at a time before shrinking fonts
       if (announceColumnCount < 4) {
         setAutoColumns(announceColumnCount + 1);
         return;
       }
-      // Step 2: shrink fonts as last resort
+      // Step 2: shrink fonts as last resort (only in Normal mode)
       if (announceFitScale > MIN_FIT_SCALE) {
         const next = Math.max(MIN_FIT_SCALE, announceFitScale - 0.03);
         setAnnounceFitScale(next);
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, [announceFitScale, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins]);
+  }, [announceFitScale, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins, isLargeOrExtraLarge]);
 
   // Detect when content is still cut off after auto-fit (for the warning banner)
   useEffect(() => {
@@ -405,10 +417,6 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     };
   }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale]);
 
-  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large (scales text without shifting layout)
-  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
-    ? data.printFontScale
-    : 1;
   const scalePx = (px: number) => `${Math.round(px * fontScale)}px`;
 
   // Tighter margins to fit more announcements on the page
