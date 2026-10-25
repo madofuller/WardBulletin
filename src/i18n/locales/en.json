@@ -2,6 +2,8 @@
   "common": {
     "newBulletin": "New Bulletin",
     "exportPdf": "Export PDF",
+    "savePdf": "Save as PDF",
+    "preparingPdf": "Opening print dialog...",
     "exporting": "Exporting...",
     "myQrCode": "My QR Code",
     "signIn": "Sign In",
@@ -861,7 +863,13 @@
     "bookletSuggestion": "Switch to Booklet to print more announcements on two nested sheets.",
     "bookletMode": "Booklet (2 sheets)",
     "singleSheet": "One sheet",
-    "bookletModeTooltip": "Print as a nested 8-panel booklet so more announcements fit. Fold the inner sheet inside the outer sheet."
+    "bookletModeTooltip": "Print as a nested 8-panel booklet so more announcements fit. Fold the inner sheet inside the outer sheet.",
+    "savePdfTooltip": "Opens the print dialog. Select \"Save as PDF\" or \"Microsoft Print to PDF\" as the destination to create a vector PDF with sharp text and QR codes.",
+    "printTips": "Printing Tips:",
+    "vectorPdfTip": "For PDF:",
+    "vectorPdfInstructions": "Click \"Print\" below, then select \"Save as PDF\" or \"Microsoft Print to PDF\" as destination. This creates sharp, selectable text.",
+    "duplexTip": "For paper:",
+    "extraLargeTip": "Extra Large mode preserves font sizes in both PDF and paper output."
   },
   "languages": {
     "en": "English",
