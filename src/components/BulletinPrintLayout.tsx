@@ -1060,9 +1060,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
       {/* Page 3: Announcements Continuation (only if needed in Large/Extra Large modes) */}
       {announcementSplitIndex !== null && announcementSplitIndex < printableAnnouncements.length && (
-        <div className="print-page landscape w-[11in] h-[8.5in] print:!text-xl print:!text-black" style={{ pageBreakBefore: 'always', padding: '1in', background: 'white' }}>
-          <h2 className="text-xl font-bold print:!text-2xl print:!text-black w-full text-center mb-4">{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
-          <div>
+        <div className="print-page landscape w-[11in] h-[8.5in] print:!text-xl print:!text-black" style={{ pageBreakBefore: 'always' }}>
+          <div className={`w-full text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0.5in' }}>
+            <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center mb-2">{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
             {(() => {
               const continuationAnnouncements = printableAnnouncements.slice(announcementSplitIndex);
               console.log('Continuation announcements:', continuationAnnouncements.length, 'from index', announcementSplitIndex);
@@ -1074,11 +1075,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               const contentFontSize = scalePx(Math.round(baseContent));
 
               return (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {continuationAnnouncements.map((a: any, idx: number) => {
                     const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
                     return (
-                      <div key={idx} className="mb-4">
+                      <div key={idx}>
                         <div
                           className="font-semibold print:!text-black leading-tight mb-1"
                           style={{ fontSize: titleFontSize }}
@@ -1102,6 +1103,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 </div>
               );
             })()}
+            </div>
           </div>
         </div>
       )}
