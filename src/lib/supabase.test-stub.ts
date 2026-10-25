@@ -39,6 +39,14 @@ export const robustService = {
   saveBulletin: () => Promise.resolve({}),
 };
 
+export const profileSharingService = {
+  getProfilePermissions: () => Promise.resolve([]),
+  getInvitations: () => Promise.resolve([]),
+  createInvitation: () => Promise.resolve({}),
+  acceptInvitation: () => Promise.resolve({}),
+  deletePermission: () => Promise.resolve({}),
+};
+
 export const retryOperation = (fn: Function) => fn();
 
 // Re-export everything the real module exports

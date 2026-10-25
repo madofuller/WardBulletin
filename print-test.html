@@ -4,29 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Print Test</title>
-  <style>
-    /* Force print portal to always be visible for testing */
-    body {
-      margin: 0;
-      padding: 0;
-      background: white;
-    }
-    
-    /* Hide the screen UI in test mode, show only portal */
-    body > div:not(.print-source-portal) {
-      display: none !important;
-    }
-    
-    .print-source-portal {
-      display: block !important;
-      position: static !important;
-      width: 100% !important;
-      height: auto !important;
-    }
-  </style>
 </head>
 <body>
+  <!-- Screen UI root -->
   <div id="root"></div>
+  <!-- Print portal - direct child of body, matches app's print CSS structure -->
+  <div class="print-source-portal" id="print-portal"></div>
   <script type="module" src="/src/print-test-entry.tsx"></script>
 </body>
 </html>

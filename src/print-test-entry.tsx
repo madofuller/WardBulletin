@@ -1,108 +1,89 @@
 /**
  * Standalone entry point for print regression testing.
- * No auth, no Supabase, no routing - just fixture rendering.
+ * Renders BulletinPrintLayout into .print-source-portal (direct child of body),
+ * matching the app's print CSS structure so @media print works correctly.
  */
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import BulletinPrintLayout from './components/BulletinPrintLayout';
 import { BulletinData } from './types/bulletin';
 import './index.css'; // Import all app CSS including print styles
 import './i18n'; // Initialize i18n
 
-// Mock profile for QR codes
+// Mock profile for QR codes - must have profile_slug for QR to render
 const mockProfile = {
   profile_slug: 'test-ward',
 };
 
-function PrintTestApp() {
-  const [bulletinData, setBulletinData] = useState<BulletinData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  
-  // Get fixture name from URL
-  const params = new URLSearchParams(window.location.search);
-  const fixtureName = params.get('fixture') || 'minimal';
-  
-  useEffect(() => {
-    // Load fixture
-    fetch(`/test-fixtures/${fixtureName}.json`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Failed to load: ${res.statusText}`);
-        return res.json();
-      })
-      .then(data => {
-        setBulletinData(data);
-        // Expose for test inspection
-        (window as any).__BULLETIN_DATA__ = data;
-        
-        // Wait for fonts to load
-        document.fonts.ready.then(() => {
-          // Wait a bit more for QR codes
-          setTimeout(() => {
-            setReady(true);
-            (window as any).__PRINT_READY__ = true;
-            console.log('[Print Test] Ready');
-          }, 1000);
-        });
-      })
-      .catch(err => {
-        setError(err.message);
-        console.error('[Print Test] Error:', err);
-      });
-  }, [fixtureName]);
-  
-  if (error) {
-    return (
-      <div style={{ padding: '20px', color: 'red' }}>
-        Error: {error}
-      </div>
-    );
-  }
-  
-  if (!bulletinData) {
-    return (
-      <div style={{ padding: '20px' }}>
-        Loading fixture: {fixtureName}...
-      </div>
-    );
-  }
-  
+// Simple screen UI component
+function ScreenUI({ fixtureName, ready }: { fixtureName: string; ready: boolean }) {
   return (
-    <>
-      {/* Screen UI - hidden on print */}
-      <div style={{ padding: '20px', fontFamily: 'sans-serif' }} className="print:hidden">
-        <h1>Print Test: {fixtureName}</h1>
-        <p>Ready: {ready ? 'Yes' : 'No (fonts loading...)'}</p>
-        <button
-          onClick={() => window.print()}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            background: '#0066cc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          Print
-        </button>
-      </div>
-      
-      {/* Print layout - always in DOM, visible only on print */}
-      <div className="print-source-portal">
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>Print Test: {fixtureName}</h1>
+      <p>Ready: {ready ? 'Yes ✓' : 'Loading...'}</p>
+      <p style={{ fontSize: '12px', color: '#666' }}>
+        The bulletin renders in .print-source-portal (direct child of body).
+        Use browser print preview or @media print to see it.
+      </p>
+    </div>
+  );
+}
+
+// Get fixture name from URL
+const params = new URLSearchParams(window.location.search);
+const fixtureName = params.get('fixture') || 'minimal';
+
+// Render screen UI into #root
+const rootElement = document.getElementById('root')!;
+const rootRoot = createRoot(rootElement);
+rootRoot.render(<ScreenUI fixtureName={fixtureName} ready={false} />);
+
+// Load and render bulletin into .print-source-portal
+async function renderBulletin() {
+  try {
+    // Load fixture
+    const res = await fetch(`/test-fixtures/${fixtureName}.json`);
+    if (!res.ok) throw new Error(`Failed to load: ${res.statusText}`);
+    const bulletinData: BulletinData = await res.json();
+    
+    // Expose for test inspection
+    (window as any).__BULLETIN_DATA__ = bulletinData;
+    
+    // Wait for fonts
+    await document.fonts.ready;
+    
+    // Wait a bit more for QR codes
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Render bulletin into portal
+    const portalElement = document.getElementById('print-portal')!;
+    const portalRoot = createRoot(portalElement);
+    
+    portalRoot.render(
+      <React.StrictMode>
         <BulletinPrintLayout
           data={bulletinData}
           // @ts-ignore - mock profile for testing
           profile={mockProfile}
         />
+      </React.StrictMode>
+    );
+    
+    // Update screen UI to show ready
+    rootRoot.render(<ScreenUI fixtureName={fixtureName} ready={true} />);
+    
+    // Signal ready
+    (window as any).__PRINT_READY__ = true;
+    console.log('[Print Test] Ready');
+  } catch (err) {
+    console.error('[Print Test] Error:', err);
+    rootRoot.render(
+      <div style={{ padding: '20px', color: 'red' }}>
+        Error: {String(err)}
       </div>
-    </>
-  );
+    );
+  }
 }
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <PrintTestApp />
-  </React.StrictMode>
-);
+renderBulletin();
