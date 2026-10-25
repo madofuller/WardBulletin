@@ -8,6 +8,7 @@ import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import BulletinPrintLayout from './components/BulletinPrintLayout';
 import { BulletinData } from './types/bulletin';
+import { SessionProvider } from './lib/SessionContext';
 import './index.css'; // Import all app CSS including print styles
 import './i18n'; // Initialize i18n
 
