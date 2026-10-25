@@ -92,33 +92,57 @@
     max-width: 100% !important;
   }
 
-  /* Scale glyphs only (pt), never rem/padding. Large ≥10pt, Extra Large ≥14pt. */
-  .print-layout[data-font-scale="1.4"] .print-page,
-  .print-layout[data-font-scale="1.4"] .print-page :not(canvas):not(img) {
+  /*
+    Scale by region, never via html rem and never via a blanket :not() rule
+    (that rule is more specific than h1/h2 and flattened headings to body size).
+    Large: body 10.5pt, headings 14pt, cover name 30pt.
+    Extra Large: body 14pt, headings 18pt, cover name 36pt.
+    Cover subtitles stay smaller than the ward name.
+  */
+  .print-layout[data-font-scale="1.4"] .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1.4"] .print-region-announcements .print-body {
     font-size: 10.5pt !important;
+    line-height: 1.25 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-heading,
+  .print-layout[data-font-scale="1.4"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1.4"] .print-page h3.print-heading {
+    font-size: 14pt !important;
     line-height: 1.2 !important;
   }
-  .print-layout[data-font-scale="1.4"] .print-page h1 {
+  .print-layout[data-font-scale="1.4"] .print-cover-name,
+  .print-layout[data-font-scale="1.4"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1.4"] .print-page h2.print-cover-name {
+    font-size: 30pt !important;
+    line-height: 1.1 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-cover-sub {
+    font-size: 12pt !important;
+  }
+
+  .print-layout[data-font-scale="1.8"] .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1.8"] .print-region-announcements .print-body {
+    font-size: 14pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.8"] .print-heading,
+  .print-layout[data-font-scale="1.8"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1.8"] .print-page h3.print-heading {
     font-size: 18pt !important;
     line-height: 1.15 !important;
   }
-  .print-layout[data-font-scale="1.4"] .print-page h2,
-  .print-layout[data-font-scale="1.4"] .print-page h3 {
-    font-size: 14pt !important;
+  .print-layout[data-font-scale="1.8"] .print-cover-name,
+  .print-layout[data-font-scale="1.8"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1.8"] .print-page h2.print-cover-name {
+    font-size: 36pt !important;
+    line-height: 1.05 !important;
   }
-
-  .print-layout[data-font-scale="1.8"] .print-page,
-  .print-layout[data-font-scale="1.8"] .print-page :not(canvas):not(img) {
-    font-size: 14pt !important;
-    line-height: 1.15 !important;
-  }
-  .print-layout[data-font-scale="1.8"] .print-page h1 {
-    font-size: 20pt !important;
-    line-height: 1.1 !important;
-  }
-  .print-layout[data-font-scale="1.8"] .print-page h2,
-  .print-layout[data-font-scale="1.8"] .print-page h3 {
-    font-size: 16pt !important;
+  .print-layout[data-font-scale="1.8"] .print-cover-sub {
+    font-size: 13pt !important;
   }
 
   /* Preserve colors and backgrounds for intentional design elements */
