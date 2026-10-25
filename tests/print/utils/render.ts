@@ -138,48 +138,71 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
       height: Math.round(dims.height * 96),
     });
     
-    // Emulate print media
+    // Emulate print media BEFORE waiting for portal
+    // This makes the .print-source-portal visible
     await page.emulateMedia({ media: 'print' });
     
+    // Generate PDF first (Chromium only, works reliably with print media)
+    let pdfPath: string | undefined;
+    if (browserType !== 'chromium') {
+      throw new Error(`PDF generation only supported for Chromium, got: ${browserType}`);
+    }
+    
+    pdfPath = join(outputDir, `${fixture}-${browserType}-${pageSize}.pdf`);
+    await page.pdf({
+      path: pdfPath,
+      format: pageSize === 'letter' ? 'Letter' : 'A4',
+      landscape: true,
+      printBackground: true,
+      preferCSSPageSize: false,
+    });
+    console.log(`    PDF saved: ${pdfPath}`);
+    
+    // Convert PDF to PNGs using pdf2pic
+    const { fromPath } = await import('pdf2pic');
+    
+    // Convert with high quality
+    const converter = fromPath(pdfPath, {
+      density: 200, // DPI
+      saveFilename: `${fixture}-${browserType}-${pageSize}`,
+      savePath: outputDir,
+      format: 'png',
+      width: 2200, // High resolution for quality checks
+      height: 1700,
+    });
+    
+    // Get page count from PDF
+    const fs = await import('fs/promises');
+    const pdfLib = await import('pdf-lib');
+    const pdfBytes = await fs.readFile(pdfPath);
+    const pdfDoc = await pdfLib.PDFDocument.load(pdfBytes);
+    const pageCount = pdfDoc.getPageCount();
+    
+    console.log(`    Converting ${pageCount} PDF pages to PNG...`);
+    
+    // Convert each page
     const results: RenderResult[] = [];
-    
-    // Find all print pages
-    const printPages = await page.locator('.print-page').all();
-    
-    for (let i = 0; i < printPages.length; i++) {
-      const pageElement = printPages[i];
-      const pngPath = join(outputDir, `${fixture}-${browserType}-${pageSize}-page${i + 1}.png`);
+    for (let i = 1; i <= pageCount; i++) {
+      const result = await converter(i, { responseType: 'image' });
+      const generatedPath = result.path;
       
-      // Screenshot the page
-      await pageElement.screenshot({ 
-        path: pngPath,
-        type: 'png',
-      });
+      // Rename to expected format
+      const pngPath = join(outputDir, `${fixture}-${browserType}-${pageSize}-page${i}.png`);
+      await fs.rename(generatedPath, pngPath);
+      
+      console.log(`    Page ${i} converted: ${pngPath}`);
       
       results.push({
         pngPath,
         bulletinData,
         dimensions: dims,
         page, // Keep page open for inspection
+        pdfPath: i === 1 ? pdfPath : undefined,
       });
     }
     
-    // Generate PDF for Chromium
-    if (browserType === 'chromium') {
-      const pdfPath = join(outputDir, `${fixture}-${browserType}-${pageSize}.pdf`);
-      await page.pdf({
-        path: pdfPath,
-        width: `${dims.width}in`,
-        height: `${dims.height}in`,
-        printBackground: true,
-        preferCSSPageSize: false,
-        pageRanges: '1-2', // Only first 2 pages
-      });
-      
-      // Add PDF path to first result
-      if (results.length > 0) {
-        results[0].pdfPath = pdfPath;
-      }
+    if (results.length === 0) {
+      throw new Error('No pages extracted from PDF');
     }
     
     return results;

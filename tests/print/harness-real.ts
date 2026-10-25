@@ -48,9 +48,8 @@ async function startDevServer(): Promise<{ server: ChildProcess; url: string }> 
       stdio: 'pipe',
       env: {
         ...process.env,
-        // Mock Supabase for testing
-        VITE_SUPABASE_URL: 'https://test.supabase.co',
-        VITE_SUPABASE_ANON_KEY: 'test_anon_key_for_print_regression_testing_only',
+        // Enable test mode to use Supabase stub
+        VITE_PRINT_TEST: 'true',
       },
     });
     

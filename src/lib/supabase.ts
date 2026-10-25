@@ -6,11 +6,16 @@ import { pickTokenRow } from './tokenResolution'
 // Get Supabase configuration from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const isTestMode = import.meta.env.VITE_PRINT_TEST === 'true'
 
-// Validate that required environment variables are set
-if (!supabaseUrl || !supabaseAnonKey) {
+// Validate that required environment variables are set (skip in test mode)
+if (!isTestMode && (!supabaseUrl || !supabaseAnonKey)) {
   throw new Error('Supabase configuration is required')
 }
+
+// Use mock values in test mode
+const effectiveUrl = supabaseUrl || 'https://test.supabase.co'
+const effectiveKey = supabaseAnonKey || 'test_key'
 
 // If the URL carries a Supabase password-recovery hash, redirect to /reset-password
 // before the client below consumes it. Otherwise the recovery event fires before any
@@ -30,7 +35,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Create Supabase client with better error handling
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(effectiveUrl, effectiveKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
