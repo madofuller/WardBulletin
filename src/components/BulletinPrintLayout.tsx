@@ -311,6 +311,11 @@ function shortenMissionName(missionName: string): string {
 const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
   const { user, profile } = useSession();
   const { t, i18n } = useTranslation();
+  
+  // Debug logging for test environment
+  if (import.meta.env.VITE_PRINT_TEST === 'true') {
+    console.log('[BulletinPrintLayout] profile:', profile?.profile_slug, 'showQR:', data.showQRCodeOnPrint);
+  }
   const backCoverRef = useRef<HTMLDivElement>(null);
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });

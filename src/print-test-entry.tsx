@@ -57,11 +57,13 @@ async function renderBulletin() {
     
     portalRoot.render(
       <React.StrictMode>
-        <BulletinPrintLayout
-          data={bulletinData}
-          // @ts-ignore - mock profile for testing
-          profile={mockProfile}
-        />
+        <SessionProvider>
+          <BulletinPrintLayout
+            data={bulletinData}
+            // @ts-ignore - mock profile for testing
+            profile={mockProfile}
+          />
+        </SessionProvider>
       </React.StrictMode>
     );
     
