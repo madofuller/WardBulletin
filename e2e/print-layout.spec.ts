@@ -96,6 +96,31 @@ test.describe('print layout', () => {
     errors.assertClean();
   });
 
+  test('an overfull back cover leaves entries off with a "+N more" note instead of cutting them off', async ({ page }) => {
+    const errors = watchErrors(page);
+    await seedDraft(page, {
+      printFontScale: 1.25,
+      wardMissionaries: Array.from({ length: 40 }, (_, n) => ({
+        name: `Elder Missionary ${n + 1}`,
+        mission: 'Utah Salt Lake City',
+        email: `m${n + 1}@example.com`,
+        serviceType: 'mission',
+      })),
+    });
+    await gotoEditor(page);
+
+    const portal = page.locator('.print-source-portal');
+    await expect(portal).toContainText(/\+\d+ more/);
+    // The list that remains fits its box (nothing is clipped mid-row).
+    await expect
+      .poll(() => page.locator('.print-source-portal .print-page').first().evaluate((el) => {
+        const box = el.querySelector('div > div.flex-1') as HTMLElement;
+        return box.scrollHeight - box.clientHeight;
+      }), { timeout: 15_000 })
+      .toBeLessThanOrEqual(2);
+    errors.assertClean();
+  });
+
   test('heavy announcement content still auto-fits without overflow', async ({ page }) => {
     const longContent =
       'The stake is organizing a multi-ward service project at the cannery next month. Volunteers are needed for both the morning and afternoon shifts, and youth are welcome when accompanied by a leader. Please coordinate with your quorum or class presidency.';

@@ -6,7 +6,6 @@ import { BulletinData } from '../types/bulletin';
 
 const FONT_SCALE_OPTIONS = [
   { value: 1, labelKey: 'printPreview.fontSizeNormal' },
-  { value: 1.15, labelKey: 'printPreview.fontSizeLarge' },
   { value: 1.25, labelKey: 'printPreview.fontSizeExtraLarge' }
 ] as const;
 
@@ -38,8 +37,10 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
 
   if (!isOpen) return null;
 
-  const currentScale = typeof bulletinData.printFontScale === 'number' && bulletinData.printFontScale >= 1 && bulletinData.printFontScale <= 1.5
-    ? bulletinData.printFontScale
+  // Only Normal and Extra Large exist now; a bulletin saved with the old "Large" (1.15)
+  // prints as Extra Large.
+  const currentScale = typeof bulletinData.printFontScale === 'number' && bulletinData.printFontScale > 1 && bulletinData.printFontScale <= 1.5
+    ? 1.25
     : 1;
 
   const toggleQRCode = () => {
@@ -128,7 +129,7 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                     }`}
-                    title={value === 1 ? '100%' : value === 1.15 ? '115%' : '125%'}
+                    title={value === 1 ? '100%' : '125%'}
                   >
                     {t(labelKey)}
                   </button>
