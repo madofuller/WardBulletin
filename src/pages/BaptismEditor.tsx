@@ -254,8 +254,7 @@ export default function BaptismEditor() {
     }
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
-      const scale = 1.5;
-      const marginY = 10;
+      const scale = 3;
       const [{ default: jsPDF }, { default: html2canvas }] = await loadPdfDeps();
 
       const canvas1 = await html2canvas(printPage1Ref.current, {
@@ -267,19 +266,17 @@ export default function BaptismEditor() {
         width: printPage2Ref.current.scrollWidth, height: printPage2Ref.current.scrollHeight,
       });
 
-      const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
-      const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
+      const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
+      const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
 
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter', compress: true });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      const ratio1 = Math.min(1, (pdfWidth) / canvas1.width, (pdfHeight - marginY * 2) / canvas1.height);
-      pdf.addImage(imgData1, 'JPEG', (pdfWidth - canvas1.width * ratio1) / 2, marginY, canvas1.width * ratio1, canvas1.height * ratio1);
-
+      // Each print page is exactly letter-landscape, so fill the whole PDF page.
+      pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.addPage('letter', 'landscape');
-      const ratio2 = Math.min(1, (pdfWidth) / canvas2.width, (pdfHeight - marginY * 2) / canvas2.height);
-      pdf.addImage(imgData2, 'JPEG', (pdfWidth - canvas2.width * ratio2) / 2, marginY, canvas2.width * ratio2, canvas2.height * ratio2);
+      pdf.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
       const candidateName = data.agenda.find(i => i.type === 'baptism_ordinance')?.candidateName || 'Baptism';
       pdf.setDocumentProperties({ title: `${candidateName} - Baptism Program` });

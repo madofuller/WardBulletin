@@ -308,6 +308,10 @@ function shortenMissionName(missionName: string): string {
   return shortened;
 }
 
+// Printers can't print the outer ~0.25in of a sheet, so content is kept inside this
+// margin or the edges (QR codes, benediction, ward name) get cut off on paper.
+const PRINT_SAFE_MARGIN = '0.35in 0.3in';
+
 const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
   const { user, profile } = useSession();
   const { t, i18n } = useTranslation();
@@ -315,16 +319,37 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
-  // Auto-fit: first add columns, then shrink fonts as a last resort
-  const MIN_FIT_SCALE = 0.65;
-  const [announceFitScale, setAnnounceFitScale] = useState(1);
+  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large
+  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
+    ? data.printFontScale
+    : 1;
+
+  // One body text size for the whole bulletin. The chosen print size sets the target
+  // (16px x scale); each area reports the largest body size it can hold without cutting
+  // content off, and every area renders at the smallest of those, so all pages always
+  // match. Only a page that genuinely can't hold its content at the target pulls the
+  // others down with it.
+  const BASE_BODY_PX = 16;
+  const targetBodyPx = BASE_BODY_PX * fontScale;
+  // Floor: a setting never shrinks more than 10% below its size, so Normal / Large / Extra
+  // Large always look different. Content that still doesn't fit is cut off with a warning.
+  const MIN_BODY_PX = targetBodyPx * 0.9;
+  const [annCap, setAnnCap] = useState(targetBodyPx);
+  const [programCap, setProgramCap] = useState(targetBodyPx);
+  const [backCap, setBackCap] = useState(targetBodyPx);
+  const bodyPx = Math.round(Math.max(MIN_BODY_PX, Math.min(targetBodyPx, annCap, programCap, backCap)) * 10) / 10;
+  // Auto-fit announcements: first add columns, then shrink the shared body size as a last resort
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
 
   // Announcements marked web-only never reach paper; everything below
   // (column auto-fit, grouping, the section header) works off this list.
-  const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
-  const announcementCount = printableAnnouncements.length;
-  const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
+  const allPrintableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
+  // Last resort once the text is at its smallest size: leave trailing announcements off
+  // (with a "+N more" note) instead of cutting one off mid-sentence.
+  const [annHidden, setAnnHidden] = useState(0);
+  const printableAnnouncements = annHidden > 0 ? allPrintableAnnouncements.slice(0, allPrintableAnnouncements.length - annHidden) : allPrintableAnnouncements;
+  const announcementCount = allPrintableAnnouncements.length;
+  const announcementTotalChars = allPrintableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
   const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
   // Debounce the content key so the auto-fit measure/shrink loop (forced
   // reflows of two full off-screen print pages) runs once per typing pause
@@ -345,9 +370,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announceColumnCount = Math.max(autoColumns, defaultCols);
 
   useEffect(() => {
-    setAnnounceFitScale(1);
+    setAnnCap(targetBodyPx);
     setAutoColumns(0);
-  }, [announcementsContentKey, data.printFontScale, data.printTightMargins]);
+    setAnnHidden(0);
+  }, [announcementsContentKey, data.printFontScale, data.printTightMargins, targetBodyPx]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -362,14 +388,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         setAutoColumns(announceColumnCount + 1);
         return;
       }
-      // Step 2: shrink fonts as last resort
-      if (announceFitScale > MIN_FIT_SCALE) {
-        const next = Math.max(MIN_FIT_SCALE, announceFitScale - 0.03);
-        setAnnounceFitScale(next);
+      // Step 2: shrink the shared body size as a last resort
+      if (annCap > MIN_BODY_PX) {
+        setAnnCap(Math.max(MIN_BODY_PX, Math.min(annCap, bodyPx) - targetBodyPx * 0.03));
+        return;
       }
+      // Step 3: at the smallest allowed size, leave the last announcement off
+      if (annHidden < announcementCount - 1) setAnnHidden(annHidden + 1);
     }, 100);
     return () => clearTimeout(timer);
-  }, [announceFitScale, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins]);
+  }, [annCap, annHidden, bodyPx, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins]);
 
   // Detect when content is still cut off after auto-fit (for the warning banner)
   useEffect(() => {
@@ -401,19 +429,131 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       cancelAnimationFrame(raf);
       ro?.disconnect();
     };
-  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale]);
+  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, bodyPx]);
 
-  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large (scales text without shifting layout)
-  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
-    ? data.printFontScale
-    : 1;
+  // The program (right panel of page 2) uses fixed rem sizes (16px body), so the shared
+  // body size is applied as a transform: laid out 1/fontScale wide, then scaled to
+  // bodyPx/16. Transforms don't change layout height, so measuring here can't feed back.
+  const programPanelRef = useRef<HTMLDivElement>(null);
+  const programContentRef = useRef<HTMLDivElement>(null);
+  const [programNaturalHeight, setProgramNaturalHeight] = useState(0);
+  const programScale = bodyPx / BASE_BODY_PX;
+  useEffect(() => {
+    const measure = () => {
+      const panel = programPanelRef.current;
+      const content = programContentRef.current;
+      if (!panel || !content) return;
+      const style = getComputedStyle(panel);
+      const available = panel.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const natural = content.offsetHeight;
+      if (!available || !natural) return;
+      setProgramNaturalHeight(natural);
+      // Largest body size at which the whole program fits the page height
+      const cap = Math.min(targetBodyPx, BASE_BODY_PX * available / natural);
+      setProgramCap(prev => Math.abs(prev - cap) < 0.05 ? prev : cap);
+    };
+    measure();
+    // Fonts/images can settle after the first paint without resizing the content box
+    const timers = [300, 1000].map(ms => setTimeout(measure, ms));
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (programContentRef.current) ro?.observe(programContentRef.current);
+    return () => { timers.forEach(clearTimeout); ro?.disconnect(); };
+  });
+
+  // Same idea for the back cover (unit info) lists on page 1, except the content is laid
+  // out 1/scale wide (then scaled down) so shrinking also frees horizontal room and columns
+  // don't collide. Rows never wrap, so the laid-out height doesn't depend on width. The
+  // horizontal limit is remembered (it only ever tightens) so the fit can't oscillate.
+  const backContentRef = useRef<HTMLDivElement>(null);
+  const backMaxHorizontal = useRef(Infinity);
+  const [backNaturalHeight, setBackNaturalHeight] = useState(0);
+  const backScale = Math.min(1, bodyPx / targetBodyPx);
+  const backKey = JSON.stringify([data.wardLeadership, data.missionaries, data.wardMissionaries, data.serviceMissionaries, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, data.meetingType, !!profile?.profile_slug]);
+  // Like the announcements adding columns before shrinking: when the lists don't fit at the
+  // chosen size, first move the QR code to the (mostly empty) front cover to free its height,
+  // and only then shrink the text. Not done when the cover already holds a picture.
+  const [qrOnCover, setQrOnCover] = useState(false);
+  const showQR = !!profile?.profile_slug && data.showQRCodeOnPrint !== false;
+  const coverHasImage = !!data.imageId && data.imageId !== 'none';
+  // Also first stack the wide missionary rows (name + mission on one line, email below)
+  // when they're too wide for the page at the chosen size.
+  const [stackRows, setStackRows] = useState(false);
+  const [backHidden, setBackHidden] = useState(0);
+  useEffect(() => { backMaxHorizontal.current = Infinity; setBackCap(targetBodyPx); setQrOnCover(false); setStackRows(false); setBackHidden(0); }, [backKey, targetBodyPx]);
+  useEffect(() => {
+    const measure = () => {
+      const box = backCoverRef.current;
+      const content = backContentRef.current;
+      if (!box || !content) return;
+      // Small safety margin so rounding/trailing margins never clip the last row
+      const available = box.clientHeight - 8;
+      const natural = content.offsetHeight;
+      if (!available || !natural) return;
+      setBackNaturalHeight(natural);
+      if (content.scrollWidth > content.clientWidth + 1) {
+        if (!stackRows) {
+          setStackRows(true); // re-measured with the stacked rows on the next pass
+          return;
+        }
+        backMaxHorizontal.current = Math.min(backMaxHorizontal.current, bodyPx * content.clientWidth / content.scrollWidth);
+      }
+      const cap = Math.min(targetBodyPx, targetBodyPx * available / natural, backMaxHorizontal.current);
+      if (cap < targetBodyPx - 0.05 && showQR && !qrOnCover && !coverHasImage) {
+        setQrOnCover(true); // re-measured with the extra height on the next pass
+        return;
+      }
+      // Still doesn't fit at the smallest allowed size: leave the last entry off
+      if (cap < MIN_BODY_PX - 0.05 && backHidden < fullMissionaries.length + fullWardMissionaries.length + fullMilitaryMembers.length + fullServiceMissionaries.length) {
+        setBackHidden(backHidden + 1);
+        return;
+      }
+      setBackCap(prev => Math.abs(prev - cap) < 0.05 ? prev : cap);
+    };
+    measure();
+    const timers = [300, 1000].map(ms => setTimeout(measure, ms));
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (backContentRef.current) ro?.observe(backContentRef.current);
+    if (backCoverRef.current) ro?.observe(backCoverRef.current);
+    return () => { timers.forEach(clearTimeout); ro?.disconnect(); };
+  });
+
+  // Front cover: scaled by the print size setting, backing off if it wouldn't fit the page
+  const coverPanelRef = useRef<HTMLDivElement>(null);
+  const coverContentRef = useRef<HTMLDivElement>(null);
+  const [coverNaturalHeight, setCoverNaturalHeight] = useState(0);
+  const [coverCap, setCoverCap] = useState(fontScale);
+  const coverScale = Math.min(fontScale, coverCap);
+  useEffect(() => {
+    const measure = () => {
+      const panel = coverPanelRef.current;
+      const content = coverContentRef.current;
+      if (!panel || !content) return;
+      const style = getComputedStyle(panel);
+      const available = panel.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const natural = content.offsetHeight;
+      if (!available || !natural) return;
+      setCoverNaturalHeight(natural);
+      const cap = Math.max(1, Math.min(fontScale, available / natural));
+      setCoverCap(prev => Math.abs(prev - cap) < 0.01 ? prev : cap);
+    };
+    measure();
+    const timers = [300, 1000].map(ms => setTimeout(measure, ms));
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (coverContentRef.current) ro?.observe(coverContentRef.current);
+    return () => { timers.forEach(clearTimeout); ro?.disconnect(); };
+  });
+
   const scalePx = (px: number) => `${Math.round(px * fontScale)}px`;
+  // Back-cover lists are laid out at the target body size and scaled down to bodyPx.
+  const backCoverPx = `${Math.round(targetBodyPx)}px`;
 
   // Tighter margins to fit more announcements on the page
   const tight = !!data.printTightMargins;
   const pad = {
     leftPanel: tight ? 'pl-2 pr-8 pt-2 pb-0' : isLightContent ? 'pl-4 pr-6 pt-3 pb-0' : 'pl-3 pr-12 pt-3 pb-0',
-    rightPanel: tight ? 'pl-8 pr-2 py-4' : 'pl-12 pr-3 py-6',
+    // Centered on the half-page: the page's safe margin only narrows the outer edge, so the
+    // fold-side padding adds it back (0.3in = PRINT_SAFE_MARGIN's horizontal inset).
+    rightPanel: tight ? 'pl-[calc(0.3in+0.5rem)] pr-2 py-4' : 'pl-[calc(0.3in+1rem)] pr-4 py-6',
     announcementsGap: tight ? 'gap-2' : 'gap-4',
     announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
     sectionMb: tight ? 'mb-0.5' : 'mb-1'
@@ -442,14 +582,27 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
   // Filter out empty ward info entries
   const filteredWardLeadership = data.wardLeadership?.filter(hasValidLeadershipInfo) || [];
-  const filteredMissionaries = data.missionaries?.filter(hasValidMissionaryInfo) || [];
+  const fullMissionaries = data.missionaries?.filter(hasValidMissionaryInfo) || [];
   const allWardMissionaries = data.wardMissionaries?.filter(hasValidMissionaryInfo) || [];
-  const filteredWardMissionaries = allWardMissionaries.filter((entry: any) => entry.serviceType !== 'military');
-  const filteredMilitaryMembers = allWardMissionaries.filter((entry: any) => entry.serviceType === 'military');
-  const filteredServiceMissionaries = data.serviceMissionaries?.filter(hasValidServiceMissionaryInfo) || [];
+  const fullWardMissionaries = allWardMissionaries.filter((entry: any) => entry.serviceType !== 'military');
+  const fullMilitaryMembers = allWardMissionaries.filter((entry: any) => entry.serviceType === 'military');
+  const fullServiceMissionaries = data.serviceMissionaries?.filter(hasValidServiceMissionaryInfo) || [];
 
   // Check if there's any meaningful ward info to display
-  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0 || filteredMilitaryMembers.length > 0 || filteredServiceMissionaries.length > 0;
+  const hasWardInfo = filteredWardLeadership.length > 0 || fullMissionaries.length > 0 || fullWardMissionaries.length > 0 || fullMilitaryMembers.length > 0 || fullServiceMissionaries.length > 0;
+
+  // Entries left off when the lists can't fit at the smallest allowed size: the end of the
+  // last section goes first, the leadership list is never trimmed.
+  let backHiddenLeft = backHidden;
+  const trimBack = (list: any[]) => {
+    const n = Math.min(backHiddenLeft, list.length);
+    backHiddenLeft -= n;
+    return n > 0 ? list.slice(0, list.length - n) : list;
+  };
+  const filteredServiceMissionaries = trimBack(fullServiceMissionaries);
+  const filteredMilitaryMembers = trimBack(fullMilitaryMembers);
+  const filteredWardMissionaries = trimBack(fullWardMissionaries);
+  const filteredMissionaries = trimBack(fullMissionaries);
 
   const selectedTheme = themes.find(t => t.name === data.userTheme);
 
@@ -464,6 +617,17 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         fontSize: `${fontScale * 100}%`
       }}
     >
+      {(annHidden > 0 || backHidden > 0) && (
+        <div className="print-overflow-warning mb-3 p-3 bg-amber-100 border border-amber-300 rounded-lg text-amber-900 text-sm print:!hidden" role="status">
+          {t('printPreview.entriesLeftOff', {
+            defaultValue: 'Not everything fits at this text size, so {{parts}} left off the printed page (it stays in the digital bulletin). Choose a smaller size to print everything.',
+            parts: [
+              backHidden > 0 ? t('printPreview.leftOffBackCover', { defaultValue: '{{count}} back-cover entries', count: backHidden }) : '',
+              annHidden > 0 ? t('printPreview.leftOffAnnouncements', { defaultValue: '{{count}} announcements', count: annHidden }) : '',
+            ].filter(Boolean).join(' and ') + ' were',
+          })}
+        </div>
+      )}
       {hasOverflow && (
         <div className="print-overflow-warning mb-3 p-3 bg-amber-100 border border-amber-300 rounded-lg text-amber-900 text-sm print:!hidden" role="status">
           {overflow.backCover && overflow.announcements
@@ -477,7 +641,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       <div
         ref={refs?.page1}
         className="print-page landscape w-[11in] h-[8.5in] flex"
-        style={{ pageBreakAfter: 'always' }}
+        style={{ pageBreakAfter: 'always', padding: PRINT_SAFE_MARGIN }}
       >
                  {/* Back Cover (left) - Unit Information */}
           {data.meetingType === 'baptism' ? (
@@ -485,18 +649,27 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           ) : (
           <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`}>
            {/* Scrollable content area - reserves space for QR code if enabled */}
-           <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) ? 'calc(100% - 200px)' : '100%' }}>
+           {/* min-h-0 lets this area shrink so the QR block below always stays on the page,
+               however large the print font scale makes the leadership lists. */}
+           <div ref={backCoverRef} className="flex-1 min-h-0 overflow-hidden">
+            {/* Scale-to-fit wrapper: shrink the lists to the space above the QR block
+                instead of cutting them off mid-line. */}
+            <div style={backScale < 1 ? { height: backNaturalHeight * backScale } : undefined}>
+            <div
+              ref={backContentRef}
+              style={backScale < 1 ? { width: `${100 / backScale}%`, transform: `scale(${backScale})`, transformOrigin: 'top left' } : undefined}
+            >
               {/* Unit Leadership Table */}
               {filteredWardLeadership.length > 0 && (
                 <div className={`w-full ${pad.sectionMb}`}>
-                  <h2 className={`text-lg font-bold print:!text-lg print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`}>{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
-                   <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
+                  <h2 style={{ fontSize: backCoverPx }} className={`font-bold print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`}>{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
+                   <table className="w-full leading-tight" style={{ fontSize: backCoverPx }}>
                      <tbody>
                        {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
                          <tr key={idx}>
-                           <td className="py-1 font-bold text-xs pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
-                           <td className="py-1 text-xs font-normal pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
-                           <td className="py-1 text-right text-xs font-normal whitespace-nowrap" style={{ width: '25%' }}>
+                           <td className="py-0.5 font-bold pr-2 whitespace-nowrap" style={{ width: '45%' }}>{leader.title}</td>
+                           <td className="py-0.5 font-bold pr-2 whitespace-nowrap" style={{ width: '30%' }}>{leader.name}</td>
+                           <td className="py-0.5 text-right font-bold whitespace-nowrap" style={{ width: '34%' }}>
                              {leader.phone || ''}
                            </td>
                          </tr>
@@ -511,14 +684,14 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries Table */}
               {filteredMissionaries.length > 0 && (
-                <div className={`w-full ${pad.sectionMb}`}>
-                  <h3 className={`text-sm font-semibold print:!text-sm print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.missionaries').toUpperCase()}</h3>
-                  <table className="w-full text-xs print:!text-xs print:!text-black table-fixed">
+                <div className={`w-full ${tight ? 'mb-1.5' : 'mb-3'}`}>
+                  <h3 style={{ fontSize: backCoverPx }} className={`font-bold print:!text-black border-b-2 border-black pb-1 ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.missionaries').toUpperCase()}</h3>
+                  <table className="w-full leading-tight" style={{ fontSize: backCoverPx }}>
                     <tbody>
                       {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
                         <tr key={idx}>
-                          <td className="py-0 font-bold text-xs pr-1" style={{ width: '60%' }}>{missionary.name}</td>
-                          <td className="py-0 text-right text-xs font-normal" style={{ width: '40%' }}>
+                          <td className="py-0 font-bold pr-1" style={{ width: '60%' }}>{missionary.name}</td>
+                          <td className="py-0 text-right font-bold" style={{ width: '40%' }}>
                             {missionary.phone || ''}
                           </td>
                         </tr>
@@ -533,35 +706,28 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Missionaries from our ward */}
               {filteredWardMissionaries.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
+                <div className={`w-full ${tight ? 'mb-1.5' : 'mb-3'}`}>
+                  <h3 style={{ fontSize: backCoverPx }} className={`font-bold print:!text-black border-b-2 border-black pb-1 ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
                   {(() => {
                     const missionaryCount = filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = scalePx(9);
-                    if (missionaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (missionaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (missionaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
+                    const fontSize = backCoverPx;
                     
                     return (
-                      <div className="space-y-1" style={{ fontSize }}>
+                      <div className="space-y-0.5 leading-tight whitespace-nowrap" style={{ fontSize }}>
                         {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).map((missionary: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center py-0">
-                        <div className="font-bold" style={{ width: '25%' }}>
-                          {missionary.name}
+                      <div key={idx} className={stackRows ? 'py-0.5' : 'flex justify-between items-center py-0'}>
+                        <div className={stackRows ? 'flex justify-between' : 'contents'}>
+                          <div className="font-bold flex-shrink-0 pr-3">
+                            {missionary.name}
+                          </div>
+                          <div className={stackRows ? 'text-right font-bold' : 'text-center flex-1 px-2 font-bold'}>
+                            {missionary.mission && (
+                              <span className="text-gray-600">{missionary.mission}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-center flex-1 px-2 font-normal">
-                          {missionary.mission && (
-                            <span className="text-gray-600">{missionary.mission}</span>
-                          )}
-                        </div>
-                        <div className="text-right flex-shrink-0 font-normal" style={{ minWidth: '120px' }}>
+                        <div className={stackRows ? 'font-bold' : 'text-right flex-shrink-0 font-bold'}>
                           {missionary.email ? (
                             <span className="text-gray-700">{missionary.email}</span>
                           ) : (
@@ -581,38 +747,34 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Serving in the Military */}
               {filteredMilitaryMembers.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.servingInMilitary', 'Serving in the Military').toUpperCase()}</h3>
+                <div className={`w-full ${tight ? 'mb-1.5' : 'mb-3'}`}>
+                  <h3 style={{ fontSize: backCoverPx }} className={`font-bold print:!text-black border-b-2 border-black pb-1 ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.servingInMilitary', 'Serving in the Military').toUpperCase()}</h3>
                   {(() => {
                     const militaryCount = filteredMilitaryMembers.length;
                     // Dynamic font sizing: fewer entries = larger font, more entries = smaller font
-                    let fontSize = scalePx(9);
-                    if (militaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (militaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (militaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
+                    const fontSize = backCoverPx;
 
                     return (
-                      <div className="space-y-1" style={{ fontSize }}>
+                      <div className="space-y-0.5 leading-tight whitespace-nowrap" style={{ fontSize }}>
                         {filteredMilitaryMembers.map((member: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center py-0">
-                            <div className="font-bold" style={{ width: '40%' }}>
-                              {member.name}
+                          <div key={idx} className={stackRows ? 'py-0.5' : 'flex justify-between items-center py-0'}>
+                            <div className={stackRows ? 'flex justify-between' : 'contents'}>
+                              <div className="font-bold flex-shrink-0 pr-3">
+                                {member.name}
+                              </div>
+                              <div className={stackRows ? 'text-right font-bold' : 'text-right flex-1 font-bold'}>
+                                {member.mission && (
+                                  <span className="text-gray-600">{member.mission}</span>
+                                )}
+                                {!stackRows && member.mission && member.email && <span className="text-gray-400"> · </span>}
+                                {!stackRows && member.email && (
+                                  <span className="text-gray-700">{member.email}</span>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-right flex-1 font-normal">
-                              {member.mission && (
-                                <span className="text-gray-600">{member.mission}</span>
-                              )}
-                              {member.mission && member.email && <span className="text-gray-400"> · </span>}
-                              {member.email && (
-                                <span className="text-gray-700">{member.email}</span>
-                              )}
-                            </div>
+                            {stackRows && member.email && (
+                              <div className="font-bold"><span className="text-gray-700">{member.email}</span></div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -623,30 +785,21 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               {/* Service Missionaries */}
               {filteredServiceMissionaries.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
+                <div className={`w-full ${tight ? 'mb-1.5' : 'mb-3'}`}>
+                  <h3 style={{ fontSize: backCoverPx }} className={`font-bold print:!text-black border-b-2 border-black pb-1 ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
                   {(() => {
                     const serviceMissionaryCount = filteredServiceMissionaries.length;
                     // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = scalePx(9);
-                    if (serviceMissionaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (serviceMissionaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (serviceMissionaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
+                    const fontSize = backCoverPx;
 
                     return (
-                      <div className="space-y-1" style={{ fontSize }}>
+                      <div className="space-y-0.5 leading-tight whitespace-nowrap" style={{ fontSize }}>
                         {filteredServiceMissionaries.map((missionary: any, idx: number) => (
                           <div key={idx} className="flex justify-between items-center py-0">
-                            <div className="font-bold" style={{ width: '40%' }}>
+                            <div className="font-bold flex-shrink-0 pr-3">
                               {missionary.name}
                             </div>
-                            <div className="text-right flex-1 font-normal">
+                            <div className="text-right flex-1 font-bold">
                               {missionary.serviceName ? (
                                 <span className="text-gray-600">{missionary.serviceName}</span>
                               ) : (
@@ -660,12 +813,20 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   })()}
                 </div>
               )}
+
+              {backHidden > 0 && (
+                <p className="font-bold italic" style={{ fontSize: backCoverPx }}>
+                  +{backHidden} {showQR ? t('printPreview.moreOnDigitalBulletin', 'more: see the digital bulletin') : t('printPreview.moreAnnouncements', 'more')}
+                </p>
+              )}
+            </div>
+            </div>
            </div>
 
            {/* QR Code - Fixed at bottom with reserved space, only if enabled */}
-           {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
-             <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0">
-               <div className="mb-3">
+           {showQR && !qrOnCover && (
+             <div className="w-full flex flex-col items-center justify-center text-center mt-2 pb-8 flex-shrink-0">
+               <div className="mb-2">
                  <PrintQRCode profileSlug={profile.profile_slug} />
                </div>
                <p className="text-sm print:!text-base print:!text-black font-medium">
@@ -678,7 +839,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
          )}
 
         {/* Front Cover (right) */}
-        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+        <div ref={coverPanelRef} className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+          {/* Scaled with the print size setting like the rest of the bulletin, but never
+              past the page: the scale backs off if the cover (e.g. with a picture) is tall. */}
+          <div className="w-full flex-shrink-0 flex justify-center items-start" style={coverScale !== 1 && coverNaturalHeight ? { height: coverNaturalHeight * coverScale } : undefined}>
+          <div ref={coverContentRef} className="flex flex-col items-center text-center flex-shrink-0" style={{ width: `${100 / coverScale}%`, ...(coverScale !== 1 ? { transform: `scale(${coverScale})`, transformOrigin: 'top center' } : {}) }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-2xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
@@ -717,11 +882,25 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           )}
 
           {data.theme && <p className="font-semibold italic text-sm text-gray-600 print:!text-lg print:!text-black">"{data.theme}"</p>}
+
+          {/* QR code relocated here when the unit lists needed its space */}
+          {showQR && qrOnCover && profile?.profile_slug && (
+            <div className="flex flex-col items-center text-center mt-8">
+              <div className="mb-2">
+                <PrintQRCode profileSlug={profile.profile_slug} />
+              </div>
+              <p className="text-sm print:!text-base print:!text-black font-medium">
+                {t('qrCode.scanQrCodeToAccess')}
+              </p>
+            </div>
+          )}
+          </div>
+          </div>
         </div>
       </div>
 
       {/* Page 2: Inside (landscape) */}
-      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
+      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black" style={{ padding: PRINT_SAFE_MARGIN }}>
         {/* Announcements (left) - blank for baptism */}
         {data.meetingType === 'baptism' ? (
           <div className="w-1/2" />
@@ -750,13 +929,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 const columnCount = announceColumnCount;
                 const gap = tight ? '0.35rem' : '0.5rem';
 
-                const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
-                const baseHeader = Math.round((tight ? 14 : 16) * densityScale);
-                const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
-                const baseContent = Math.round((tight ? 12 : 14) * densityScale);
-                const headerFontSize = scalePx(Math.round(baseHeader * announceFitScale));
-                const titleFontSize = scalePx(Math.round(baseTitle * announceFitScale));
-                const contentFontSize = scalePx(Math.round(baseContent * announceFitScale));
+                // Same body size as the program and back cover; headings differ by weight only
+                const headerFontSize = `${bodyPx}px`;
+                const titleFontSize = `${bodyPx}px`;
+                const contentFontSize = `${bodyPx}px`;
 
                 return (
                   <div style={{ columnCount, columnGap: gap, columnFill: 'balance', height: '100%' }}>
@@ -770,8 +946,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                               <li key={idx} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
                                 {showHeader && (
                                   <div
-                                    className="font-bold print:!text-black border-b border-gray-300 pb-0.5 mb-1"
-                                    style={{ fontSize: headerFontSize }}
+                                    className="font-bold print:!text-black border-b border-gray-300 leading-snug pb-1 mb-1"
+                                    style={{ fontSize: headerFontSize, breakAfter: 'avoid' }}
                                   >
                                     {audienceLabel}
                                   </div>
@@ -785,7 +961,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                 {a.category && a.category !== 'general' && (
                                   <span
                                     className="text-gray-600 bg-gray-100 px-1 py-0.5 rounded inline-block mb-0.5"
-                                    style={{ fontSize: scalePx(tight ? 10 : 11) }}
+                                    style={{ fontSize: `${Math.round(bodyPx * 0.75)}px` }}
                                   >
                                     {a.category}
                                   </span>
@@ -851,7 +1027,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                       ) : null;
                                     })}
                                     {a.images.filter((img: any) => !img.hideImageOnPrint).length > 3 && (
-                                      <span style={{ fontSize: scalePx(8) }} className="text-gray-500 self-end">
+                                      <span style={{ fontSize: `${Math.round(bodyPx * 0.55)}px` }} className="text-gray-500 self-end">
                                         +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 3} more
                                       </span>
                                     )}
@@ -868,11 +1044,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               })()}
               </div>
               {/* QR code for full announcements */}
-              {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
-                <div className="flex-shrink-0 flex items-center justify-center gap-2 pt-0.5">
-                  <PrintQRCode profileSlug={`${profile.profile_slug}#announcements`} size={56} />
-                  <span className="print:!text-black italic" style={{ fontSize: scalePx(9) }}>
-                    {t('printPreview.scanForFullAnnouncements')}
+              {(showQR || annHidden > 0) && (
+                <div className="flex-shrink-0 flex items-center justify-center gap-2 pt-0.5 pb-3">
+                  {showQR && profile?.profile_slug && <PrintQRCode profileSlug={`${profile.profile_slug}#announcements`} size={56} />}
+                  <span className="print:!text-black italic" style={{ fontSize: `${Math.round(bodyPx * 0.6)}px` }}>
+                    {annHidden > 0 && `+${annHidden} ${t('printPreview.moreAnnouncements', 'more')}${showQR ? ' · ' : ''}`}
+                    {showQR && t('printPreview.scanForFullAnnouncements')}
                   </span>
                 </div>
               )}
@@ -880,7 +1057,16 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         )}
 
         {/* Program (right) */}
-        <div className={`w-1/2 ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+        <div ref={programPanelRef} className={`w-1/2 ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+          {/* Scale-to-fit wrapper: a long program (e.g. several musical numbers) is
+              shrunk to the panel instead of being centered past the page edge,
+              which used to clip the unit name off the top. */}
+          <div className="w-full flex-shrink-0 flex justify-center items-start" style={programScale !== 1 && programNaturalHeight ? { height: programNaturalHeight * programScale } : undefined}>
+          <div
+            ref={programContentRef}
+            className="flex flex-col items-center flex-shrink-0"
+            style={{ width: `${100 / fontScale}%`, ...(programScale !== 1 ? { transform: `scale(${programScale})`, transformOrigin: 'top center' } : {}) }}
+          >
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
@@ -901,7 +1087,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </p>
           )}
 
-          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.4em' }}>
+          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: `0 ${fontScale > 1 ? 0.1 : 0.4}em` }}>
             <tbody>
               <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />
               <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
@@ -1004,6 +1190,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               <ProgramTableRow label={t('bulletin.benediction')} value={data.prayers?.closing} />
             </tbody>
           </table>
+          </div>
+          </div>
         </div>
       </div>
 

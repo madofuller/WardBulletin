@@ -68,6 +68,18 @@
   }
 }
 
+/* Paper output is pure black: grey text, rules and tinted chips wash out on
+   photocopiers (they skip what they can't "see"). Applies to browser print,
+   the preview, and the PDF export, which renders this same DOM. */
+.print-layout,
+.print-layout * {
+  color: #000 !important;
+  border-color: #000 !important;
+}
+.print-layout .bg-gray-100 {
+  background-color: transparent !important;
+}
+
 /* ============================================================
    PRINT PREVIEW STYLES
    Replicate Tailwind print: utilities inside the .print-preview

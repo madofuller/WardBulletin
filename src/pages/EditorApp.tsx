@@ -1554,10 +1554,8 @@ function EditorApp() {
         // Small delay to ensure layout is fully rendered
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Optimized scale for better file size while maintaining quality
-        const scale = 1.5;
-        const marginX = 0; // extra horizontal margin handled by centering
-        const marginY = 10; // mm top/bottom padding
+        // Render at high resolution so text stays sharp when printed
+        const scale = 3;
 
         const [{ default: jsPDF }, { default: html2canvas }] = await loadPdfDeps();
 
@@ -1586,8 +1584,8 @@ function EditorApp() {
         });
 
         // Convert to JPEG with compression for smaller file size
-        const imgData1 = canvas1.toDataURL('image/jpeg', 0.85);
-        const imgData2 = canvas2.toDataURL('image/jpeg', 0.85);
+        const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
+        const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
 
         const pdf = new jsPDF({ 
           orientation: 'landscape', 
@@ -1598,40 +1596,12 @@ function EditorApp() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Page 1
-        const ratio1 = Math.min(
-          1,
-          (pdfWidth - marginX * 2) / canvas1.width,
-          (pdfHeight - marginY * 2) / canvas1.height
-        );
-        const imgX1 = (pdfWidth - canvas1.width * ratio1) / 2;
-        const imgY1 = marginY;
-        pdf.addImage(
-          imgData1,
-          'JPEG',
-          imgX1,
-          imgY1,
-          canvas1.width * ratio1,
-          canvas1.height * ratio1
-        );
-
-        // Page 2
+        // Each print page is exactly letter-landscape (11in x 8.5in), so the image
+        // fills the whole PDF page. Shrinking it would defeat the Extra Large font
+        // size; the layout already keeps its own margins.
+        pdf.addImage(imgData1, 'JPEG', 0, 0, pdfWidth, pdfHeight);
         pdf.addPage('letter', 'landscape');
-        const ratio2 = Math.min(
-          1,
-          (pdfWidth - marginX * 2) / canvas2.width,
-          (pdfHeight - marginY * 2) / canvas2.height
-        );
-        const imgX2 = (pdfWidth - canvas2.width * ratio2) / 2;
-        const imgY2 = marginY;
-        pdf.addImage(
-          imgData2,
-          'JPEG',
-          imgX2,
-          imgY2,
-          canvas2.width * ratio2,
-          canvas2.height * ratio2
-        );
+        pdf.addImage(imgData2, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
         pdf.setDocumentProperties({ title: 'WardBulletin' });
         (pdf as any).viewerPreferences?.({ Duplex: 'DuplexFlipShortEdge' });
