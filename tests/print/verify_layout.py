@@ -182,7 +182,30 @@ def check_pdf(pdf_path: Path, fixture: str):
         issues.append(f"cover title appears {cover_hits} times")
 
     expected = [normalize(t) for t in FIXTURE_ANNOUNCEMENTS.get(fixture, [])]
-    found_counts = {t: joined.count(t) for t in expected}
+    found_counts = {}
+    for t in expected:
+        # Titles wrap across columns; require every significant word, in order.
+        words = [w for w in t.split() if len(w) > 2]
+        if not words:
+            found_counts[t] = joined.count(t)
+            continue
+        idx = 0
+        hits = 0
+        search = joined
+        while True:
+            pos = 0
+            ok = True
+            for w in words:
+                p = search.find(w, pos)
+                if p < 0:
+                    ok = False
+                    break
+                pos = p + len(w)
+            if not ok:
+                break
+            hits += 1
+            search = search[pos:]
+        found_counts[t] = hits
     missing = [t for t, c in found_counts.items() if c == 0]
     duped = [t for t, c in found_counts.items() if c > 1]
     if missing:

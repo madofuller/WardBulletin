@@ -336,7 +336,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // continuation page instead of shrinking.
   const isLargeOrExtraLarge = fontScale >= 1.4;
   const MIN_FONT_SIZE_PT = 12; // Absolute minimum in points
-  const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.85;
+  const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.65;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
   const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
 
@@ -352,9 +352,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     if (!isLargeOrExtraLarge || printableAnnouncements.length === 0) {
       return [printableAnnouncements];
     }
-    const charsPerLine = Math.max(28, Math.round(52 / fontScale));
-    const linesPerPanel = Math.max(10, Math.round(38 / fontScale));
-    const charsPerPanel = charsPerLine * linesPerPanel;
+    // 4.9in usable width × ~7.5in usable height. Pack enough items that
+    // continuation pages stay mostly full; Extra Large still uses larger px type.
+    const charsPerPanel = fontScale >= 1.8 ? 1600 : 2000;
     const pages: any[][] = [];
     let current: any[] = [];
     let used = 0;
@@ -513,7 +513,6 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       data-font-scale={fontScale.toString()}
       style={{
         fontFamily: selectedTheme ? selectedTheme.fontFamily : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        fontSize: `${fontScale * 100}%`
       }}
     >
       {hasOverflow && (
@@ -735,7 +734,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
          )}
 
         {/* Front Cover (right) — rendered exactly once */}
-        <div className={`print-panel w-[5.5in] h-[8.5in] flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
+        <div className={`print-panel w-[5.5in] h-[8.5in] flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-2xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
@@ -945,7 +944,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         )}
 
         {/* Program (right) */}
-        <div className={`print-panel w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
+        <div className={`print-panel w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start' : 'justify-start'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
