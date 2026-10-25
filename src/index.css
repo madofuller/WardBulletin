@@ -2,31 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Font scaling for on-screen print preview */
-.print-layout[data-font-scale="1"] {
-  font-size: 100%;
-}
-.print-layout[data-font-scale="1.4"] {
-  font-size: 140%;
-}
-.print-layout[data-font-scale="1.8"] {
-  font-size: 180%;
-}
-
 /* ============================================================
    PRINT STYLES
    When the browser prints, hide everything except the dedicated
    print source container (.print-source-container) which holds
    the BulletinPrintLayout used for both browser print and PDF.
-   
-   PRINT MARGINS: Most home printers and copiers cannot print to
-   the edge of the paper. Typical unprintable margins are 0.25in
-   (6mm) on all sides. We use 0.3in to be conservative.
+
+   Do NOT change html { font-size } here. Tailwind rem utilities
+   (padding, print:!text-*) are rooted on html; scaling html
+   inflates the bifold and stacks pages on top of each other.
+   Text size for Large/Extra Large is applied in px via scalePx().
    ============================================================ */
 @media print {
   @page {
     size: 11in 8.5in landscape;
-    /* No @page margin - component uses internal padding for printer safety */
     margin: 0;
   }
 
@@ -34,36 +23,12 @@
     margin: 0 !important;
     padding: 0 !important;
     width: 11in !important;
-    height: 8.5in !important;
+    height: auto !important;
     overflow: visible !important;
     background: white !important;
-    /* Ensure text renders consistently */
+    font-size: 16px !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* Scale root font-size based on printFontScale for rem-based Tailwind classes
-     Uses both :has() (modern browsers) and direct attribute (fallback for older Safari/Firefox/iPads)
-     Direct attribute is set via JS in beforeprint event and component mount */
-  html[data-print-font-scale="1"] {
-    font-size: 16px !important; /* Normal: 100% */
-  }
-  html[data-print-font-scale="1.4"] {
-    font-size: 22.4px !important; /* Large: 140% */
-  }
-  html[data-print-font-scale="1.8"] {
-    font-size: 28.8px !important; /* Extra Large: 180% */
-  }
-  
-  /* Fallback using :has() for browsers that support it but where JS hasn't run yet */
-  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1"]) {
-    font-size: 16px !important;
-  }
-  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1.4"]) {
-    font-size: 22.4px !important;
-  }
-  html:not([data-print-font-scale]):has(.print-layout[data-font-scale="1.8"]) {
-    font-size: 28.8px !important;
   }
 
   /* Hide everything by default */
@@ -87,21 +52,24 @@
   .print-source-portal .print-layout {
     position: static !important;
   }
-  
-  /* Scale all rem-based sizes by fontScale data attribute in print */
-  .print-source-portal .print-layout[data-font-scale="1"] {
-    font-size: 16px !important; /* Normal: 100% = 11-12pt */
-  }
-  .print-source-portal .print-layout[data-font-scale="1.4"] {
-    font-size: 22.4px !important; /* Large: 140% = 14-16pt */
-  }
-  .print-source-portal .print-layout[data-font-scale="1.8"] {
-    font-size: 28.8px !important; /* Extra Large: 180% = 16-20pt */
-  }
 
   .print-source-portal .print-page {
+    width: 11in !important;
+    height: 8.5in !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
     page-break-after: always;
     page-break-inside: avoid;
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  .print-source-portal .print-panel {
+    width: 5.5in !important;
+    height: 8.5in !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
   }
 
   /* Preserve colors and backgrounds for intentional design elements */

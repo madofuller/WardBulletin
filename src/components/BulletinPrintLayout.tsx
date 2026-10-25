@@ -345,87 +345,33 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
   const announcementCount = printableAnnouncements.length;
   
-  // Deterministic announcement splitting based on character count and font scale
-  // Only trigger in Large/Extra Large modes with many announcements
-  const [announcementSplitIndex, setAnnouncementSplitIndex] = useState<number | null>(null);
-  
-  // Set font scale on html element for print (fallback for browsers without :has() support)
-  // Older Safari, Firefox, and iPads need this explicit class for print font scaling
-  useEffect(() => {
-    const setHtmlFontScale = () => {
-      if (typeof document !== 'undefined') {
-        document.documentElement.setAttribute('data-print-font-scale', fontScale.toString());
+  // Chunk announcements for Large/Extra Large so each 5.5in panel stays inside
+  // the bifold. Character capacity is conservative (narrow column + larger type).
+  // Computed in useMemo — no state, no render loop.
+  const announcementPages = useMemo(() => {
+    if (!isLargeOrExtraLarge || printableAnnouncements.length === 0) {
+      return [printableAnnouncements];
+    }
+    const charsPerLine = Math.max(28, Math.round(52 / fontScale));
+    const linesPerPanel = Math.max(10, Math.round(38 / fontScale));
+    const charsPerPanel = charsPerLine * linesPerPanel;
+    const pages: any[][] = [];
+    let current: any[] = [];
+    let used = 0;
+    for (const ann of printableAnnouncements) {
+      const chars = (ann.title || '').length + (ann.content || '').length + 24;
+      if (current.length > 0 && used + chars > charsPerPanel) {
+        pages.push(current);
+        current = [ann];
+        used = chars;
+      } else {
+        current.push(ann);
+        used += chars;
       }
-    };
-    
-    setHtmlFontScale();
-    
-    // Also set on beforeprint event for print dialogs
-    const handleBeforePrint = () => {
-      setHtmlFontScale();
-    };
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeprint', handleBeforePrint);
-      return () => {
-        window.removeEventListener('beforeprint', handleBeforePrint);
-      };
     }
-  }, [fontScale]);
-  
-  // Stable key for measurement: prevents recomputation loops
-  const announcementsStableKey = useMemo(() => {
-    if (!printableAnnouncements || printableAnnouncements.length === 0) {
-      return `${fontScale}:0:`;
-    }
-    const contentHash = printableAnnouncements
-      .map((a: any) => `${a.title || ''}:${a.content?.length || 0}`)
-      .join('|');
-    return `${fontScale}:${printableAnnouncements.length}:${contentHash}`;
-  }, [fontScale, announcementCount]);
-  
-  // Compute split index deterministically based on character count and font scale
-  // Avoids render loops and measurement timing issues
-  useEffect(() => {
-    // Only split if Large/Extra Large with many announcements
-    if (!isLargeOrExtraLarge || printableAnnouncements.length <= 5) {
-      setAnnouncementSplitIndex(null);
-      return;
-    }
-    
-    // Estimate based on character count
-    // Available lines in announcement panel: ~40 lines at fontScale=1.0, scales down with larger fonts
-    const BASE_LINES_PER_PANEL = 40;
-    const availableLines = Math.floor(BASE_LINES_PER_PANEL / fontScale);
-    const CHARS_PER_LINE = 80; // Average characters per line
-    const CHARS_PER_PANEL = availableLines * CHARS_PER_LINE;
-    
-    let cumulative = 0;
-    let splitIdx = 0;
-    
-    for (let i = 0; i < printableAnnouncements.length; i++) {
-      const ann = printableAnnouncements[i];
-      const titleChars = (ann.title || '').length;
-      const contentChars = (ann.content || '').length;
-      const totalChars = titleChars + contentChars + 20; // +20 for spacing/formatting
-      
-      if (cumulative + totalChars > CHARS_PER_PANEL && i > 0) {
-        // This announcement pushes us over, split here
-        splitIdx = i;
-        break;
-      }
-      
-      cumulative += totalChars;
-      splitIdx = i + 1;
-    }
-    
-    // If we fit everything, no split needed
-    if (splitIdx >= printableAnnouncements.length) {
-      setAnnouncementSplitIndex(null);
-    } else {
-      setAnnouncementSplitIndex(splitIdx);
-    }
-  }, [announcementsStableKey, isLargeOrExtraLarge, printableAnnouncements.length, fontScale]);
+    if (current.length) pages.push(current);
+    return pages;
+  }, [isLargeOrExtraLarge, fontScale, announcementCount, printableAnnouncements]);
   const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
   const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
   // Debounce the content key so the auto-fit measure/shrink loop (forced
@@ -566,9 +512,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       className="print-layout font-sans"
       data-font-scale={fontScale.toString()}
       style={{
-        // Use system fonts that render consistently across platforms and printers
         fontFamily: selectedTheme ? selectedTheme.fontFamily : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        // fontSize handled by data-font-scale attribute in print CSS
+        fontSize: `${fontScale * 100}%`
       }}
     >
       {hasOverflow && (
@@ -584,13 +529,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       <div
         ref={refs?.page1}
         className="print-page landscape w-[11in] h-[8.5in] flex"
-        style={{ pageBreakAfter: 'always' }}
+        style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}
       >
                  {/* Back Cover (left) - Unit Information */}
           {data.meetingType === 'baptism' ? (
-            <div className="w-1/2" />
+            <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
           ) : (
-          <div className={`w-1/2 flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`}>
+          <div className={`print-panel w-[5.5in] h-[8.5in] flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
            {/* Scrollable content area - reserves space for QR code if enabled
                 QR space calculation accounts for font scaling in Extra Large mode */}
            <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ 
@@ -778,7 +723,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
            {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
              <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0" style={{ paddingBottom: '24px' }}>
                <div className="mb-3">
-                 <PrintQRCode profileSlug={profile.profile_slug} size={Math.max(192, Math.round(160 * fontScale))} />
+                 <PrintQRCode profileSlug={profile.profile_slug} size={Math.max(96, Math.min(144, Math.round(96 * fontScale)))} />
                </div>
                <p className="text-sm print:!text-base print:!text-black font-medium">
                  {t('qrCode.scanQrCodeToAccess')}
@@ -789,8 +734,8 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
          </div>
          )}
 
-        {/* Front Cover (right) */}
-        <div className={`w-1/2 flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+        {/* Front Cover (right) — rendered exactly once */}
+        <div className={`print-panel w-[5.5in] h-[8.5in] flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-2xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
@@ -839,12 +784,12 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       </div>
 
       {/* Page 2: Inside (landscape) */}
-      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black">
+      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black" style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}>
         {/* Announcements (left) - blank for baptism */}
         {data.meetingType === 'baptism' ? (
-          <div className="w-1/2" />
+          <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
         ) : (
-        <div className={`w-1/2 text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className={`print-panel w-[5.5in] h-[8.5in] text-left print:!text-black ${pad.leftPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in', display: 'flex', flexDirection: 'column' }}>
               {/* No header over an empty panel: a minimal program without
                   announcements shouldn't print an "Announcements & Events"
                   title with nothing under it. */}
@@ -854,9 +799,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
               <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               {(() => {
                 // In Large/Extra Large with overflow, only show announcements that fit
-                const displayAnnouncements = announcementSplitIndex !== null 
-                  ? printableAnnouncements.slice(0, announcementSplitIndex)
-                  : printableAnnouncements;
+                const displayAnnouncements = announcementPages[0] || printableAnnouncements;
                 const grouped = displayAnnouncements.reduce((groups: Record<string, any[]>, announcement: any) => {
                   // Recurring standalone items may carry the literal
                   // 'standalone' audience (no _id suffix) — match both forms
@@ -1002,7 +945,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         )}
 
         {/* Program (right) */}
-        <div className={`w-1/2 ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`}>
+        <div className={`print-panel w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start pt-8' : 'justify-center'} flex flex-col items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
           {data.meetingType === 'baptism' ? (
             <>
               <p className="text-lg mb-1 print:!text-xl print:!text-black uppercase">{t('bulletin.theBaptismOf')}</p>
@@ -1148,16 +1091,20 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
         </div>
       </div>
 
-      {/* Page 3: Announcements Continuation (only if needed in Large/Extra Large modes) */}
-      {announcementSplitIndex !== null && announcementSplitIndex < printableAnnouncements.length && (
-        <div className="print-page landscape w-[11in] h-[8.5in] print:!text-xl print:!text-black" style={{ pageBreakBefore: 'always' }}>
-          <div className={`w-full text-left print:!text-black ${pad.leftPanel}`} style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0.5in' }}>
+      {/* Continuation pages: leftover announcements only, one 5.5in panel per page */}
+      {announcementPages.slice(1).map((pageAnnouncements, pageIdx) => (
+        <div
+          key={`continuation-${pageIdx}`}
+          className="print-page landscape w-[11in] h-[8.5in] flex print:!text-xl print:!text-black"
+          style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakBefore: 'always', pageBreakAfter: 'always', boxSizing: 'border-box' }}
+        >
+          <div
+            className={`print-panel w-[5.5in] h-[8.5in] text-left print:!text-black ${pad.leftPanel}`}
+            style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in', display: 'flex', flexDirection: 'column' }}
+          >
             <h2 className="text-sm font-bold print:!text-base print:!text-black w-full text-center mb-2">{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
             <div style={{ flex: 1, overflow: 'hidden' }}>
             {(() => {
-              const continuationAnnouncements = printableAnnouncements.slice(announcementSplitIndex);
-              console.log('Continuation announcements:', continuationAnnouncements.length, 'from index', announcementSplitIndex);
-              
               const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
               const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
               const baseContent = Math.round((tight ? 12 : 14) * densityScale);
@@ -1166,7 +1113,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
               return (
                 <div className="space-y-3">
-                  {continuationAnnouncements.map((a: any, idx: number) => {
+                  {pageAnnouncements.map((a: any, idx: number) => {
                     const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
                     return (
                       <div key={idx}>
@@ -1195,8 +1142,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             })()}
             </div>
           </div>
+          <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
         </div>
-      )}
+      ))}
 
     </div>
   );
