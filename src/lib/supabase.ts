@@ -1421,32 +1421,33 @@ export const bulletinService = {
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {
-    // OPTIMIZED: Try single RPC call first, fall back to 3-query path if RPC doesn't exist
-    // This allows deployment before migration is applied (PGRST202 / 404 on missing RPC)
+    // OPTIMIZED: Try single RPC call first, fall back to 3-query path on ANY failure
+    // This allows deployment before migration is applied
     try {
       const { data, error } = await supabase
         .rpc('get_public_bulletin_by_slug', { profile_slug_param: profileSlug });
 
-      // If RPC doesn't exist (PGRST202 or 404), fall back to old path
-      if (error && (error.code === 'PGRST202' || error.message?.includes('does not exist'))) {
-        console.warn('RPC not found, falling back to 3-query path');
+      // On ANY RPC failure (PGRST202, 404, network error, malformed payload), fall back
+      if (error) {
+        console.warn('[RPC fallback] RPC error, using legacy path:', error.code || error.message);
         return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
       }
 
-      if (error) {
-        throw new Error('Failed to fetch bulletin');
-      }
-
-      if (!data) {
-        return null;
+      // If data is null/undefined/malformed, fall back
+      if (!data || typeof data !== 'object') {
+        console.warn('[RPC fallback] Malformed RPC response, using legacy path');
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
       }
 
       // Check for error response from RPC
       if (data.error) {
+        // Only return null for true "not found" errors (skip fallback)
         if (data.error === 'Bulletin not found' || data.error === 'No bulletin published') {
           return null;
         }
-        throw new Error(data.error);
+        // Other errors: fall back
+        console.warn('[RPC fallback] RPC returned error, using legacy path:', data.error);
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
       }
 
       // Extract tokens from the RPC result
@@ -1507,12 +1508,9 @@ export const bulletinService = {
 
       return result;
     } catch (err: any) {
-      // If RPC call fails entirely, fall back to legacy
-      if (err?.message?.includes('does not exist') || err?.code === 'PGRST202') {
-        console.warn('RPC not available, using legacy 3-query path');
-        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
-      }
-      throw err;
+      // On ANY unexpected error (network, timeout, parse, etc), fall back to legacy
+      console.warn('[RPC fallback] Exception during RPC, using legacy path:', err);
+      return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
     }
   },
 

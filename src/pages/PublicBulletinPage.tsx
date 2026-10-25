@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import PublicBulletinView from '../components/PublicBulletinView';
 import DynamicMetaTags from '../components/DynamicMetaTags';
 import DynamicManifest from '../components/DynamicManifest';
-import { bulletinService } from '../lib/supabase';
+import { getPublicBulletinBySlug } from '../lib/public-fetch';
 import { SkeletonBulletin } from '../components/SkeletonLoader';
 
 // Helper function to ensure sacrament item exists at the top of agenda
@@ -92,7 +92,7 @@ export default function PublicBulletinPage() {
     error
   } = useQuery({
     queryKey: ['public-bulletin', slug, cacheBuster],
-    queryFn: () => slug ? bulletinService.getLatestBulletinByProfileSlug(slug) : Promise.resolve(null),
+    queryFn: () => slug ? getPublicBulletinBySlug(slug) : Promise.resolve(null),
     enabled: !!slug,
     // Prevent stale data from being shown
     staleTime: 0,
