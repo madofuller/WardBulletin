@@ -518,7 +518,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 QR space calculation accounts for font scaling in Extra Large mode */}
            <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ 
              maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) 
-               ? `calc(100% - ${Math.round(200 * fontScale)}px)` 
+               ? `calc(100% - ${Math.max(240, Math.round(200 * fontScale))}px)` 
                : '100%' 
            }}>
               {/* Unit Leadership Table */}
@@ -699,9 +699,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
 
            {/* QR Code - Fixed at bottom with reserved space, only if enabled */}
            {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
-             <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0">
+             <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0" style={{ paddingBottom: '24px' }}>
                <div className="mb-3">
-                 <PrintQRCode profileSlug={profile.profile_slug} />
+                 <PrintQRCode profileSlug={profile.profile_slug} size={Math.max(192, Math.round(160 * fontScale))} />
                </div>
                <p className="text-sm print:!text-base print:!text-black font-medium">
                  {t('qrCode.scanQrCodeToAccess')}
