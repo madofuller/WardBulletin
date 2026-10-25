@@ -1,0 +1,609 @@
+[
+  {
+    "branch": "main",
+    "fixture": "typical",
+    "mode": "Normal",
+    "scale": 1,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_typical_Normal/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "6.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "typical",
+    "mode": "Large",
+    "scale": 1.15,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_typical_Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "7.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "typical",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_typical_Extra-Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.23×"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "special-musical-number",
+    "mode": "Normal",
+    "scale": 1,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.23in",
+        "pngPath": "/workspace/tests/print/results/main_special-musical-number_Normal/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "6.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": false,
+        "value": "Yes"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "special-musical-number",
+    "mode": "Large",
+    "scale": 1.15,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.23in",
+        "pngPath": "/workspace/tests/print/results/main_special-musical-number_Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "7.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": false,
+        "value": "Yes"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "special-musical-number",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.23in",
+        "pngPath": "/workspace/tests/print/results/main_special-musical-number_Extra-Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": false,
+        "value": "Yes"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.23×"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "many-announcements",
+    "mode": "Normal",
+    "scale": 1,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_many-announcements_Normal/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "6.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "many-announcements",
+    "mode": "Large",
+    "scale": 1.15,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_many-announcements_Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "7.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "many-announcements",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "0.04in",
+        "pngPath": "/workspace/tests/print/results/main_many-announcements_Extra-Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.23×"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "long-names",
+    "mode": "Normal",
+    "scale": 1,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.01in",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Normal/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": false,
+        "value": "Fail",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Normal/qr-degraded.png"
+      },
+      "qr_margin": {
+        "pass": false,
+        "value": "Outside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "6.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "long-names",
+    "mode": "Large",
+    "scale": 1.15,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.01in",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": false,
+        "value": "Fail",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Large/qr-degraded.png"
+      },
+      "qr_margin": {
+        "pass": false,
+        "value": "Outside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "7.5pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    }
+  },
+  {
+    "branch": "main",
+    "fixture": "long-names",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "checks": {
+      "margin": {
+        "pass": false,
+        "value": "-0.01in",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Extra-Large/page-1.png"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": false,
+        "value": "Fail",
+        "pngPath": "/workspace/tests/print/results/main_long-names_Extra-Large/qr-degraded.png"
+      },
+      "qr_margin": {
+        "pass": false,
+        "value": "Outside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "27.0pt"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "3"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.23×"
+      }
+    }
+  }
+]
