@@ -31,9 +31,10 @@ function ScreenUI({ fixtureName, ready }: { fixtureName: string; ready: boolean 
   );
 }
 
-// Get fixture name from URL
+// Get fixture name and font scale from URL
 const params = new URLSearchParams(window.location.search);
 const fixtureName = params.get('fixture') || 'minimal';
+const fontScale = parseFloat(params.get('fontScale') || '1');
 
 // Render screen UI into #root
 const rootElement = document.getElementById('root')!;
