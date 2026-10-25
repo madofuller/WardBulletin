@@ -27,6 +27,10 @@ dist/
 # Print test results (keep only summaries)
 tests/print/results/*/
 !tests/print/results/COMPARISON.md
+!tests/print/results/COMPARISON-combined.md
+!tests/print/results/INTEGRATION.md
+!tests/print/results/combined-results.json
 !tests/print/results/SUMMARY.md
 !tests/print/results/FINAL_RESULTS.md
 !tests/print/results/artifacts/
+!tests/print/results/artifacts/**
