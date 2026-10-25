@@ -26,7 +26,10 @@ mkdir -p "$RESULTS/artifacts"
 cd "$ROOT"
 
 restore_tree() {
-  git checkout "$HARNESS_BRANCH" -- . >/dev/null 2>&1 || git checkout HEAD -- . >/dev/null 2>&1 || true
+  # Restore app source only. Never reset tests/print/results — those are the
+  # per-branch artifacts we commit after each run.
+  git checkout "$HARNESS_BRANCH" -- src print-test.html vite.config.ts public/test-fixtures \
+    >/dev/null 2>&1 || true
   git checkout "$HARNESS_BRANCH" -- "${HARNESS_FILES[@]}" >/dev/null 2>&1 || true
 }
 

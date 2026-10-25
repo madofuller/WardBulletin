@@ -74,7 +74,7 @@ function main() {
   lines.push('- **margin in**: smallest edge from any word bbox to the page edge; fail if `< 0.25in`.');
   lines.push('- **overlapping text**: fail if any two pdfplumber word bboxes intersect (inset 0.75pt so adjacent words do not count).');
   lines.push('- **fold crossing**: fail if any word straddles the 5.5in landscape-Letter fold.');
-  lines.push('- **XL vs Normal body**: Extra Large median body size must be `≥ 1.15×` Normal on the same fixture.');
+  lines.push('- **XL vs Normal body**: Extra Large min frequent body size (`<14pt`) must be `≥ 1.15×` Normal on the same fixture.');
   lines.push('');
   lines.push('## Fail counts');
   lines.push('');
