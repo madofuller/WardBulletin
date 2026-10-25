@@ -10,25 +10,41 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallbackDenylist: [
+          /^\/api\//,  // Never cache API routes
+          /^\/print/,  // Don't interfere with printing
+        ],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/i,
+            // Public bulletins - network first, cache fallback
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/(users|bulletins|tokens)\?.*$/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api',
+              cacheName: 'supabase-public-data',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 5 * 60, // 5 minutes
+                maxEntries: 30,
+                maxAgeSeconds: 3 * 60, // 3 minutes - short TTL for fresh data
               },
               cacheableResponse: {
                 statuses: [0, 200],
               },
+              networkTimeoutSeconds: 10, // Fallback to cache after 10s
             },
+          },
+          {
+            // Auth endpoints - NEVER cache
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*$/i,
+            handler: 'NetworkOnly',
           },
         ],
       },
       manifest: false, // Use existing dynamic manifest
+      injectManifest: {
+        injectionPoint: undefined,
+      },
       devOptions: {
         enabled: false,
       },
