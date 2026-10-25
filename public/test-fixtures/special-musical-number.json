@@ -1,5 +1,5 @@
 {
-  "wardName": "SunRiver 2nd Ward",
+  "wardName": "SunRiver Meadows 2nd Ward of the St. George Utah Pine Valley Stake",
   "date": "2024-03-24",
   "meetingType": "sacrament",
   "theme": "Music and Worship",
@@ -57,6 +57,6 @@
   "missionaries": [],
   "wardMissionaries": [],
   "serviceMissionaries": [],
-  "showQRCodeOnPrint": false,
+  "showQRCodeOnPrint": true,
   "printFontScale": 1
 }

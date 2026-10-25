@@ -6,9 +6,31 @@ import path from 'path';
 export default defineConfig(({ command, mode }) => {
   // For print-test build, stub out Supabase
   const isTest = process.env.VITE_PRINT_TEST === 'true';
+  const stubPath = path.resolve(__dirname, 'src/lib/supabase.test-stub.ts');
+
+  const stubSupabasePlugin = {
+    name: 'print-test-stub-supabase',
+    enforce: 'pre' as const,
+    resolveId(source: string) {
+      if (!isTest) return null;
+      if (source.includes('supabase.test-stub')) return null;
+      if (source === '@supabase/supabase-js') return null;
+      if (
+        source === '@/lib/supabase' ||
+        source === './supabase' ||
+        source === '../lib/supabase' ||
+        source === './lib/supabase' ||
+        source.endsWith('/lib/supabase') ||
+        source.endsWith('/lib/supabase.ts')
+      ) {
+        return stubPath;
+      }
+      return null;
+    },
+  };
   
   return {
-    plugins: [react()],
+    plugins: [react(), stubSupabasePlugin],
     test: {
       exclude: ['node_modules', '.claude', 'dist', 'e2e/**'],
     },
@@ -16,10 +38,10 @@ export default defineConfig(({ command, mode }) => {
       alias: isTest ? {
         // Stub Supabase for print tests
         // Match the import paths used in the codebase
-        '@/lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
-        './supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
-        './lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
-        '../lib/supabase': path.resolve(__dirname, 'src/lib/supabase.test-stub.ts'),
+        '@/lib/supabase': stubPath,
+        './supabase': stubPath,
+        './lib/supabase': stubPath,
+        '../lib/supabase': stubPath,
       } : {},
     },
     optimizeDeps: {
@@ -43,10 +65,14 @@ export default defineConfig(({ command, mode }) => {
         },
       },
     },
-    server: {
-      hmr: {
-        clientPort: 5173,
-      },
-    },
+    server: isTest
+      ? {
+          hmr: false,
+        }
+      : {
+          hmr: {
+            clientPort: 5173,
+          },
+        },
   };
 });

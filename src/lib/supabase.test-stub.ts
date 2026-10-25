@@ -1,55 +1,85 @@
 /**
- * Test stub for Supabase client - used only in print regression tests.
- * Provides minimal API surface needed for BulletinPrintLayout to render.
+ * Test stub for Supabase — used only when VITE_PRINT_TEST=true.
+ * Supplies a signed-in user + profile slug so print QR codes render.
  */
 
-// Mock Supabase client that does nothing but satisfies type requirements
+const mockUser = {
+  id: 'test-user-id',
+  email: 'test@example.com',
+};
+
+const mockSession = {
+  user: mockUser,
+  access_token: 'test-token',
+  refresh_token: 'test-refresh',
+};
+
+const mockProfile = {
+  email: 'test@example.com',
+  profile_slug: 'test-ward',
+  role: 'user',
+  active_bulletin_id: null,
+  unit_type: 'ward',
+  language: 'en',
+};
+
+function resolved<T>(data: T) {
+  return Promise.resolve({ data, error: null });
+}
+
+function thenable(data: unknown = []) {
+  const row: any = {
+    select: () => row,
+    insert: () => row,
+    update: () => row,
+    delete: () => row,
+    upsert: () => row,
+    eq: () => row,
+    in: () => row,
+    is: () => row,
+    order: () => row,
+    limit: () => row,
+    single: () => resolved(null),
+    maybeSingle: () => resolved(null),
+    then: (resolve: (v: unknown) => unknown) => resolve({ data, error: null }),
+  };
+  return row;
+}
+
 export const supabase = {
-  from: () => ({
-    select: () => Promise.resolve({ data: [], error: null }),
-    insert: () => Promise.resolve({ data: null, error: null }),
-    update: () => Promise.resolve({ data: null, error: null }),
-    delete: () => Promise.resolve({ data: null, error: null }),
-  }),
+  from: () => thenable([]),
   auth: {
-    getSession: () => Promise.resolve({ 
-      data: { 
-        session: {
-          user: {
-            id: 'test-user-id',
-            email: 'test@example.com',
-          },
-        } 
-      }, 
-      error: null 
-    }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    getSession: () => resolved({ session: mockSession }),
+    getUser: () => resolved({ user: mockUser }),
+    onAuthStateChange: (cb?: (event: string, session: typeof mockSession) => void) => {
+      if (typeof cb === 'function') {
+        queueMicrotask(() => cb('SIGNED_IN', mockSession as any));
+      }
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    },
+    signOut: () => resolved({}),
   },
   storage: {
     from: () => ({
-      upload: () => Promise.resolve({ data: null, error: null }),
+      upload: () => resolved(null),
       getPublicUrl: () => ({ data: { publicUrl: '' } }),
     }),
   },
 };
 
-// Mock services - provide mock profile for QR code generation
+export const isSupabaseConfigured = () => true;
+export const testSupabaseConnection = async () => ({ success: true });
+
 export const userService = {
   updateProfileSlug: () => Promise.resolve({}),
-  getUserProfile: () => Promise.resolve([{
-    email: 'test@example.com',
-    profile_slug: 'test-ward',
-    role: 'user',
-    active_bulletin_id: null,
-    unit_type: 'ward',
-    language: 'en',
-  }]),
+  getUserProfile: () => Promise.resolve([mockProfile]),
   updateActiveBulletinId: () => Promise.resolve({}),
 };
 
 export const bulletinService = {
   saveBulletin: () => Promise.resolve({}),
   getBulletinsByProfileSlug: () => Promise.resolve([]),
+  checkAndActivateScheduledBulletins: () => Promise.resolve([]),
 };
 
 export const robustService = {
@@ -64,7 +94,16 @@ export const profileSharingService = {
   deletePermission: () => Promise.resolve({}),
 };
 
+export const tokenService = {
+  validateToken: () => Promise.resolve(null),
+};
+
+export const localStorageService = {
+  get: () => null,
+  set: () => {},
+  remove: () => {},
+};
+
 export const retryOperation = (fn: Function) => fn();
 
-// Re-export everything the real module exports
 export default supabase;

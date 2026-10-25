@@ -144,6 +144,6 @@
   "missionaries": [],
   "wardMissionaries": [],
   "serviceMissionaries": [],
-  "showQRCodeOnPrint": false,
+  "showQRCodeOnPrint": true,
   "printFontScale": 1
 }
