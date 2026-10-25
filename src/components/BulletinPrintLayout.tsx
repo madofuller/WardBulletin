@@ -319,9 +319,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
-  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large
-  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
-    ? data.printFontScale
+  // Print font scale: 1 = normal, 1.25 = extra large. Bulletins saved with the retired
+  // "Large" (1.15) print as extra large.
+  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale > 1 && data.printFontScale <= 1.5
+    ? 1.25
     : 1;
 
   // One body text size for the whole bulletin. The chosen print size sets the target
@@ -331,7 +332,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   // others down with it.
   const BASE_BODY_PX = 16;
   const targetBodyPx = BASE_BODY_PX * fontScale;
-  // Floor: a setting never shrinks more than 10% below its size, so Normal / Large / Extra
+  // Floor: a setting never shrinks more than 10% below its size, so Normal and Extra
   // Large always look different. Content that still doesn't fit is cut off with a warning.
   const MIN_BODY_PX = targetBodyPx * 0.9;
   const [annCap, setAnnCap] = useState(targetBodyPx);
