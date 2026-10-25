@@ -132,83 +132,140 @@ export async function renderFixture(options: RenderOptions): Promise<RenderResul
     
     const dims = PAGE_SIZES[pageSize];
     
-    // Set viewport for print
+    // Set high-resolution viewport for print (2x for better quality)
+    const scale = 2;
     await page.setViewportSize({
-      width: Math.round(dims.width * 96),
-      height: Math.round(dims.height * 96),
+      width: Math.round(dims.width * 96 * scale),
+      height: Math.round(dims.height * 96 * scale),
     });
     
-    // Emulate print media BEFORE waiting for portal
-    // This makes the .print-source-portal visible
-    await page.emulateMedia({ media: 'print' });
+    // Get page layout info from DOM BEFORE print emulation (dimensions become 0 after)
+    const pageLayout = await page.evaluate(() => {
+      const pages = Array.from(document.querySelectorAll('.print-page'));
+      const portal = document.querySelector('.print-source-portal');
+      
+      if (!portal) return { pages: [], portalBox: null };
+      
+      const portalRect = portal.getBoundingClientRect();
+      
+      return {
+        portalBox: {
+          x: portalRect.x,
+          y: portalRect.y,
+          width: portalRect.width,
+          height: portalRect.height,
+        },
+        pages: pages.map((el, idx) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            index: idx,
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          };
+        }),
+      };
+    });
     
-    // Generate PDF first (Chromium only, works reliably with print media)
-    let pdfPath: string | undefined;
-    if (browserType !== 'chromium') {
-      throw new Error(`PDF generation only supported for Chromium, got: ${browserType}`);
+    console.log(`    Found ${pageLayout.pages.length} pages in DOM`);
+    
+    if (pageLayout.pages.length === 0) {
+      throw new Error('No .print-page elements found in DOM');
     }
     
-    pdfPath = join(outputDir, `${fixture}-${browserType}-${pageSize}.pdf`);
+    // NOW emulate print media for proper styling
+    await page.emulateMedia({ media: 'print' });
     
-    // Log what we're generating
-    console.log(`    Generating PDF: ${dims.width}in x ${dims.height}in (${pageSize} landscape)`);
-    
-    // Use string dimensions with units (Playwright accepts "11in" format)
-    await page.pdf({
-      path: pdfPath,
-      width: `${dims.width}in`,
-      height: `${dims.height}in`,
-      printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      scale: 1,
-    });
-    console.log(`    PDF saved: ${pdfPath}`);
-    
-    // Convert PDF to PNGs using pdf2pic
-    const { fromPath } = await import('pdf2pic');
-    
-    // Convert with high quality
-    const converter = fromPath(pdfPath, {
-      density: 200, // DPI
-      saveFilename: `${fixture}-${browserType}-${pageSize}`,
-      savePath: outputDir,
-      format: 'png',
-      width: 2200, // High resolution for quality checks
-      height: 1700,
+    // Take full-page screenshot with print media applied
+    const fullPagePath = join(outputDir, `${fixture}-${browserType}-${pageSize}-fullpage.png`);
+    await page.screenshot({
+      path: fullPagePath,
+      fullPage: true,
+      type: 'png',
     });
     
-    // Get page count from PDF
+    console.log(`    Full page screenshot saved: ${fullPagePath}`);
+    
+    // Generate PDF for reference (optional, may be empty)
+    let pdfPath: string | undefined;
+    if (browserType === 'chromium') {
+      pdfPath = join(outputDir, `${fixture}-${browserType}-${pageSize}.pdf`);
+      try {
+        await page.pdf({
+          path: pdfPath,
+          width: `${dims.width}in`,
+          height: `${dims.height}in`,
+          printBackground: true,
+          margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        });
+      } catch (e) {
+        console.log(`    PDF generation failed (expected): ${e.message}`);
+        pdfPath = undefined;
+      }
+    }
+    
+    // Use sharp to crop individual pages from full screenshot
+    const sharp = await import('sharp');
     const fs = await import('fs/promises');
-    const pdfLib = await import('pdf-lib');
-    const pdfBytes = await fs.readFile(pdfPath);
-    const pdfDoc = await pdfLib.PDFDocument.load(pdfBytes);
-    const pageCount = pdfDoc.getPageCount();
     
-    console.log(`    Converting ${pageCount} PDF pages to PNG...`);
-    
-    // Convert each page
     const results: RenderResult[] = [];
-    for (let i = 1; i <= pageCount; i++) {
-      const result = await converter(i, { responseType: 'image' });
-      const generatedPath = result.path;
+    
+    // Get full page screenshot metadata
+    const fullPageMeta = await sharp.default(fullPagePath).metadata();
+    console.log(`    Full screenshot: ${fullPageMeta.width}x${fullPageMeta.height}`);
+    
+    for (const pageInfo of pageLayout.pages) {
+      const pngPath = join(outputDir, `${fixture}-${browserType}-${pageSize}-page${pageInfo.index + 1}.png`);
       
-      // Rename to expected format
-      const pngPath = join(outputDir, `${fixture}-${browserType}-${pageSize}-page${i}.png`);
-      await fs.rename(generatedPath, pngPath);
+      // Bounds at viewport resolution (need to scale by 2x if using 2x viewport)
+      // The coordinates are in logical pixels, but viewport is at 2x
+      // So multiply all coordinates by scale factor  
+      const left = Math.max(0, Math.floor(pageInfo.x * scale));
+      const top = Math.max(0, Math.floor(pageInfo.y * scale));
+      const width = Math.floor(pageInfo.width * scale);
+      const height = Math.floor(pageInfo.height * scale);
       
-      console.log(`    Page ${i} converted: ${pngPath}`);
+      // Ensure bounds are within screenshot
+      const clampedWidth = Math.min(width, fullPageMeta.width - left);
+      const clampedHeight = Math.min(height, fullPageMeta.height - top);
+      
+      if (clampedWidth <= 0 || clampedHeight <= 0) {
+        console.log(`    ⚠ Page ${pageInfo.index + 1} out of bounds, skipping`);
+        continue;
+      }
+      
+      console.log(`    Extracting page ${pageInfo.index + 1}: ${left},${top} ${clampedWidth}x${clampedHeight}`);
+      
+      // Crop to page bounds
+      await sharp.default(fullPagePath)
+        .extract({
+          left,
+          top,
+          width: clampedWidth,
+          height: clampedHeight,
+        })
+        .resize(2200, 1700, { fit: 'fill' }) // Standard size for checks
+        .toFile(pngPath);
+      
+      console.log(`    ✓ Page ${pageInfo.index + 1} extracted: ${pngPath}`);
       
       results.push({
         pngPath,
         bulletinData,
         dimensions: dims,
         page, // Keep page open for inspection
-        pdfPath: i === 1 ? pdfPath : undefined,
+        pdfPath: pageInfo.index === 0 ? pdfPath : undefined,
       });
     }
     
+    // Cleanup full page screenshot
+    try {
+      await fs.unlink(fullPagePath);
+    } catch {}
+    
     if (results.length === 0) {
-      throw new Error('No pages extracted from PDF');
+      throw new Error('No pages extracted');
     }
     
     return results;
