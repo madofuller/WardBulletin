@@ -526,7 +526,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     </tbody>
                   </table>
                   {filteredWardLeadership.length > 20 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-2 text-center">+ {filteredWardLeadership.length - 20} more leaders</p>
+                    <p className="text-xs text-gray-600 print:!text-black mt-2 text-center">+ {filteredWardLeadership.length - 20} more leaders</p>
                   )}
                 </div>
               )}
@@ -548,7 +548,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     </tbody>
                   </table>
                   {filteredMissionaries.length > 12 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredMissionaries.length - 12} {t('bulletin.moreMissionaries')}</p>
+                    <p className="text-xs text-gray-600 print:!text-black mt-1 text-center">+ {filteredMissionaries.length - 12} {t('bulletin.moreMissionaries')}</p>
                   )}
                 </div>
               )}
@@ -580,14 +580,14 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                         </div>
                         <div className="text-center flex-1 px-2 font-normal">
                           {missionary.mission && (
-                            <span className="text-gray-600">{missionary.mission}</span>
+                            <span className="text-gray-600 print:!text-black">{missionary.mission}</span>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0 font-normal" style={{ minWidth: '120px' }}>
                           {missionary.email ? (
-                            <span className="text-gray-700">{missionary.email}</span>
+                            <span className="text-gray-700 print:!text-black">{missionary.email}</span>
                           ) : (
-                            <span className="text-gray-400">{t('bulletin.noEmail')}</span>
+                            <span className="text-gray-400 print:!text-black">{t('bulletin.noEmail')}</span>
                           )}
                         </div>
                       </div>
@@ -596,7 +596,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                     );
                   })()}
                   {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 mt-1 text-center">+ {filteredWardMissionaries.length - 15} {t('bulletin.moreWardMissionaries')}</p>
+                    <p className="text-xs text-gray-600 print:!text-black mt-1 text-center">+ {filteredWardMissionaries.length - 15} {t('bulletin.moreWardMissionaries')}</p>
                   )}
                 </div>
               )}
@@ -628,11 +628,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                             </div>
                             <div className="text-right flex-1 font-normal">
                               {member.mission && (
-                                <span className="text-gray-600">{member.mission}</span>
+                                <span className="text-gray-600 print:!text-black">{member.mission}</span>
                               )}
-                              {member.mission && member.email && <span className="text-gray-400"> · </span>}
+                              {member.mission && member.email && <span className="text-gray-400 print:!text-black"> · </span>}
                               {member.email && (
-                                <span className="text-gray-700">{member.email}</span>
+                                <span className="text-gray-700 print:!text-black">{member.email}</span>
                               )}
                             </div>
                           </div>
@@ -670,9 +670,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                             </div>
                             <div className="text-right flex-1 font-normal">
                               {missionary.serviceName ? (
-                                <span className="text-gray-600">{missionary.serviceName}</span>
+                                <span className="text-gray-600 print:!text-black">{missionary.serviceName}</span>
                               ) : (
-                                <span className="text-gray-400">{t('bulletin.noServiceListed')}</span>
+                                <span className="text-gray-400 print:!text-black">{t('bulletin.noServiceListed')}</span>
                               )}
                             </div>
                           </div>
@@ -802,7 +802,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                               <li key={idx} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
                                 {showHeader && (
                                   <div
-                                    className="font-bold print:!text-black border-b border-gray-300 pb-0.5 mb-1"
+                                    className="font-bold print:!text-black border-b print:!border-black border-gray-300 pb-0.5 mb-1"
                                     style={{ fontSize: headerFontSize }}
                                   >
                                     {audienceLabel}
@@ -816,7 +816,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                 </div>
                                 {a.category && a.category !== 'general' && (
                                   <span
-                                    className="text-gray-600 bg-gray-100 px-1 py-0.5 rounded inline-block mb-0.5"
+                                    className="text-gray-600 print:!text-black bg-gray-100 print:!bg-transparent px-1 py-0.5 rounded inline-block mb-0.5"
                                     style={{ fontSize: scalePx(tight ? 10 : 11) }}
                                   >
                                     {a.category}
@@ -883,7 +883,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                                       ) : null;
                                     })}
                                     {a.images.filter((img: any) => !img.hideImageOnPrint).length > 3 && (
-                                      <span style={{ fontSize: scalePx(8) }} className="text-gray-500 self-end">
+                                      <span style={{ fontSize: scalePx(8) }} className="text-gray-500 print:!text-black self-end">
                                         +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 3} more
                                       </span>
                                     )}
@@ -934,7 +934,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
           )}
 
           {data.leadership?.meetingLink && data.leadership.meetingLink.trim() !== '' && (
-            <p className="text-xs text-gray-600 mb-2 print:!text-sm">
+            <p className="text-xs text-gray-600 print:!text-black mb-2 print:!text-sm">
               {t('bulletin.joinMeetingPrint')} {data.leadership.meetingLink.trim()}
             </p>
           )}
