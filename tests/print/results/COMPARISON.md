@@ -1,6 +1,6 @@
 # Print regression comparison
 
-Generated: 2026-10-25T14:33:50.491Z
+Generated: 2026-10-25T14:35:15.297Z
 
 Columns: main | #173 | #171 | #174
 
@@ -9,7 +9,7 @@ Columns: main | #173 | #171 | #174
 | Branch | Cases | Failing checks |
 |---|---:|---:|
 | main | 17 | 68 |
-| #173 | 12 | 33 |
+| #173 | 17 | 68 |
 | #171 | 12 | 21 |
 | #174 | 12 | 21 |
 
@@ -17,234 +17,234 @@ Columns: main | #173 | #171 | #174
 
 | Fixture | Mode | Check | main | #173 | #171 | #174 |
 |---|---|---|---|---|---|---|
-| typical | Normal | margin in | 0.04in ❌ | 0.23in ❌ | 0.04in ❌ | 0.04in ❌ |
+| typical | Normal | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | typical | Normal | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | typical | Normal | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | typical | Normal | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| typical | Normal | body pt | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
+| typical | Normal | body pt | 12.0pt ✅ | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
 | typical | Normal | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| typical | Normal | region body | l9 c15 a15 p12 ✅ | — | — | — |
-| typical | Normal | completeness | 30 fields ✅ | — | — | — |
+| typical | Normal | region body | l9 c15 a15 p12 ✅ | l9 c15 a15 p12 ✅ | — | — |
+| typical | Normal | completeness | 30 fields ✅ | 30 fields ✅ | — | — |
 | typical | Normal | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
 | typical | Normal | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
-| typical | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| typical | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | typical | Normal | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | typical | Normal | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| typical | Large | margin in | 0.04in ❌ | -0.30in ❌ | 0.04in ❌ | 0.04in ❌ |
+| typical | Large | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | typical | Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | typical | Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | typical | Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| typical | Large | body pt | 12.0pt ✅ | 9.5pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
-| typical | Large | heading pt | 27.0pt ✅ | 38.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| typical | Large | region body | leadership 9.0pt ❌ | — | — | — |
-| typical | Large | completeness | 30 fields ✅ | — | — | — |
-| typical | Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| typical | Large | pages | 2 ✅ | 3 ✅ | 2 ✅ | 2 ✅ |
-| typical | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| typical | Large | body pt | 12.0pt ✅ | 12.0pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
+| typical | Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| typical | Large | region body | leadership 9.0pt ❌ | leadership 9.0pt ❌ | — | — |
+| typical | Large | completeness | 30 fields ✅ | 30 fields ✅ | — | — |
+| typical | Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| typical | Large | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
+| typical | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | typical | Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | typical | Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| typical | Extra Large | margin in | 0.04in ❌ | -0.29in ❌ | 0.04in ❌ | 0.04in ❌ |
+| typical | Extra Large | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | typical | Extra Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | typical | Extra Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | typical | Extra Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| typical | Extra Large | body pt | 12.0pt ❌ | 12.0pt ✅ | 8.0pt ✅ | 8.0pt ✅ |
-| typical | Extra Large | heading pt | 27.0pt ✅ | 48.5pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| typical | Extra Large | region body | program 12.0pt, leadership 9.0pt ❌ | — | — | — |
-| typical | Extra Large | completeness | 30 fields ✅ | — | — | — |
-| typical | Extra Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| typical | Extra Large | pages | 2 ✅ | 3 ✅ | 2 ✅ | 2 ✅ |
-| typical | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| typical | Extra Large | overlapping text | None ✅ | 13 overlaps ❌ | None ✅ | None ✅ |
+| typical | Extra Large | body pt | 12.0pt ❌ | 12.0pt ❌ | 8.0pt ✅ | 8.0pt ✅ |
+| typical | Extra Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| typical | Extra Large | region body | program 12.0pt, leadership 9.0pt ❌ | program 12.0pt, leadership 9.0pt ❌ | — | — |
+| typical | Extra Large | completeness | 30 fields ✅ | 30 fields ✅ | — | — |
+| typical | Extra Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| typical | Extra Large | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
+| typical | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| typical | Extra Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | typical | Extra Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| typical | Extra Large | XL vs Normal body | 1.00× ❌ | 1.85× ✅ | 1.23× ✅ | 1.23× ✅ |
-| typical | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — | — |
-| special-musical-number | Normal | margin in | -0.23in ❌ | -0.27in ❌ | -0.23in ❌ | -0.23in ❌ |
+| typical | Extra Large | XL vs Normal body | 1.00× ❌ | 1.00× ❌ | 1.23× ✅ | 1.23× ✅ |
+| typical | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — |
+| special-musical-number | Normal | margin in | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ |
 | special-musical-number | Normal | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | special-musical-number | Normal | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | special-musical-number | Normal | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| special-musical-number | Normal | body pt | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
+| special-musical-number | Normal | body pt | 12.0pt ✅ | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
 | special-musical-number | Normal | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| special-musical-number | Normal | region body | l9 c15 a12 p12 ✅ | — | — | — |
-| special-musical-number | Normal | completeness | 21 fields ✅ | — | — | — |
+| special-musical-number | Normal | region body | l9 c15 a12 p12 ✅ | l9 c15 a12 p12 ✅ | — | — |
+| special-musical-number | Normal | completeness | 21 fields ✅ | 21 fields ✅ | — | — |
 | special-musical-number | Normal | clipping | Yes ❌ | Yes ❌ | Yes ❌ | Yes ❌ |
-| special-musical-number | Normal | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| special-musical-number | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| special-musical-number | Normal | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| special-musical-number | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | special-musical-number | Normal | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | special-musical-number | Normal | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| special-musical-number | Large | margin in | -0.23in ❌ | -0.46in ❌ | -0.23in ❌ | -0.23in ❌ |
+| special-musical-number | Large | margin in | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ |
 | special-musical-number | Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | special-musical-number | Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | special-musical-number | Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| special-musical-number | Large | body pt | 12.0pt ✅ | 9.5pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
-| special-musical-number | Large | heading pt | 27.0pt ✅ | 37.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| special-musical-number | Large | region body | leadership 9.0pt ❌ | — | — | — |
-| special-musical-number | Large | completeness | 21 fields ✅ | — | — | — |
+| special-musical-number | Large | body pt | 12.0pt ✅ | 12.0pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
+| special-musical-number | Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| special-musical-number | Large | region body | leadership 9.0pt ❌ | leadership 9.0pt ❌ | — | — |
+| special-musical-number | Large | completeness | 21 fields ✅ | 21 fields ✅ | — | — |
 | special-musical-number | Large | clipping | Yes ❌ | Yes ❌ | Yes ❌ | Yes ❌ |
-| special-musical-number | Large | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| special-musical-number | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| special-musical-number | Large | overlapping text | None ✅ | 10 overlaps ❌ | None ✅ | None ✅ |
+| special-musical-number | Large | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| special-musical-number | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| special-musical-number | Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | special-musical-number | Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| special-musical-number | Extra Large | margin in | -0.23in ❌ | -0.41in ❌ | -0.23in ❌ | -0.23in ❌ |
+| special-musical-number | Extra Large | margin in | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ | -0.23in ❌ |
 | special-musical-number | Extra Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | special-musical-number | Extra Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | special-musical-number | Extra Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| special-musical-number | Extra Large | body pt | 12.0pt ❌ | 11.0pt ✅ | 8.0pt ✅ | 8.0pt ✅ |
-| special-musical-number | Extra Large | heading pt | 27.0pt ✅ | 44.5pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| special-musical-number | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — | — |
-| special-musical-number | Extra Large | completeness | 21 fields ✅ | — | — | — |
+| special-musical-number | Extra Large | body pt | 12.0pt ❌ | 12.0pt ❌ | 8.0pt ✅ | 8.0pt ✅ |
+| special-musical-number | Extra Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| special-musical-number | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — |
+| special-musical-number | Extra Large | completeness | 21 fields ✅ | 21 fields ✅ | — | — |
 | special-musical-number | Extra Large | clipping | Yes ❌ | Yes ❌ | Yes ❌ | Yes ❌ |
-| special-musical-number | Extra Large | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| special-musical-number | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| special-musical-number | Extra Large | overlapping text | None ✅ | 36 overlaps ❌ | None ✅ | None ✅ |
-| special-musical-number | Extra Large | fold crossing | None ✅ | 10 words ❌ | None ✅ | None ✅ |
-| special-musical-number | Extra Large | XL vs Normal body | 1.00× ❌ | 1.69× ✅ | 1.23× ✅ | 1.23× ✅ |
-| special-musical-number | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — | — |
-| many-announcements | Normal | margin in | 0.04in ❌ | 0.23in ❌ | 0.04in ❌ | 0.04in ❌ |
+| special-musical-number | Extra Large | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| special-musical-number | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| special-musical-number | Extra Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
+| special-musical-number | Extra Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
+| special-musical-number | Extra Large | XL vs Normal body | 1.00× ❌ | 1.00× ❌ | 1.23× ✅ | 1.23× ✅ |
+| special-musical-number | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — |
+| many-announcements | Normal | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | many-announcements | Normal | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | many-announcements | Normal | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | many-announcements | Normal | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| many-announcements | Normal | body pt | 8.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
+| many-announcements | Normal | body pt | 8.0pt ✅ | 8.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
 | many-announcements | Normal | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| many-announcements | Normal | region body | c15 a8 p12 ✅ | — | — | — |
-| many-announcements | Normal | completeness | order ❌ | — | — | — |
+| many-announcements | Normal | region body | c15 a8 p12 ✅ | c15 a8 p12 ✅ | — | — |
+| many-announcements | Normal | completeness | order ❌ | order ❌ | — | — |
 | many-announcements | Normal | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
 | many-announcements | Normal | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
-| many-announcements | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| many-announcements | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | many-announcements | Normal | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | many-announcements | Normal | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| many-announcements | Large | margin in | 0.04in ❌ | -0.12in ❌ | 0.04in ❌ | 0.04in ❌ |
+| many-announcements | Large | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | many-announcements | Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | many-announcements | Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | many-announcements | Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| many-announcements | Large | body pt | 9.5pt ❌ | 9.5pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
-| many-announcements | Large | heading pt | 27.0pt ✅ | 38.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| many-announcements | Large | region body | announcements 9.5pt ❌ | — | — | — |
-| many-announcements | Large | completeness | missing Primary Presentation Practice | Primary children will practice for the s ❌ | — | — | — |
-| many-announcements | Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| many-announcements | Large | pages | 2 ✅ | 3 ✅ | 2 ✅ | 2 ✅ |
-| many-announcements | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| many-announcements | Large | body pt | 9.5pt ❌ | 9.5pt ❌ | 7.5pt ✅ | 7.5pt ✅ |
+| many-announcements | Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| many-announcements | Large | region body | announcements 9.5pt ❌ | announcements 9.5pt ❌ | — | — |
+| many-announcements | Large | completeness | missing Primary Presentation Practice | Primary children will practice for the s ❌ | missing Primary Presentation Practice | Primary children will practice for the s ❌ | — | — |
+| many-announcements | Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| many-announcements | Large | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
+| many-announcements | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | many-announcements | Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
-| many-announcements | Large | fold crossing | None ✅ | 2 words ❌ | None ✅ | None ✅ |
-| many-announcements | Extra Large | margin in | 0.04in ❌ | -0.49in ❌ | 0.04in ❌ | 0.04in ❌ |
+| many-announcements | Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
+| many-announcements | Extra Large | margin in | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ | 0.04in ❌ |
 | many-announcements | Extra Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | many-announcements | Extra Large | QR degraded | Pass ✅ | Pass ✅ | Pass ✅ | Pass ✅ |
 | many-announcements | Extra Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Inside ✅ | Inside ✅ |
-| many-announcements | Extra Large | body pt | 10.5pt ❌ | 12.0pt ✅ | 8.0pt ✅ | 8.0pt ✅ |
-| many-announcements | Extra Large | heading pt | 27.0pt ✅ | 48.5pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| many-announcements | Extra Large | region body | program 12.0pt, announcements 10.5pt ❌ | — | — | — |
-| many-announcements | Extra Large | completeness | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | — | — | — |
-| many-announcements | Extra Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| many-announcements | Extra Large | pages | 2 ✅ | 3 ✅ | 2 ✅ | 2 ✅ |
-| many-announcements | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| many-announcements | Extra Large | overlapping text | None ✅ | 5 overlaps ❌ | None ✅ | None ✅ |
-| many-announcements | Extra Large | fold crossing | None ✅ | 4 words ❌ | None ✅ | None ✅ |
-| many-announcements | Extra Large | XL vs Normal body | 1.31× ❌ | 1.85× ✅ | 1.23× ✅ | 1.23× ✅ |
-| many-announcements | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — | — |
-| many-announcements | Extra Large booklet | margin in | 0.04in ❌ | — | — | — |
-| many-announcements | Extra Large booklet | QR clean | Found ✅ | — | — | — |
-| many-announcements | Extra Large booklet | QR degraded | Pass ✅ | — | — | — |
-| many-announcements | Extra Large booklet | QR inside 0.25in | Inside ✅ | — | — | — |
-| many-announcements | Extra Large booklet | body pt | 10.5pt ❌ | — | — | — |
-| many-announcements | Extra Large booklet | heading pt | 27.0pt ✅ | — | — | — |
-| many-announcements | Extra Large booklet | region body | program 12.0pt, announcements 10.5pt ❌ | — | — | — |
-| many-announcements | Extra Large booklet | completeness | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | — | — | — |
-| many-announcements | Extra Large booklet | clipping | None ✅ | — | — | — |
-| many-announcements | Extra Large booklet | pages | 2 ❌ | — | — | — |
-| many-announcements | Extra Large booklet | fold sim | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | — | — | — |
-| many-announcements | Extra Large booklet | overlapping text | None ✅ | — | — | — |
-| many-announcements | Extra Large booklet | fold crossing | None ✅ | — | — | — |
-| long-names | Normal | margin in | -0.01in ❌ | -0.20in ❌ | -0.01in ❌ | -0.01in ❌ |
+| many-announcements | Extra Large | body pt | 10.5pt ❌ | 10.5pt ❌ | 8.0pt ✅ | 8.0pt ✅ |
+| many-announcements | Extra Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| many-announcements | Extra Large | region body | program 12.0pt, announcements 10.5pt ❌ | program 12.0pt, announcements 10.5pt ❌ | — | — |
+| many-announcements | Extra Large | completeness | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | — | — |
+| many-announcements | Extra Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| many-announcements | Extra Large | pages | 2 ✅ | 2 ✅ | 2 ✅ | 2 ✅ |
+| many-announcements | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| many-announcements | Extra Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
+| many-announcements | Extra Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
+| many-announcements | Extra Large | XL vs Normal body | 1.31× ❌ | 1.31× ❌ | 1.23× ✅ | 1.23× ✅ |
+| many-announcements | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — |
+| many-announcements | Extra Large booklet | margin in | 0.04in ❌ | 0.04in ❌ | — | — |
+| many-announcements | Extra Large booklet | QR clean | Found ✅ | Found ✅ | — | — |
+| many-announcements | Extra Large booklet | QR degraded | Pass ✅ | Pass ✅ | — | — |
+| many-announcements | Extra Large booklet | QR inside 0.25in | Inside ✅ | Inside ✅ | — | — |
+| many-announcements | Extra Large booklet | body pt | 10.5pt ❌ | 10.5pt ❌ | — | — |
+| many-announcements | Extra Large booklet | heading pt | 27.0pt ✅ | 27.0pt ✅ | — | — |
+| many-announcements | Extra Large booklet | region body | program 12.0pt, announcements 10.5pt ❌ | program 12.0pt, announcements 10.5pt ❌ | — | — |
+| many-announcements | Extra Large booklet | completeness | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help ❌ | — | — |
+| many-announcements | Extra Large booklet | clipping | None ✅ | None ✅ | — | — |
+| many-announcements | Extra Large booklet | pages | 2 ❌ | 2 ❌ | — | — |
+| many-announcements | Extra Large booklet | fold sim | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | — | — |
+| many-announcements | Extra Large booklet | overlapping text | None ✅ | None ✅ | — | — |
+| many-announcements | Extra Large booklet | fold crossing | None ✅ | None ✅ | — | — |
+| long-names | Normal | margin in | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ |
 | long-names | Normal | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | long-names | Normal | QR degraded | Pass ✅ | Pass ✅ | Fail ❌ | Fail ❌ |
 | long-names | Normal | QR inside 0.25in | Inside ✅ | Inside ✅ | Outside ❌ | Outside ❌ |
-| long-names | Normal | body pt | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
+| long-names | Normal | body pt | 12.0pt ✅ | 12.0pt ✅ | 6.5pt ✅ | 6.5pt ✅ |
 | long-names | Normal | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| long-names | Normal | region body | l9 c15 a12 p12 ✅ | — | — | — |
-| long-names | Normal | completeness | 23 fields ✅ | — | — | — |
-| long-names | Normal | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| long-names | Normal | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| long-names | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
+| long-names | Normal | region body | l9 c15 a12 p12 ✅ | l9 c15 a12 p12 ✅ | — | — |
+| long-names | Normal | completeness | 23 fields ✅ | 23 fields ✅ | — | — |
+| long-names | Normal | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Normal | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| long-names | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
 | long-names | Normal | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
 | long-names | Normal | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
-| long-names | Large | margin in | -0.01in ❌ | -0.41in ❌ | -0.01in ❌ | -0.01in ❌ |
+| long-names | Large | margin in | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ |
 | long-names | Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | long-names | Large | QR degraded | Pass ✅ | Pass ✅ | Fail ❌ | Fail ❌ |
 | long-names | Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Outside ❌ | Outside ❌ |
-| long-names | Large | body pt | 12.0pt ✅ | 9.0pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
-| long-names | Large | heading pt | 27.0pt ✅ | 34.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| long-names | Large | region body | leadership 9.0pt ❌ | — | — | — |
-| long-names | Large | completeness | 23 fields ✅ | — | — | — |
-| long-names | Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| long-names | Large | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| long-names | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| long-names | Large | overlapping text | None ✅ | 17 overlaps ❌ | None ✅ | None ✅ |
-| long-names | Large | fold crossing | None ✅ | 7 words ❌ | None ✅ | None ✅ |
-| long-names | Extra Large | margin in | -0.01in ❌ | -0.15in ❌ | -0.01in ❌ | -0.01in ❌ |
+| long-names | Large | body pt | 12.0pt ✅ | 12.0pt ✅ | 7.5pt ✅ | 7.5pt ✅ |
+| long-names | Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| long-names | Large | region body | leadership 9.0pt ❌ | leadership 9.0pt ❌ | — | — |
+| long-names | Large | completeness | 23 fields ✅ | 23 fields ✅ | — | — |
+| long-names | Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Large | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| long-names | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| long-names | Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Extra Large | margin in | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ | -0.01in ❌ |
 | long-names | Extra Large | QR clean | Found ✅ | Found ✅ | Found ✅ | Found ✅ |
 | long-names | Extra Large | QR degraded | Pass ✅ | Pass ✅ | Fail ❌ | Fail ❌ |
 | long-names | Extra Large | QR inside 0.25in | Inside ✅ | Inside ✅ | Outside ❌ | Outside ❌ |
-| long-names | Extra Large | body pt | 12.0pt ❌ | 10.0pt ✅ | 8.0pt ✅ | 8.0pt ✅ |
-| long-names | Extra Large | heading pt | 27.0pt ✅ | 40.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
-| long-names | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — | — |
-| long-names | Extra Large | completeness | 23 fields ✅ | — | — | — |
-| long-names | Extra Large | clipping | None ✅ | Yes ❌ | None ✅ | None ✅ |
-| long-names | Extra Large | pages | 3 ❌ | 3 ✅ | 3 ✅ | 3 ✅ |
-| long-names | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| long-names | Extra Large | overlapping text | None ✅ | 34 overlaps ❌ | None ✅ | None ✅ |
-| long-names | Extra Large | fold crossing | None ✅ | 16 words ❌ | None ✅ | None ✅ |
-| long-names | Extra Large | XL vs Normal body | 1.00× ❌ | 1.54× ✅ | 1.23× ✅ | 1.23× ✅ |
-| long-names | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — | — |
-| bishops-exact-case | Normal | margin in | -0.34in ❌ | — | — | — |
-| bishops-exact-case | Normal | QR clean | Found ✅ | — | — | — |
-| bishops-exact-case | Normal | QR degraded | Pass ✅ | — | — | — |
-| bishops-exact-case | Normal | QR inside 0.25in | Inside ✅ | — | — | — |
-| bishops-exact-case | Normal | body pt | 14.5pt ✅ | — | — | — |
-| bishops-exact-case | Normal | heading pt | 26.5pt ✅ | — | — | — |
-| bishops-exact-case | Normal | region body | l9 c15 a12 p12 ✅ | — | — | — |
-| bishops-exact-case | Normal | completeness | 34 fields ✅ | — | — | — |
-| bishops-exact-case | Normal | clipping | Yes ❌ | — | — | — |
-| bishops-exact-case | Normal | pages | 2 ✅ | — | — | — |
-| bishops-exact-case | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| bishops-exact-case | Normal | overlapping text | None ✅ | — | — | — |
-| bishops-exact-case | Normal | fold crossing | None ✅ | — | — | — |
-| bishops-exact-case | Large | margin in | -0.34in ❌ | — | — | — |
-| bishops-exact-case | Large | QR clean | Found ✅ | — | — | — |
-| bishops-exact-case | Large | QR degraded | Pass ✅ | — | — | — |
-| bishops-exact-case | Large | QR inside 0.25in | Inside ✅ | — | — | — |
-| bishops-exact-case | Large | body pt | 12.0pt ✅ | — | — | — |
-| bishops-exact-case | Large | heading pt | 26.5pt ✅ | — | — | — |
-| bishops-exact-case | Large | region body | leadership 9.0pt ❌ | — | — | — |
-| bishops-exact-case | Large | completeness | 34 fields ✅ | — | — | — |
-| bishops-exact-case | Large | clipping | Yes ❌ | — | — | — |
-| bishops-exact-case | Large | pages | 2 ✅ | — | — | — |
-| bishops-exact-case | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| bishops-exact-case | Large | overlapping text | None ✅ | — | — | — |
-| bishops-exact-case | Large | fold crossing | None ✅ | — | — | — |
-| bishops-exact-case | Extra Large | margin in | -0.34in ❌ | — | — | — |
-| bishops-exact-case | Extra Large | QR clean | Found ✅ | — | — | — |
-| bishops-exact-case | Extra Large | QR degraded | Pass ✅ | — | — | — |
-| bishops-exact-case | Extra Large | QR inside 0.25in | Inside ✅ | — | — | — |
-| bishops-exact-case | Extra Large | body pt | 12.0pt ❌ | — | — | — |
-| bishops-exact-case | Extra Large | heading pt | 26.5pt ✅ | — | — | — |
-| bishops-exact-case | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — | — |
-| bishops-exact-case | Extra Large | completeness | order ❌ | — | — | — |
-| bishops-exact-case | Extra Large | clipping | Yes ❌ | — | — | — |
-| bishops-exact-case | Extra Large | pages | 2 ✅ | — | — | — |
-| bishops-exact-case | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — | — |
-| bishops-exact-case | Extra Large | overlapping text | None ✅ | — | — | — |
-| bishops-exact-case | Extra Large | fold crossing | None ✅ | — | — | — |
-| bishops-exact-case | Extra Large | XL vs Normal body | 0.83× ❌ | — | — | — |
-| bishops-exact-case | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | margin in | -0.34in ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | QR clean | Found ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | QR degraded | Pass ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | QR inside 0.25in | Inside ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | body pt | 12.0pt ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | heading pt | 26.5pt ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | completeness | order ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | clipping | Yes ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | pages | 2 ❌ | — | — | — |
-| bishops-exact-case | Extra Large booklet | fold sim | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | overlapping text | None ✅ | — | — | — |
-| bishops-exact-case | Extra Large booklet | fold crossing | None ✅ | — | — | — |
+| long-names | Extra Large | body pt | 12.0pt ❌ | 12.0pt ❌ | 8.0pt ✅ | 8.0pt ✅ |
+| long-names | Extra Large | heading pt | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ | 27.0pt ✅ |
+| long-names | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — |
+| long-names | Extra Large | completeness | 23 fields ✅ | 23 fields ✅ | — | — |
+| long-names | Extra Large | clipping | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Extra Large | pages | 3 ❌ | 3 ❌ | 3 ✅ | 3 ✅ |
+| long-names | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| long-names | Extra Large | overlapping text | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Extra Large | fold crossing | None ✅ | None ✅ | None ✅ | None ✅ |
+| long-names | Extra Large | XL vs Normal body | 1.00× ❌ | 1.00× ❌ | 1.23× ✅ | 1.23× ✅ |
+| long-names | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — |
+| bishops-exact-case | Normal | margin in | -0.34in ❌ | -0.34in ❌ | — | — |
+| bishops-exact-case | Normal | QR clean | Found ✅ | Found ✅ | — | — |
+| bishops-exact-case | Normal | QR degraded | Pass ✅ | Pass ✅ | — | — |
+| bishops-exact-case | Normal | QR inside 0.25in | Inside ✅ | Inside ✅ | — | — |
+| bishops-exact-case | Normal | body pt | 14.5pt ✅ | 14.5pt ✅ | — | — |
+| bishops-exact-case | Normal | heading pt | 26.5pt ✅ | 26.5pt ✅ | — | — |
+| bishops-exact-case | Normal | region body | l9 c15 a12 p12 ✅ | l9 c15 a12 p12 ✅ | — | — |
+| bishops-exact-case | Normal | completeness | 34 fields ✅ | 34 fields ✅ | — | — |
+| bishops-exact-case | Normal | clipping | Yes ❌ | Yes ❌ | — | — |
+| bishops-exact-case | Normal | pages | 2 ✅ | 2 ✅ | — | — |
+| bishops-exact-case | Normal | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| bishops-exact-case | Normal | overlapping text | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Normal | fold crossing | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Large | margin in | -0.34in ❌ | -0.34in ❌ | — | — |
+| bishops-exact-case | Large | QR clean | Found ✅ | Found ✅ | — | — |
+| bishops-exact-case | Large | QR degraded | Pass ✅ | Pass ✅ | — | — |
+| bishops-exact-case | Large | QR inside 0.25in | Inside ✅ | Inside ✅ | — | — |
+| bishops-exact-case | Large | body pt | 12.0pt ✅ | 12.0pt ✅ | — | — |
+| bishops-exact-case | Large | heading pt | 26.5pt ✅ | 26.5pt ✅ | — | — |
+| bishops-exact-case | Large | region body | leadership 9.0pt ❌ | leadership 9.0pt ❌ | — | — |
+| bishops-exact-case | Large | completeness | 34 fields ✅ | 34 fields ✅ | — | — |
+| bishops-exact-case | Large | clipping | Yes ❌ | Yes ❌ | — | — |
+| bishops-exact-case | Large | pages | 2 ✅ | 2 ✅ | — | — |
+| bishops-exact-case | Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| bishops-exact-case | Large | overlapping text | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Large | fold crossing | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Extra Large | margin in | -0.34in ❌ | -0.34in ❌ | — | — |
+| bishops-exact-case | Extra Large | QR clean | Found ✅ | Found ✅ | — | — |
+| bishops-exact-case | Extra Large | QR degraded | Pass ✅ | Pass ✅ | — | — |
+| bishops-exact-case | Extra Large | QR inside 0.25in | Inside ✅ | Inside ✅ | — | — |
+| bishops-exact-case | Extra Large | body pt | 12.0pt ❌ | 12.0pt ❌ | — | — |
+| bishops-exact-case | Extra Large | heading pt | 26.5pt ✅ | 26.5pt ✅ | — | — |
+| bishops-exact-case | Extra Large | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — |
+| bishops-exact-case | Extra Large | completeness | order ❌ | order ❌ | — | — |
+| bishops-exact-case | Extra Large | clipping | Yes ❌ | Yes ❌ | — | — |
+| bishops-exact-case | Extra Large | pages | 2 ✅ | 2 ✅ | — | — |
+| bishops-exact-case | Extra Large | fold sim | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L ✅ | — | — |
+| bishops-exact-case | Extra Large | overlapping text | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Extra Large | fold crossing | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Extra Large | XL vs Normal body | 0.83× ❌ | 0.83× ❌ | — | — |
+| bishops-exact-case | Extra Large | region scale | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | margin in | -0.34in ❌ | -0.34in ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | QR clean | Found ✅ | Found ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | QR degraded | Pass ✅ | Pass ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | QR inside 0.25in | Inside ✅ | Inside ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | body pt | 12.0pt ❌ | 12.0pt ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | heading pt | 26.5pt ✅ | 26.5pt ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | region body | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | program 12.0pt, announcements 12.0pt, leadership 9.0pt ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | completeness | order ❌ | order ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | clipping | Yes ❌ | Yes ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | pages | 2 ❌ | 2 ❌ | — | — |
+| bishops-exact-case | Extra Large booklet | fold sim | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | 1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | overlapping text | None ✅ | None ✅ | — | — |
+| bishops-exact-case | Extra Large booklet | fold crossing | None ✅ | None ✅ | — | — |

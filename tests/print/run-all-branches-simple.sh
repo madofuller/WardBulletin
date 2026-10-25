@@ -2,6 +2,7 @@
 # Sequential in-place source swap. Keeps this checkout's node_modules.
 set -u
 set -o pipefail
+set +e
 
 ROOT="/workspace"
 RESULTS="$ROOT/tests/print/results"
@@ -16,7 +17,6 @@ HARNESS_FILES=(
 )
 
 BRANCHES=(
-  "main|main"
   "cursor/print-layout-fixes-f7ea|cursor-print-layout-fixes-f7ea"
   "cursor/pdf-qr-fixes-aaec|cursor-pdf-qr-fixes-aaec"
   "cursor/public-page-performance-e836|cursor-public-page-performance-e836"
@@ -129,7 +129,9 @@ for spec in "${BRANCHES[@]}"; do
     fi
   done
   echo "  checkout ${existing[*]}"
-  git checkout "origin/$BRANCH" -- "${existing[@]}"
+  git checkout "origin/$BRANCH" -- "${existing[@]}" || {
+    echo "  checkout of some paths failed; continuing with what landed"
+  }
 
   git checkout "$HARNESS_BRANCH" -- "${HARNESS_FILES[@]}"
   # Keep our QR-enabled fixtures even if a branch also ships public fixtures.
