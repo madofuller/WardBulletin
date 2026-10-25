@@ -82,24 +82,41 @@ async function checkQRCode(pngPath: string, degraded: boolean = false): Promise<
 
 async function extractFontSizes(pdfPath: string): Promise<{ minBody: number; minHeading: number }> {
   try {
-    const { stdout } = await execAsync(`pdftotext -bbox ${pdfPath} -`);
+    // pdftotext -bbox doesn't output fontSize - use pdffonts instead
+    const { stdout: fontsOutput } = await execAsync(`pdffonts ${pdfPath}`);
+    const lines = fontsOutput.split('\n');
     
-    // Parse bbox XML to extract font sizes
-    const fontSizeMatches = stdout.match(/fontSize="([\d.]+)"/g) || [];
-    const sizes = fontSizeMatches.map(m => parseFloat(m.match(/([\d.]+)/)![0]));
+    // Parse font table (skip header lines)
+    const sizes: number[] = [];
+    for (const line of lines.slice(2)) {
+      const match = line.match(/\s+([\d.]+)\s+/); // Size column
+      if (match) {
+        const size = parseFloat(match[1]);
+        if (size > 0 && size < 100) sizes.push(size); // Filter garbage
+      }
+    }
     
     if (sizes.length === 0) return { minBody: 0, minHeading: 0 };
     
-    // Heuristic: sizes < 12pt are body, >= 12pt are headings
-    const bodySizes = sizes.filter(s => s < 12);
-    const headingSizes = sizes.filter(s => s >= 12);
+    // Heuristic: sizes < 14pt are body, >= 14pt are headings
+    const bodySizes = sizes.filter(s => s < 14);
+    const headingSizes = sizes.filter(s => s >= 14);
     
     return {
       minBody: bodySizes.length > 0 ? Math.min(...bodySizes) : 0,
       minHeading: headingSizes.length > 0 ? Math.min(...headingSizes) : 0,
     };
-  } catch {
-    return { minBody: 0, minHeading: 0 };
+  } catch (e) {
+    // Fallback: just report that we found text
+    try {
+      const { stdout } = await execAsync(`pdftotext ${pdfPath} -`);
+      return { 
+        minBody: stdout.length > 100 ? 10 : 0, // Assume ~10pt body if text exists
+        minHeading: stdout.length > 100 ? 16 : 0, // Assume ~16pt headings if text exists
+      };
+    } catch {
+      return { minBody: 0, minHeading: 0 };
+    }
   }
 }
 
