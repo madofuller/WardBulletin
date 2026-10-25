@@ -59,16 +59,13 @@ def _classify_sizes(sizes: list[float]) -> dict[str, float]:
         }
 
     counts = Counter(rounded)
-    # Ignore 1–2 glyph artifacts when picking min/max.
     frequent = sorted(size for size, n in counts.items() if n >= 8) or sorted(counts)
     max_pt = max(frequent)
     heading_pt = max_pt
     body_candidates = [size for size in frequent if size < heading_pt - 0.4]
     if not body_candidates:
-        # Single-size page: treat the mode as body; heading check will fail.
         body_pt = counts.most_common(1)[0][0]
     else:
-        # Modal size in the body cluster (not the smallest caption).
         body_counts = Counter(s for s in rounded if s in set(body_candidates) and s >= 6.0)
         body_pt = body_counts.most_common(1)[0][0] if body_counts else min(body_candidates)
     bodies = [size for size in rounded if size <= body_pt + 0.6] or rounded
@@ -86,13 +83,6 @@ def _classify_sizes(sizes: list[float]) -> dict[str, float]:
 CAPTION_RE = ("scan", "qr")
 
 
-def _region_for(page_index: int, x0: float) -> str:
-    left = x0 < FOLD_PT
-    if page_index == 0:
-        return "leadership" if left else "cover"
-    return "announcements" if left else "program"
-
-
 def _region_body_pt(sizes: list[float], region: str) -> float:
     if not sizes:
         return 0.0
@@ -104,18 +94,45 @@ def _region_body_pt(sizes: list[float], region: str) -> float:
     counts = Counter(rounded)
     frequent = sorted(size for size, n in counts.items() if n >= 3) or sorted(counts)
     if region == "cover":
-        # Ward name (largest), never the subtitle cluster.
-        return max(rounded)
-    # Prefer the real body cluster over QR captions / subtitles.
-    large = [s for s in frequent if s >= 13.5]
-    if large:
-        body_large = [s for s in large if s <= 16.5] or large
-        return Counter(s for s in rounded if s in set(body_large)).most_common(1)[0][0]
-    bodyish = [s for s in frequent if s >= 8.0] or frequent
-    if len(bodyish) > 1 and max(bodyish) - min(bodyish) >= 1.5:
-        bodyish = [s for s in bodyish if s >= max(bodyish) - 1.0]
-    chosen = Counter(s for s in rounded if s in set(bodyish)).most_common(1)
-    return chosen[0][0] if chosen else min(bodyish)
+        # Date / church / "Sacrament Meeting" — not the ward-name heading.
+        top = max(frequent)
+        subs = [s for s in frequent if s <= top - 2.0]
+        if subs:
+            return Counter(s for s in rounded if s in set(subs)).most_common(1)[0][0]
+        return min(frequent)
+    top = max(frequent)
+    bodyish = [s for s in frequent if s <= top - 1.5] or [min(frequent)]
+    chosen = Counter(s for s in rounded if s in set(bodyish))
+    return chosen.most_common(1)[0][0] if chosen else min(bodyish)
+
+
+def _score_panel_role(text: str) -> str:
+    low = text.lower()
+    scores = {
+        "program": 0,
+        "cover": 0,
+        "leadership": 0,
+        "announcements": 0,
+    }
+    for token in ("presiding", "conducting", "invocation", "benediction", "opening hymn", "sacrament hymn"):
+        if token in low:
+            scores["program"] += 3
+    if "latter-day" in low or "latter day" in low:
+        scores["cover"] += 3
+    if "sacrament meeting" in low and scores["program"] == 0:
+        scores["cover"] += 2
+    if "ward leadership" in low or "branch leadership" in low:
+        scores["leadership"] += 4
+    if "scan this qr" in low or "scan the qr" in low:
+        scores["leadership"] += 1
+    if "announcements" in low:
+        scores["announcements"] += 3
+    if "more announcements" in low:
+        scores["announcements"] += 2
+    role = max(scores, key=lambda k: scores[k])
+    if scores[role] == 0:
+        return "announcements"
+    return role
 
 
 def analyze(pdf_path: str) -> dict[str, Any]:
@@ -133,6 +150,7 @@ def analyze(pdf_path: str) -> dict[str, Any]:
         "program": [],
     }
     text_parts: list[str] = []
+    panels: list[dict[str, Any]] = []
 
     with pdfplumber.open(pdf_path) as pdf:
         page_count = len(pdf.pages)
@@ -156,19 +174,25 @@ def analyze(pdf_path: str) -> dict[str, Any]:
             ]
             word_count += len(usable)
             page_words: list[str] = []
+            halves: dict[str, list[str]] = {"left": [], "right": []}
+            half_sizes: dict[str, list[float]] = {"left": [], "right": []}
             for w in usable:
                 text = str(w.get("text", "")).strip()
                 page_words.append(text)
+                side = "left" if float(w["x0"]) < FOLD_PT else "right"
+                halves[side].append(text)
                 size = w.get("size")
                 if isinstance(size, (int, float)):
                     low = text.lower()
                     if any(token in low for token in CAPTION_RE):
                         continue
-                    # QR caption lives in the bottom inch of page 1 left.
-                    if index == 0 and float(w["x0"]) < FOLD_PT and float(w["top"]) > 7.0 * 72:
-                        continue
-                    region_sizes[_region_for(index, float(w["x0"]))].append(float(size))
+                    half_sizes[side].append(float(size))
             text_parts.append(" ".join(page_words))
+            for side in ("left", "right"):
+                half_text = " ".join(halves[side])
+                role = _score_panel_role(half_text)
+                panels.append({"page": index + 1, "side": side, "role": role, "text": half_text})
+                region_sizes[role].extend(half_sizes[side])
 
             if usable:
                 x0 = min(w["x0"] for w in usable)
@@ -208,7 +232,6 @@ def analyze(pdf_path: str) -> dict[str, Any]:
 
     fonts = _classify_sizes(all_sizes)
     margin_in = (min_edge_pt / 72.0) if min_edge_pt is not None else None
-
     region_fonts = {name: _region_body_pt(vals, name) for name, vals in region_sizes.items()}
 
     return {
@@ -230,6 +253,7 @@ def analyze(pdf_path: str) -> dict[str, Any]:
         "unique_sizes": sorted({round(s * 2) / 2 for s in all_sizes}),
         "full_text": "\n".join(text_parts),
         "region_fonts": {k: round(v, 2) for k, v in region_fonts.items()},
+        "panels": panels,
     }
 
 

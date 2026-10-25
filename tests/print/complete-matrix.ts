@@ -28,7 +28,10 @@ interface TestResult {
   fixture: string;
   mode: string;
   scale: number;
+  output: 'single' | 'booklet';
   checks: Record<string, CheckResult>;
+  regionFonts?: Record<string, number>;
+  panelMap?: string;
 }
 
 interface PdfAnalysis {
@@ -49,6 +52,7 @@ interface PdfAnalysis {
   fold_samples: Array<{ text: string; page: number }>;
   full_text?: string;
   region_fonts?: Record<string, number>;
+  panels?: Array<{ page: number; side: string; role: string; text: string }>;
 }
 
 function tokens(value: string): string[] {
@@ -68,7 +72,18 @@ function isSubsequence(needles: string[], haystack: string[]): boolean {
   return i === needles.length;
 }
 
-function checkCompleteness(pdfText: string, fixture: any): CheckResult {
+function imposeFor(output: 'single' | 'booklet'): Array<[number, number]> {
+  if (output === 'booklet') {
+    return [[8, 1], [2, 7], [6, 3], [4, 5]];
+  }
+  return [[4, 1], [2, 3]];
+}
+
+function facingPairs(output: 'single' | 'booklet'): Array<[number, number]> {
+  return output === 'booklet' ? [[2, 3], [4, 5], [6, 7]] : [[2, 3]];
+}
+
+function checkCompleteness(pdfText: string, fixture: any, omittedTitles: string[] = []): CheckResult {
   const haystack = tokens(pdfText);
   const missing: string[] = [];
   const phrases: string[] = [];
@@ -96,7 +111,9 @@ function checkCompleteness(pdfText: string, fixture: any): CheckResult {
     if (item.hymnTitle) phrases.push(item.hymnTitle);
     if (item.title) phrases.push(item.title);
   }
+  const omitted = new Set(omittedTitles.map((t) => t.toLowerCase()));
   for (const ann of (fixture.announcements || []).filter((a: any) => !a.hideOnPrint)) {
+    if (omitted.has(String(ann.title || '').toLowerCase())) continue;
     if (ann.title) phrases.push(ann.title);
     if (ann.content) phrases.push(ann.content);
   }
@@ -260,23 +277,120 @@ async function checkQrPages(outputDir: string, pageFiles: string[]): Promise<{
   };
 }
 
+function checkFoldSimulation(
+  analysis: PdfAnalysis,
+  output: 'single' | 'booklet'
+): { fold: CheckResult; continued: CheckResult; pages: CheckResult; map: string } {
+  const pages = analysis.pages || 0;
+  const pageOk = output === 'booklet' ? pages >= 4 && pages % 4 === 0 : pages === 2;
+  const impose = imposeFor(output);
+  const byPage = new Map<string, { role: string; text: string }>();
+  for (const panel of analysis.panels || []) {
+    byPage.set(`${panel.page}:${panel.side}`, { role: panel.role, text: panel.text || '' });
+  }
+  const reading: Record<number, { role: string; text: string; pdf: string }> = {};
+  impose.forEach(([left, right], index) => {
+    const page = index + 1;
+    const L = byPage.get(`${page}:left`) || { role: 'empty', text: '' };
+    const R = byPage.get(`${page}:right`) || { role: 'empty', text: '' };
+    reading[left] = { ...L, pdf: `p${page}L` };
+    reading[right] = { ...R, pdf: `p${page}R` };
+  });
+
+  const cover = reading[1];
+  const coverOk = !!cover && /sacrament meeting|latter-day|latter day/i.test(cover.text) && !/presiding/i.test(cover.text);
+
+  const programPanels = Object.entries(reading)
+    .filter(([, panel]) => /presiding/i.test(panel.text) && /benediction/i.test(panel.text))
+    .map(([n]) => Number(n));
+  const programBits = Object.entries(reading)
+    .filter(([, panel]) => /presiding|benediction|opening hymn/i.test(panel.text))
+    .map(([n]) => Number(n));
+  let programOk = programPanels.length === 1;
+  if (!programOk && programBits.length === 2) {
+    const [a, b] = programBits.slice().sort((x, y) => x - y);
+    programOk = facingPairs(output).some(([l, r]) => l === a && r === b);
+  }
+
+  const full = analysis.full_text || '';
+  const continuedOk = !/\(continued\)|\bcontinued\)/i.test(full);
+
+  const bits: string[] = [];
+  if (!coverOk) bits.push('cover≠p1');
+  if (!programOk) bits.push(`program@${programBits.join(',') || 'none'}`);
+  const map = Object.keys(reading)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map((n) => `${n}:${reading[n].role}/${reading[n].pdf}`)
+    .join(' ');
+
+  return {
+    fold: {
+      pass: coverOk && programOk,
+      value: bits.length ? bits.join('; ') : map,
+    },
+    continued: {
+      pass: continuedOk,
+      value: continuedOk ? 'None' : 'Continued',
+    },
+    pages: {
+      pass: pageOk,
+      value: String(pages),
+    },
+    map,
+  };
+}
+
+async function buildFoldStrip(
+  outputDir: string,
+  pageFiles: string[],
+  output: 'single' | 'booklet',
+  destName: string
+): Promise<string | undefined> {
+  const impose = imposeFor(output);
+  const crops: string[] = [];
+  try {
+    for (let i = 0; i < impose.length; i++) {
+      const file = pageFiles[i];
+      if (!file) continue;
+      const full = path.join(outputDir, file);
+      const leftOut = path.join(outputDir, `fold-p${i + 1}-L.png`);
+      const rightOut = path.join(outputDir, `fold-p${i + 1}-R.png`);
+      await execFileAsync('convert', [full, '-crop', '825x1275+0+0', '+repage', leftOut]);
+      await execFileAsync('convert', [full, '-crop', '825x1275+825+0', '+repage', rightOut]);
+      const [leftId, rightId] = impose[i];
+      crops[leftId - 1] = leftOut;
+      crops[rightId - 1] = rightOut;
+    }
+    const ordered = crops.filter(Boolean);
+    if (ordered.length === 0) return undefined;
+    const dest = path.join(outputDir, destName);
+    await execFileAsync('convert', [...ordered, '+append', dest]);
+    return dest;
+  } catch {
+    return undefined;
+  }
+}
+
 async function runCase(
   browser: Browser,
   branch: string,
   fixture: string,
-  mode: { scale: number; label: string },
+  mode: { scale: number; label: string; output?: 'single' | 'booklet' },
   port: number,
   outputBase: string
 ): Promise<TestResult> {
-  const testId = `${slug(branch)}_${fixture}_${slug(mode.label)}`;
+  const output = mode.output === 'booklet' ? 'booklet' : 'single';
+  const testId = `${slug(branch)}_${fixture}_${slug(mode.label)}${output === 'booklet' ? '_booklet' : ''}`;
   const outputDir = path.join(outputBase, testId);
   fs.mkdirSync(outputDir, { recursive: true });
 
   const result: TestResult = {
     branch,
     fixture,
-    mode: mode.label,
+    mode: output === 'booklet' ? `${mode.label} booklet` : mode.label,
     scale: mode.scale,
+    output,
     checks: {},
   };
 
@@ -286,7 +400,7 @@ async function runCase(
   page.on('pageerror', (err) => logs.push(`[pageerror] ${err.message}`));
 
   try {
-    const url = `http://127.0.0.1:${port}/print-test.html?fixture=${fixture}&fontScale=${mode.scale}`;
+    const url = `http://127.0.0.1:${port}/print-test.html?fixture=${fixture}&fontScale=${mode.scale}&output=${output}`;
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     try {
       await page.waitForFunction(() => (window as any).__PRINT_READY__ === true, { timeout: 20000 });
@@ -384,15 +498,30 @@ async function runCase(
               .map(([k, v]) => `${k[0]}${Number(v).toFixed(0)}`)
               .join(' '),
     };
-    result.checks.completeness = checkCompleteness(analysis.full_text || '', fixtureData);
+    const printPlan = await page.evaluate(() => (window as any).__PRINT_PLAN__ || null);
+    const omittedTitles: string[] = printPlan?.omittedTitles || [];
+    result.checks.completeness = checkCompleteness(analysis.full_text || '', fixtureData, omittedTitles);
+    if (omittedTitles.length) {
+      const moreLine = /more announcements:\s*scan the qr code/i.test(analysis.full_text || '');
+      if (!moreLine) {
+        result.checks.completeness = { pass: false, value: 'missing omit QR line' };
+      }
+    }
     result.checks.clipping = {
       pass: !analysis.clipping,
       value: analysis.clipping ? 'Yes' : 'None',
     };
-    result.checks.pages = {
-      pass: analysis.pages > 0,
-      value: String(analysis.pages || pageFiles.length),
-    };
+    const foldSim = checkFoldSimulation(analysis, output);
+    result.checks.pages = foldSim.pages;
+    result.checks.fold_sim = foldSim.fold;
+    result.checks.no_continued = foldSim.continued;
+    result.panelMap = foldSim.map;
+    result.regionFonts = analysis.region_fonts || {};
+    const stripFixtures = new Set(['bishops-exact-case', 'many-announcements']);
+    const stripModes = new Set(['Normal', 'Extra Large']);
+    if (stripFixtures.has(fixture) && stripModes.has(mode.label)) {
+      await buildFoldStrip(outputDir, pageFiles, output, 'folded-order.png');
+    }
     result.checks.overlap = {
       pass: analysis.overlap_count === 0,
       value: analysis.overlap_count === 0 ? 'None' : `${analysis.overlap_count} overlaps`,
@@ -420,21 +549,60 @@ async function runCase(
 function addModeScaleChecks(results: TestResult[]) {
   const groups = new Map<string, TestResult[]>();
   for (const result of results) {
+    if (result.output === 'booklet') continue;
     const key = `${result.branch}::${result.fixture}`;
     const list = groups.get(key) || [];
     list.push(result);
     groups.set(key, list);
   }
+  const regions = ['program', 'announcements', 'leadership', 'cover'] as const;
   for (const group of groups.values()) {
     const normal = group.find((r) => r.mode === 'Normal');
+    const large = group.find((r) => r.mode === 'Large');
     const extra = group.find((r) => r.mode === 'Extra Large');
     if (!normal || !extra) continue;
     const normalBody = parseFloat(normal.checks.body_pt?.value || '0');
     const extraBody = parseFloat(extra.checks.body_pt?.value || '0');
+    const ratio = extraBody / Math.max(normalBody, 0.1);
     extra.checks.mode_scale = {
-      pass: extraBody >= 14 && (normalBody <= 0 || extraBody + 0.05 >= Math.min(normalBody, 14)),
-      value: normalBody > 0 ? `${(extraBody / Math.max(normalBody, 0.1)).toFixed(2)}×` : 'N/A',
+      pass: extraBody >= 14 && normalBody > 0 && ratio + 0.001 >= 1.15,
+      value: normalBody > 0 ? `${ratio.toFixed(2)}×` : 'N/A',
     };
+
+    const fails: string[] = [];
+    for (const region of regions) {
+      const n = Number(normal.regionFonts?.[region] || 0);
+      const l = Number(large?.regionFonts?.[region] || 0);
+      const x = Number(extra.regionFonts?.[region] || 0);
+      const present = [n, l, x].filter((v) => v > 0);
+      if (present.length < 2) continue;
+      if (n > 0 && l > 0 && !(n < l)) fails.push(`${region} N≥L`);
+      if (l > 0 && x > 0 && !(l < x)) fails.push(`${region} L≥XL`);
+      if (n > 0 && x > 0 && !(n < x)) fails.push(`${region} N≥XL`);
+    }
+    extra.checks.region_scale = {
+      pass: fails.length === 0,
+      value: fails.length ? fails.join(', ') : 'N<L<XL',
+    };
+  }
+}
+
+function printTable(results: TestResult[]) {
+  const keys = [
+    'margin', 'qr_clean', 'body_pt', 'heading_pt', 'region_body', 'completeness',
+    'pages', 'fold_sim', 'no_continued', 'mode_scale', 'region_scale',
+  ];
+  console.log('\n| fixture | mode | pages | body | regions | fold | scale | result |');
+  console.log('|---------|------|-------|------|---------|------|-------|--------|');
+  for (const result of results) {
+    const failed = Object.entries(result.checks).filter(([, c]) => !c.pass).map(([k]) => k);
+    const pages = result.checks.pages?.value || '?';
+    const body = result.checks.body_pt?.value || '?';
+    const regions = result.checks.region_body?.value || '?';
+    const fold = result.checks.fold_sim?.value || '?';
+    const scale = result.checks.mode_scale?.value || result.checks.region_scale?.value || '';
+    const mark = failed.length ? `FAIL ${failed.join(',')}` : 'PASS';
+    console.log(`| ${result.fixture} | ${result.mode} | ${pages} | ${body} | ${regions} | ${fold} | ${scale} | ${mark} |`);
   }
 }
 
@@ -462,11 +630,34 @@ async function main() {
         console.log(`${passed}/${total}${err ? ` (${err})` : ''}`);
       }
     }
+
+    const bookletCases: Array<{ fixture: string; scale: number; label: string }> = [
+      { fixture: 'many-announcements', scale: 1.25, label: 'Extra Large' },
+      { fixture: 'bishops-exact-case', scale: 1.25, label: 'Extra Large' },
+    ];
+    for (const extra of bookletCases) {
+      if (only && !only.includes(extra.fixture)) continue;
+      process.stdout.write(`  ${extra.fixture} / ${extra.label} booklet... `);
+      const result = await runCase(
+        browser,
+        branch,
+        extra.fixture,
+        { scale: extra.scale, label: extra.label, output: 'booklet' },
+        port,
+        outputBase
+      );
+      allResults.push(result);
+      const passed = Object.values(result.checks).filter((c) => c.pass).length;
+      const total = Object.values(result.checks).length;
+      const err = result.checks.error?.value;
+      console.log(`${passed}/${total}${err ? ` (${err})` : ''}`);
+    }
   } finally {
     await browser.close();
   }
 
   addModeScaleChecks(allResults);
+  printTable(allResults);
   const resultsFile = path.join(outputBase, `${slug(branch)}-results.json`);
   fs.writeFileSync(resultsFile, JSON.stringify(allResults, null, 2));
   console.log(`Results saved to ${resultsFile}`);

@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { linkifyHtml } from "../lib/linkifyHtml";
@@ -23,10 +23,11 @@ import {
   UnitType
 } from '../lib/terminology';
 import {
-  paginateAnnouncements,
-  paginateProgram,
+  imposeSheets,
+  planPrintLayout,
   printModeFromScale,
   printTypeScale,
+  type AnnouncementChunk,
   type ProgramBlock,
 } from '../lib/printPagination';
 
@@ -403,774 +404,437 @@ function buildProgramBlocks(
   return blocks;
 }
 
-const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
-  const { user, profile } = useSession();
-  const { t, i18n } = useTranslation();
-  const backCoverRef = useRef<HTMLDivElement>(null);
-  const announcementsRef = useRef<HTMLDivElement>(null);
-  const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
+const PANEL: React.CSSProperties = {
+  width: '5.5in',
+  height: '8.5in',
+  overflow: 'hidden',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  padding: '0.3in',
+};
 
-  // Print font scale: Map UI scale to actual print multipliers for senior readability
-  // Goals: Normal ~11pt body, Large ~14pt body, Extra Large ~16-18pt body
+const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { page1?: React.RefObject<HTMLDivElement>, page2?: React.RefObject<HTMLDivElement> }, unitTypeOverride?: UnitType }>(({ data, refs, unitTypeOverride }, ref) => {
+  const { profile } = useSession();
+  const { t, i18n } = useTranslation();
+
   const fontScale = (() => {
     const uiScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
       ? data.printFontScale
       : 1;
-    
-    // Map UI scale (1.0/1.15/1.25) to real print scale for seniors:
-    // - Normal (1.0): 1.0× = 11-12pt body text
-    // - Large (1.15): 1.4× = 14-16pt body text  
-    // - Extra Large (1.25): 1.8× = 16-20pt body text
-    if (uiScale >= 1.25) return 1.8;  // Extra Large
-    if (uiScale >= 1.15) return 1.4;  // Large
-    return 1.0;                        // Normal
+    if (uiScale >= 1.25) return 1.8;
+    if (uiScale >= 1.15) return 1.4;
+    return 1.0;
   })();
 
-  // In Large/Extra Large modes (fontScale >= 1.4), disable auto-shrinking entirely.
-  // Text must remain at full scale for senior readability. Overflow flows to a
-  // continuation page instead of shrinking.
-  const isLargeOrExtraLarge = fontScale >= 1.4;
-  const MIN_FONT_SIZE_PT = 12; // Absolute minimum in points
-  const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.65;
-  const [announceFitScale, setAnnounceFitScale] = useState(1);
-  const [autoColumns, setAutoColumns] = useState(0); // 0 = use default, otherwise a forced column count
-
-  // Announcements marked web-only never reach paper; everything below
-  // (column auto-fit, grouping, the section header) works off this list.
   const printableAnnouncements = (data.announcements || []).filter((a: any) => !a.hideOnPrint);
-  const announcementCount = printableAnnouncements.length;
-  
   const printMode = printModeFromScale(fontScale);
+  const outputMode = data.printOutputMode === 'booklet' ? 'booklet' : 'single';
   const typeScale = printTypeScale(printMode);
-  const bodyStyle: React.CSSProperties | undefined = typeScale.bodyPt
-    ? { fontSize: `${typeScale.bodyPt}pt`, lineHeight: 1.2 }
-    : undefined;
-  const headingStyle: React.CSSProperties | undefined = typeScale.headingPt
-    ? { fontSize: `${typeScale.headingPt}pt`, lineHeight: 1.15 }
-    : undefined;
-  const coverNameStyle: React.CSSProperties | undefined = typeScale.coverNamePt
-    ? { fontSize: `${typeScale.coverNamePt}pt`, lineHeight: 1.1 }
-    : undefined;
-  const coverSubStyle: React.CSSProperties | undefined = typeScale.coverSubPt
-    ? { fontSize: `${typeScale.coverSubPt}pt` }
-    : undefined;
-  const announceTitleStyle: React.CSSProperties = {
-    fontSize: typeScale.announceTitlePt ? `${typeScale.announceTitlePt}pt` : undefined,
-    lineHeight: 1.2,
-  };
-  const announceBodyStyle: React.CSSProperties = {
-    fontSize: typeScale.announceBodyPt ? `${typeScale.announceBodyPt}pt` : undefined,
-    lineHeight: 1.2,
-  };
+  const bodyStyle: React.CSSProperties = { fontSize: `${typeScale.bodyPt}pt`, lineHeight: 1.2 };
+  const headingStyle: React.CSSProperties = { fontSize: `${typeScale.headingPt}pt`, lineHeight: 1.15, fontWeight: 700 };
+  const coverNameStyle: React.CSSProperties = { fontSize: `${typeScale.coverNamePt}pt`, lineHeight: 1.1 };
+  const coverSubStyle: React.CSSProperties = { fontSize: `${typeScale.coverSubPt}pt`, lineHeight: 1.25 };
+  const announceTitleStyle: React.CSSProperties = { fontSize: `${typeScale.announceTitlePt}pt`, lineHeight: 1.2, fontWeight: 600 };
+  const announceBodyStyle: React.CSSProperties = { fontSize: `${typeScale.announceBodyPt}pt`, lineHeight: 1.2 };
+  const programBodyStyle: React.CSSProperties = { ...bodyStyle };
 
-  // Pack announcements so a panel never clips mid-sentence. Long items split
-  // on a word boundary; shorter ones move whole to the next page.
-  const announcementPages = useMemo(
-    () => paginateAnnouncements(printableAnnouncements, printMode, 1),
-    [printMode, announcementCount, printableAnnouncements]
-  );
-  const programPages = useMemo(
-    () => paginateProgram(buildProgramBlocks(data, t, unitTypeOverride), printMode),
-    [data, t, unitTypeOverride, printMode]
-  );
-  const announcementTotalChars = printableAnnouncements.reduce((s: number, a: any) => s + (a.content?.length || 0) + (a.title?.length || 0), 0);
-  const announcementsContentKeyRaw = announcementCount + ':' + announcementTotalChars;
-  // Debounce the content key so the auto-fit measure/shrink loop (forced
-  // reflows of two full off-screen print pages) runs once per typing pause
-  // instead of on every keystroke.
-  const [announcementsContentKey, setAnnouncementsContentKey] = useState(announcementsContentKeyRaw);
-  useEffect(() => {
-    if (announcementsContentKeyRaw === announcementsContentKey) return;
-    const timer = setTimeout(() => setAnnouncementsContentKey(announcementsContentKeyRaw), 500);
-    return () => clearTimeout(timer);
-  }, [announcementsContentKeyRaw, announcementsContentKey]);
-  const isHeavyContent = announcementTotalChars > 2000;
-  const isLightContent = announcementTotalChars < 800;
+  const hasValidLeadershipInfo = (entry: any) => entry && (entry.name?.trim() || entry.phone?.trim());
+  const hasValidMissionaryInfo = (entry: any) => entry && (entry.name?.trim() || entry.phone?.trim() || entry.mission?.trim() || entry.email?.trim());
+  const hasValidServiceMissionaryInfo = (entry: any) => entry && (entry.name?.trim() || entry.serviceName?.trim());
 
-  // In Large/Extra Large modes, use single column for better readability.
-  // In Normal mode, use conservative column count that escalates only on overflow.
-  // Pagination is 1-column; extra columns would clip text the packer thought fit.
-  const defaultCols = 1;
-  const announceColumnCount = 1;
-
-  useEffect(() => {
-    setAnnounceFitScale(1);
-    setAutoColumns(0);
-  }, [announcementsContentKey, data.printFontScale, data.printTightMargins]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!announcementsRef.current) return;
-      const el = announcementsRef.current;
-      const overflowV = el.scrollHeight - el.clientHeight;
-      const overflowH = el.scrollWidth - el.clientWidth;
-      if (overflowV <= 2 && overflowH <= 2) return;
-
-      // In Large/Extra Large modes, do NOT auto-shrink or add columns.
-      // Let content overflow; it will flow to a continuation page.
-      if (isLargeOrExtraLarge) return;
-
-      // Step 1: add columns one at a time before shrinking fonts
-      if (announceColumnCount < 4) {
-        setAutoColumns(announceColumnCount + 1);
-        return;
-      }
-      // Step 2: shrink fonts as last resort (only in Normal mode)
-      if (announceFitScale > MIN_FIT_SCALE) {
-        const next = Math.max(MIN_FIT_SCALE, announceFitScale - 0.03);
-        setAnnounceFitScale(next);
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [announceFitScale, autoColumns, announceColumnCount, announcementsContentKey, data.printFontScale, data.printTightMargins, isLargeOrExtraLarge]);
-
-  // Detect when content is still cut off after auto-fit (for the warning banner)
-  useEffect(() => {
-    const check = () => {
-      let backCover = false;
-      let announcements = false;
-      if (backCoverRef.current) {
-        const el = backCoverRef.current;
-        backCover = el.scrollHeight > el.clientHeight;
-      }
-      if (announcementsRef.current) {
-        const el = announcementsRef.current;
-        announcements = el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2;
-      }
-      setOverflow(prev => (prev.backCover === backCover && prev.announcements === announcements) ? prev : { backCover, announcements });
-    };
-    const t1 = setTimeout(check, 300);
-    const t2 = setTimeout(check, 800);
-    const ro = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(() => setTimeout(check, 80))
-      : null;
-    const raf = requestAnimationFrame(() => {
-      if (backCoverRef.current) ro?.observe(backCoverRef.current);
-      if (announcementsRef.current) ro?.observe(announcementsRef.current);
-    });
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      cancelAnimationFrame(raf);
-      ro?.disconnect();
-    };
-  }, [data.announcements?.length, data.wardLeadership?.length, data.missionaries?.length, data.wardMissionaries?.length, data.serviceMissionaries?.length, data.printFontScale, data.printTightMargins, data.showQRCodeOnPrint, announceFitScale]);
-
-  const scalePx = (px: number) => `${Math.round(px * fontScale)}px`;
-
-  // Tighter margins to fit more announcements on the page
-  const tight = !!data.printTightMargins;
-  const pad = {
-    // Ensure >= 0.25in (24px) margins for printer safety zones
-    // pl/pr-6 = 24px = 0.25in minimum for safe printing
-    leftPanel: tight ? 'pl-6 pr-8 pt-6 pb-0' : isLightContent ? 'pl-6 pr-6 pt-6 pb-0' : 'pl-6 pr-12 pt-6 pb-0',
-    rightPanel: tight ? 'pl-8 pr-6 py-6' : 'pl-12 pr-6 py-6',
-    announcementsGap: tight ? 'gap-2' : 'gap-4',
-    announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
-    sectionMb: tight ? 'mb-0.5' : 'mb-1'
-  };
-
-  // Dynamic audience labels based on terminology
-  const getAudienceLabel = (audience: string): string => {
-    return getAudienceDisplayName(audience, unitTypeOverride);
-  };
-
-  // Helper function to check if ward info entry has meaningful data
-  // For leadership, we only care about name/phone, not title (since titles are pre-populated)
-  const hasValidLeadershipInfo = (entry: any) => {
-    return entry && (entry.name?.trim() || entry.phone?.trim());
-  };
-  
-  // For missionaries, we care about name, phone, mission, or email
-  const hasValidMissionaryInfo = (entry: any) => {
-    return entry && (entry.name?.trim() || entry.phone?.trim() || entry.mission?.trim() || entry.email?.trim());
-  };
-
-  // For service missionaries, we care about name or serviceName
-  const hasValidServiceMissionaryInfo = (entry: any) => {
-    return entry && (entry.name?.trim() || entry.serviceName?.trim());
-  };
-
-  // Filter out empty ward info entries
   const filteredWardLeadership = data.wardLeadership?.filter(hasValidLeadershipInfo) || [];
   const filteredMissionaries = data.missionaries?.filter(hasValidMissionaryInfo) || [];
   const allWardMissionaries = data.wardMissionaries?.filter(hasValidMissionaryInfo) || [];
   const filteredWardMissionaries = allWardMissionaries.filter((entry: any) => entry.serviceType !== 'military');
   const filteredMilitaryMembers = allWardMissionaries.filter((entry: any) => entry.serviceType === 'military');
   const filteredServiceMissionaries = data.serviceMissionaries?.filter(hasValidServiceMissionaryInfo) || [];
+  const showQR = !!(profile?.profile_slug && data.showQRCodeOnPrint !== false);
+  const qrSize = Math.max(77, Math.min(160, Math.round(96 * fontScale)));
 
-  // Check if there's any meaningful ward info to display
-  const hasWardInfo = filteredWardLeadership.length > 0 || filteredMissionaries.length > 0 || filteredWardMissionaries.length > 0 || filteredMilitaryMembers.length > 0 || filteredServiceMissionaries.length > 0;
+  const programBlocks = useMemo(
+    () => buildProgramBlocks(data, t, unitTypeOverride),
+    [data, t, unitTypeOverride]
+  );
 
-  const selectedTheme = themes.find(t => t.name === data.userTheme);
+  const plan = useMemo(
+    () => planPrintLayout({
+      mode: printMode,
+      outputMode,
+      announcements: printableAnnouncements,
+      programBlocks,
+      leadershipCount: filteredWardLeadership.length,
+      missionaryCount: filteredMissionaries.length + filteredWardMissionaries.length + filteredMilitaryMembers.length + filteredServiceMissionaries.length,
+      hasQR: showQR,
+    }),
+    [printMode, outputMode, printableAnnouncements, programBlocks, filteredWardLeadership.length, filteredMissionaries.length, filteredWardMissionaries.length, filteredMilitaryMembers.length, filteredServiceMissionaries.length, showQR]
+  );
 
-  const hasOverflow = overflow.backCover || overflow.announcements;
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__PRINT_PLAN__ = {
+        outputMode: plan.outputMode,
+        printedAnnouncementIds: [
+          ...plan.insideAnnouncements,
+          ...plan.backAnnouncements,
+          ...Object.values(plan.bookletAnnouncements).flat(),
+        ].map((a) => a.id),
+        omittedTitles: plan.omittedAnnouncements.map((a) => a.title),
+        moreAnnouncementsLine: plan.moreAnnouncementsLine,
+        programFits: plan.programFits,
+        programBodyPt: plan.programBodyPt,
+        readingPanels: plan.readingPanels,
+        imposition: imposeSheets(plan.outputMode),
+      };
+    }
+  }, [plan]);
+
+  const tight = !!data.printTightMargins;
+  const getAudienceLabel = (audience: string): string => getAudienceDisplayName(audience, unitTypeOverride);
+  const selectedTheme = themes.find((theme) => theme.name === data.userTheme);
+  programBodyStyle.fontSize = `${plan.programBodyPt}pt`;
+
+  const renderAnnouncementList = (items: AnnouncementChunk[]) => {
+    const unitAudience = getUnitLabel(unitTypeOverride);
+    return (
+      <ul style={{ display: 'flex', flexDirection: 'column', gap: tight ? '0.2rem' : '0.35rem' }}>
+        {items.map((a, idx) => {
+          const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
+          const isStandalone = a.audience === 'standalone' || a.audience?.startsWith('standalone_');
+          const audienceLabel = isStandalone
+            ? (a.customAudienceLabel || '')
+            : getAudienceLabel(a.audience || getUnitLowercase(unitTypeOverride));
+          const prev = items[idx - 1];
+          const prevLabel = prev
+            ? (prev.audience === 'standalone' || prev.audience?.startsWith('standalone_')
+              ? (prev.customAudienceLabel || '')
+              : getAudienceLabel(prev.audience || getUnitLowercase(unitTypeOverride)))
+            : '';
+          const showHeader = !!audienceLabel && audienceLabel !== unitAudience && audienceLabel !== prevLabel;
+          return (
+            <li key={`${a.id || idx}`}>
+              {showHeader && (
+                <div className="print-heading font-bold print:!text-black border-b print:!border-black border-gray-300 pb-0.5 mb-1" style={headingStyle}>
+                  {audienceLabel}
+                </div>
+              )}
+              <div className="print-announce-title font-semibold print:!text-black leading-tight" style={announceTitleStyle}>
+                {a.title}
+              </div>
+              {a.category && a.category !== 'general' && (
+                <span className="print-body text-gray-600 print:!text-black inline-block mb-0.5" style={announceBodyStyle}>
+                  {a.category}
+                </span>
+              )}
+              <div
+                className="print-body print:!text-black leading-tight [&_a]:underline [&_a]:break-all"
+                style={{ ...announceBodyStyle, wordWrap: 'break-word', overflowWrap: 'break-word' } as React.CSSProperties}
+                dangerouslySetInnerHTML={{
+                  __html: decodedContent
+                    .replace(/<ul>/g, '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">')
+                    .replace(/<ol>/g, '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">')
+                    .replace(/<li>/g, '<li style="margin-left: 0; display: list-item;">')
+                    .replace(/<p>/g, '<p style="margin: 0 0 0.1rem 0;">'),
+                }}
+              />
+              {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
+                <div className="mb-1">
+                  {(() => {
+                    const selectedImage = getImageByIdSync(a.imageId);
+                    return selectedImage?.url ? (
+                      <img src={selectedImage.url} alt={selectedImage.name} className="h-auto rounded" style={{ objectFit: 'contain', maxHeight: '100px', maxWidth: '150px' }} />
+                    ) : null;
+                  })()}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
+  const announcementsPanel = (readingOrder: number, items: AnnouncementChunk[], showMore = false) => (
+    <div
+      className="print-panel print-region-announcements w-[5.5in] h-[8.5in] text-left print:!text-black flex flex-col"
+      data-reading-order={readingOrder}
+      data-panel-role="announcements"
+      style={PANEL}
+    >
+      {items.length > 0 && (
+        <h2 className="print-heading text-sm font-bold print:!text-black w-full text-center flex-shrink-0 mb-0.5" style={headingStyle}>
+          {t('printPreview.announcementsAndEvents')}
+        </h2>
+      )}
+      <div style={{ flex: 1, overflow: 'hidden' }}>
+        {renderAnnouncementList(items)}
+      </div>
+      {showMore && (
+        <p className="print-cover-sub font-semibold print:!text-black mt-2 flex-shrink-0" style={coverSubStyle}>
+          {t('printPreview.moreAnnouncementsScanQr', 'More announcements: scan the QR code')}
+        </p>
+      )}
+    </div>
+  );
+
+  const coverPanel = (
+    <div
+      className="print-panel print-region-cover w-[5.5in] h-[8.5in] flex flex-col justify-center items-center text-center print:!text-black"
+      data-reading-order={1}
+      data-panel-role="cover"
+      style={{ ...PANEL, padding: '0.35in 0.3in' }}
+    >
+      {data.meetingType === 'baptism' ? (
+        <>
+          <p className="print-cover-sub mb-1 print:!text-black uppercase" style={coverSubStyle}>{t('bulletin.theBaptismOf')}</p>
+          <h1 className="print-cover-name font-bold mb-2 print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', ...coverNameStyle }}>
+            {data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}
+          </h1>
+          <p className="print-cover-sub mb-4 print:!text-black" style={coverSubStyle}>{formatDate(data.date, i18n.language)}</p>
+        </>
+      ) : (
+        <>
+          <h1 className="print-cover-name font-bold mb-2 print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', ...coverNameStyle }}>
+            {data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
+          </h1>
+          <p className="print-cover-sub mb-1 print:!text-black" style={{ wordWrap: 'break-word', ...coverSubStyle }}>{formatDate(data.date, i18n.language)}</p>
+          <p className="print-cover-sub mb-1 print:!text-black" style={coverSubStyle}>{t('bulletin.churchName')}</p>
+          <p className="print-cover-sub mb-4 print:!text-black" style={coverSubStyle}>{t('bulletin.sacramentMeeting')}</p>
+        </>
+      )}
+      {data.imageId && data.imageId !== 'none' && (
+        <div className="mb-4">
+          {(() => {
+            const imageUrl = data.imageUrl || getImageByIdSync(data.imageId)?.url;
+            return imageUrl ? (
+              <img src={imageUrl} alt="" className="max-w-full max-h-80 object-contain print:!max-h-96" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ) : null;
+          })()}
+        </div>
+      )}
+      {data.theme && <p className="print-cover-sub font-semibold italic print:!text-black" style={coverSubStyle}>"{data.theme}"</p>}
+    </div>
+  );
+
+  const programPanel = (
+    <div
+      className="print-panel print-region-program w-[5.5in] h-[8.5in] flex flex-col items-center text-center print:!text-black"
+      data-reading-order={3}
+      data-panel-role="program"
+      style={{ ...PANEL, padding: '0.35in 0.3in' }}
+    >
+      {data.meetingType === 'baptism' ? (
+        <>
+          <p className="print-cover-sub mb-1 print:!text-black uppercase" style={coverSubStyle}>{t('bulletin.theBaptismOf')}</p>
+          <h2 className="print-cover-name font-bold mb-2 print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', ...coverNameStyle }}>
+            {data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}
+          </h2>
+          <p className="print-cover-sub italic mb-6 print:!text-black" style={coverSubStyle}>{formatDate(data.date, i18n.language)}</p>
+        </>
+      ) : (
+        <>
+          <h2 className="print-heading font-bold mb-1 print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word', hyphens: 'auto', maxWidth: '100%', ...headingStyle }}>
+            {data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
+          </h2>
+          <h3 className="print-heading font-bold mb-0.5 print:!text-black" style={headingStyle}>{t('bulletin.sacramentMeeting')}</h3>
+          <p className="print-cover-sub italic mb-2 print:!text-black" style={{ wordWrap: 'break-word', ...coverSubStyle }}>{formatDate(data.date, i18n.language)}</p>
+        </>
+      )}
+      {data.leadership?.meetingLink && data.leadership.meetingLink.trim() !== '' && (
+        <p className="print-body print:!text-black mb-2" style={programBodyStyle}>
+          {t('bulletin.joinMeetingPrint')} {data.leadership.meetingLink.trim()}
+        </p>
+      )}
+      <table className="print-body w-full print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.06em', width: '100%', tableLayout: 'fixed', ...programBodyStyle }}>
+        <tbody>
+          {plan.programBlocks.map((block) =>
+            block.kind === 'banner' ? (
+              <tr key={block.id}>
+                <td colSpan={3} className="print-body text-center font-bold print:!text-black" style={{ ...programBodyStyle, fontWeight: 700 }}>
+                  {block.text}
+                  {block.extra && (
+                    <div className="print-body font-normal italic text-gray-700 mt-0.5 print:!text-black" style={programBodyStyle}>
+                      {block.extra}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ) : (
+              <ProgramTableRow key={block.id} label={block.label} value={block.value} extra={block.extra} extra2={block.extra2} sizeStyle={programBodyStyle} />
+            )
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const backReading = outputMode === 'booklet' ? 8 : 4;
+  const backPanel = data.meetingType === 'baptism' ? (
+    <div className="print-panel w-[5.5in] h-[8.5in]" data-reading-order={backReading} data-panel-role="back" style={PANEL} />
+  ) : (
+    <div
+      className="print-panel print-region-leadership w-[5.5in] h-[8.5in] flex flex-col justify-between text-left print:!text-black"
+      data-reading-order={backReading}
+      data-panel-role="back"
+      style={PANEL}
+    >
+      <div className="flex-1 overflow-hidden">
+        {filteredWardLeadership.length > 0 && (
+          <div className="w-full mb-2">
+            <h2 className="print-heading font-bold print:!text-black w-full text-center mb-1" style={headingStyle}>
+              {t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}
+            </h2>
+            <table className="print-body w-full table-fixed" style={bodyStyle}>
+              <tbody>
+                {filteredWardLeadership.map((leader: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="print-body py-0.5 font-bold pr-2" style={{ width: '45%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>{leader.title}</td>
+                    <td className="print-body py-0.5 pr-2" style={{ width: '30%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>{leader.name}</td>
+                    <td className="print-body py-0.5 text-right" style={{ width: '25%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>{leader.phone || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {filteredMissionaries.length > 0 && (
+          <div className="w-full mb-2">
+            <h3 className="print-heading font-bold print:!text-black mb-1" style={headingStyle}>{t('bulletin.missionaries').toUpperCase()}</h3>
+            <table className="print-body w-full table-fixed" style={bodyStyle}>
+              <tbody>
+                {filteredMissionaries.map((missionary: any, idx: number) => (
+                  <tr key={idx}>
+                    <td className="print-body py-0 font-bold pr-1" style={{ width: '60%', ...bodyStyle }}>{missionary.name}</td>
+                    <td className="print-body py-0 text-right" style={{ width: '40%', ...bodyStyle }}>{missionary.phone || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {filteredWardMissionaries.length > 0 && (
+          <div className="w-full mb-1">
+            <h3 className="print-heading font-bold print:!text-black mb-1" style={headingStyle}>
+              {t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}
+            </h3>
+            {filteredWardMissionaries.map((missionary: any, idx: number) => (
+              <div key={idx} className="print-body flex justify-between py-0" style={bodyStyle}>
+                <span className="font-bold">{missionary.name}</span>
+                <span>{missionary.mission || missionary.email || ''}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {filteredMilitaryMembers.length > 0 && (
+          <div className="w-full mb-1">
+            <h3 className="print-heading font-bold print:!text-black mb-1" style={headingStyle}>{t('bulletin.servingInMilitary', 'Serving in the Military').toUpperCase()}</h3>
+            {filteredMilitaryMembers.map((member: any, idx: number) => (
+              <div key={idx} className="print-body flex justify-between py-0" style={bodyStyle}>
+                <span className="font-bold">{member.name}</span>
+                <span>{member.mission || member.email || ''}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {filteredServiceMissionaries.length > 0 && (
+          <div className="w-full mb-1">
+            <h3 className="print-heading font-bold print:!text-black mb-1" style={headingStyle}>{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
+            {filteredServiceMissionaries.map((missionary: any, idx: number) => (
+              <div key={idx} className="print-body flex justify-between py-0" style={bodyStyle}>
+                <span className="font-bold">{missionary.name}</span>
+                <span>{missionary.serviceName || ''}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {plan.backAnnouncements.length > 0 && (
+          <div className="mt-2">
+            <h2 className="print-heading font-bold print:!text-black w-full text-center mb-1" style={headingStyle}>
+              {t('printPreview.announcementsAndEvents')}
+            </h2>
+            {renderAnnouncementList(plan.backAnnouncements)}
+          </div>
+        )}
+      </div>
+      {(plan.moreAnnouncementsLine) && (
+        <p className="print-cover-sub font-semibold print:!text-black mt-2 flex-shrink-0" style={coverSubStyle}>
+          {t('printPreview.moreAnnouncementsScanQr', 'More announcements: scan the QR code')}
+        </p>
+      )}
+      {showQR && (
+        <div className="w-full flex flex-col items-center justify-center text-center mt-2 flex-shrink-0" style={{ paddingBottom: '12px' }}>
+          <div className="mb-2">
+            <PrintQRCode profileSlug={profile!.profile_slug!} size={qrSize} />
+          </div>
+          <p className="print-cover-sub print:!text-black font-medium" style={coverSubStyle}>
+            {t('qrCode.scanQrCodeToAccess')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  const emptyAnnounce = (readingOrder: number) => (
+    <div className="print-panel print-region-announcements w-[5.5in] h-[8.5in]" data-reading-order={readingOrder} data-panel-role="announcements" style={PANEL} />
+  );
+
+  const moreOnInside = plan.moreAnnouncementsLine && plan.backAnnouncements.length === 0 && Object.values(plan.bookletAnnouncements).every((list) => !list.length);
+  const panelByReading: Record<number, React.ReactNode> = {
+    1: coverPanel,
+    2: data.meetingType === 'baptism' ? emptyAnnounce(2) : announcementsPanel(2, plan.insideAnnouncements, moreOnInside),
+    3: programPanel,
+  };
+
+  if (outputMode === 'booklet') {
+    panelByReading[4] = announcementsPanel(4, plan.bookletAnnouncements[4] || []);
+    panelByReading[5] = announcementsPanel(5, plan.bookletAnnouncements[5] || []);
+    panelByReading[6] = announcementsPanel(6, plan.bookletAnnouncements[6] || []);
+    panelByReading[7] = announcementsPanel(7, plan.bookletAnnouncements[7] || []);
+    panelByReading[8] = backPanel;
+  } else {
+    panelByReading[4] = backPanel;
+  }
+
+  const sheets = imposeSheets(outputMode);
 
   return (
     <div
       ref={ref}
       className="print-layout font-sans"
       data-font-scale={fontScale.toString()}
+      data-print-output={outputMode}
       style={{
         fontFamily: selectedTheme ? selectedTheme.fontFamily : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       }}
     >
-      {hasOverflow && (
+      {plan.omittedAnnouncements.length > 0 && (
         <div className="print-overflow-warning mb-3 p-3 bg-amber-100 border border-amber-300 rounded-lg text-amber-900 text-sm print:!hidden" role="status">
-          {overflow.backCover && overflow.announcements
-            ? t('printPreview.contentCutOffBoth')
-            : overflow.backCover
-              ? t('printPreview.contentCutOffBackCover')
-              : t('printPreview.contentCutOffAnnouncements')}
-        </div>
-      )}
-      {/* Page 1: Outside (landscape) */}
-      <div
-        ref={refs?.page1}
-        className="print-page landscape w-[11in] h-[8.5in] flex"
-        style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}
-      >
-                 {/* Back Cover (left) - Unit Information */}
-          {data.meetingType === 'baptism' ? (
-            <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
-          ) : (
-          <div className={`print-panel print-region-leadership w-[5.5in] h-[8.5in] flex flex-col justify-between text-left print:!text-sm print:!text-black ${pad.leftPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in' }}>
-           {/* Reserve only the QR box + caption, not a scaled 2in gap. */}
-           <div ref={backCoverRef} className="flex-1 overflow-y-hidden" style={{ 
-             maxHeight: (profile?.profile_slug && data.showQRCodeOnPrint !== false) 
-               ? `calc(100% - ${Math.max(168, Math.round(96 * Math.min(fontScale, 1.3)) + 52)}px)` 
-               : '100%' 
-           }}>
-              {/* Unit Leadership Table */}
-              {filteredWardLeadership.length > 0 && (
-                <div className={`w-full ${pad.sectionMb}`}>
-                  <h2 className={`print-heading text-lg font-bold print:!text-lg print:!text-black w-full text-center ${tight ? 'mb-1' : 'mb-2'}`} style={headingStyle}>{t('terminology.wardLeadership', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h2>
-                   <table className="print-body w-full text-xs print:!text-xs print:!text-black table-fixed" style={bodyStyle}>
-                     <tbody>
-                       {filteredWardLeadership.slice(0, data.showQRCodeOnPrint !== false ? filteredWardLeadership.length : 20).map((leader: any, idx: number) => (
-                         <tr key={idx}>
-                           <td className="print-body py-1 font-bold text-xs pr-2" style={{ width: '45%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>{leader.title}</td>
-                           <td className="print-body py-1 text-xs font-normal pr-2" style={{ width: '30%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>{leader.name}</td>
-                           <td className="print-body py-1 text-right text-xs font-normal" style={{ width: '25%', overflowWrap: 'anywhere', wordBreak: 'break-word', ...bodyStyle }}>
-                             {leader.phone || ''}
-                           </td>
-                         </tr>
-                       ))}
-                    </tbody>
-                  </table>
-                  {filteredWardLeadership.length > 20 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 print:!text-black mt-2 text-center">+ {filteredWardLeadership.length - 20} more leaders</p>
-                  )}
-                </div>
-              )}
-
-              {/* Missionaries Table */}
-              {filteredMissionaries.length > 0 && (
-                <div className={`w-full ${pad.sectionMb}`}>
-                  <h3 className={`print-heading text-sm font-semibold print:!text-sm print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`} style={headingStyle}>{t('bulletin.missionaries').toUpperCase()}</h3>
-                  <table className="print-body w-full text-xs print:!text-xs print:!text-black table-fixed" style={bodyStyle}>
-                    <tbody>
-                      {filteredMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredMissionaries.length : 12).map((missionary: any, idx: number) => (
-                        <tr key={idx}>
-                          <td className="print-body py-0 font-bold text-xs pr-1" style={{ width: '60%', ...bodyStyle }}>{missionary.name}</td>
-                          <td className="print-body py-0 text-right text-xs font-normal" style={{ width: '40%', ...bodyStyle }}>
-                            {missionary.phone || ''}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredMissionaries.length > 12 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 print:!text-black mt-1 text-center">+ {filteredMissionaries.length - 12} {t('bulletin.moreMissionaries')}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Missionaries from our ward */}
-              {filteredWardMissionaries.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('terminology.wardMissionaries', { unit: getTranslatedUnitLabel(t, unitTypeOverride) }).toUpperCase()}</h3>
-                  {(() => {
-                    const missionaryCount = filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).length;
-                    // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = scalePx(9);
-                    if (missionaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (missionaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (missionaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
-                    
-                    return (
-                      <div className="space-y-1" style={{ fontSize }}>
-                        {filteredWardMissionaries.slice(0, data.showQRCodeOnPrint !== false ? filteredWardMissionaries.length : 15).map((missionary: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center py-0">
-                        <div className="font-bold" style={{ width: '25%' }}>
-                          {missionary.name}
-                        </div>
-                        <div className="text-center flex-1 px-2 font-normal">
-                          {missionary.mission && (
-                            <span className="text-gray-600 print:!text-black">{missionary.mission}</span>
-                          )}
-                        </div>
-                        <div className="text-right flex-shrink-0 font-normal" style={{ minWidth: '120px' }}>
-                          {missionary.email ? (
-                            <span className="text-gray-700 print:!text-black">{missionary.email}</span>
-                          ) : (
-                            <span className="text-gray-400 print:!text-black">{t('bulletin.noEmail')}</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                      </div>
-                    );
-                  })()}
-                  {filteredWardMissionaries.length > 15 && data.showQRCodeOnPrint === false && (
-                    <p className="text-xs text-gray-600 print:!text-black mt-1 text-center">+ {filteredWardMissionaries.length - 15} {t('bulletin.moreWardMissionaries')}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Serving in the Military */}
-              {filteredMilitaryMembers.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.servingInMilitary', 'Serving in the Military').toUpperCase()}</h3>
-                  {(() => {
-                    const militaryCount = filteredMilitaryMembers.length;
-                    // Dynamic font sizing: fewer entries = larger font, more entries = smaller font
-                    let fontSize = scalePx(9);
-                    if (militaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (militaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (militaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
-
-                    return (
-                      <div className="space-y-1" style={{ fontSize }}>
-                        {filteredMilitaryMembers.map((member: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center py-0">
-                            <div className="font-bold" style={{ width: '40%' }}>
-                              {member.name}
-                            </div>
-                            <div className="text-right flex-1 font-normal">
-                              {member.mission && (
-                                <span className="text-gray-600 print:!text-black">{member.mission}</span>
-                              )}
-                              {member.mission && member.email && <span className="text-gray-400 print:!text-black"> · </span>}
-                              {member.email && (
-                                <span className="text-gray-700 print:!text-black">{member.email}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* Service Missionaries */}
-              {filteredServiceMissionaries.length > 0 && (
-                <div className={`w-full ${tight ? 'mb-0.5' : 'mb-1'}`}>
-                  <h3 className={`text-xs font-semibold print:!text-xs print:!text-black ${tight ? 'mb-0.5' : 'mb-1'}`}>{t('bulletin.serviceMissionaries').toUpperCase()}</h3>
-                  {(() => {
-                    const serviceMissionaryCount = filteredServiceMissionaries.length;
-                    // Dynamic font sizing: fewer missionaries = larger font, more missionaries = smaller font
-                    let fontSize = scalePx(9);
-                    if (serviceMissionaryCount <= 3) {
-                      fontSize = scalePx(11);
-                    } else if (serviceMissionaryCount <= 6) {
-                      fontSize = scalePx(10);
-                    } else if (serviceMissionaryCount <= 10) {
-                      fontSize = scalePx(9);
-                    } else {
-                      fontSize = scalePx(8);
-                    }
-
-                    return (
-                      <div className="space-y-1" style={{ fontSize }}>
-                        {filteredServiceMissionaries.map((missionary: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center py-0">
-                            <div className="font-bold" style={{ width: '40%' }}>
-                              {missionary.name}
-                            </div>
-                            <div className="text-right flex-1 font-normal">
-                              {missionary.serviceName ? (
-                                <span className="text-gray-600 print:!text-black">{missionary.serviceName}</span>
-                              ) : (
-                                <span className="text-gray-400 print:!text-black">{t('bulletin.noServiceListed')}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-           </div>
-
-           {/* QR Code - Fixed at bottom with reserved space, only if enabled */}
-           {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
-             <div className="w-full flex flex-col items-center justify-center text-center mt-4 flex-shrink-0" style={{ paddingBottom: '24px' }}>
-               <div className="mb-3">
-                 <PrintQRCode profileSlug={profile.profile_slug} size={Math.max(96, Math.min(144, Math.round(96 * fontScale)))} />
-               </div>
-               <p className="print-cover-sub text-sm print:!text-base print:!text-black font-medium" style={coverSubStyle}>
-                 {t('qrCode.scanQrCodeToAccess')}
-               </p>
-             </div>
-           )}
-
-         </div>
-         )}
-
-        {/* Front Cover (right) — rendered exactly once */}
-        <div className={`print-panel print-region-cover w-[5.5in] h-[8.5in] flex flex-col justify-center items-center text-center print:!text-xl print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
-          {data.meetingType === 'baptism' ? (
-            <>
-              <p className="print-cover-sub text-lg mb-1 print:!text-2xl print:!text-black uppercase" style={coverSubStyle}>{t('bulletin.theBaptismOf')}</p>
-              <h1 className="print-cover-name text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', ...coverNameStyle }}>{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h1>
-              <p className="print-cover-sub text-lg mb-4 print:!text-2xl print:!text-black" style={coverSubStyle}>{formatDate(data.date, i18n.language)}</p>
-            </>
-          ) : (
-            <>
-              <h1 className="print-cover-name text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ 
-                wordWrap: 'break-word', 
-                overflowWrap: 'break-word', 
-                hyphens: 'auto', 
-                maxWidth: '100%',
-                lineHeight: '1.2',
-                ...coverNameStyle
-              }}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h1>
-              <p className="print-cover-sub text-lg mb-1 print:!text-2xl print:!text-black" style={{ wordWrap: 'break-word', ...coverSubStyle }}>{formatDate(data.date, i18n.language)}</p>
-              <p className="print-cover-sub text-base mb-1 print:!text-xl print:!text-black" style={coverSubStyle}>{t('bulletin.churchName')}</p>
-              <p className="print-cover-sub text-base mb-4 print:!text-xl print:!text-black" style={coverSubStyle}>{t('bulletin.sacramentMeeting')}</p>
-            </>
-          )}
-
-          {/* Image Display - moved below text, above theme */}
-          {data.imageId && data.imageId !== 'none' && (
-            <div className="mb-4">
-              {(() => {
-                // Use imageUrl directly if available (for custom uploaded images)
-                // Otherwise fall back to getImageByIdSync for preset images
-                const imageUrl = data.imageUrl || getImageByIdSync(data.imageId)?.url;
-                return imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="max-w-full max-h-80 object-contain print:!max-h-96"
-                    onError={(e) => {
-                      // Hide broken images
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                ) : null;
-              })()}
-            </div>
-          )}
-
-          {data.theme && <p className="print-cover-sub font-semibold italic text-sm text-gray-600 print:!text-lg print:!text-black" style={coverSubStyle}>"{data.theme}"</p>}
-        </div>
-      </div>
-
-      {/* Page 2: Inside (landscape) */}
-      <div ref={refs?.page2} className="print-page landscape w-[11in] h-[8.5in] flex print:!text-black" style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}>
-        {/* Announcements (left) - blank for baptism */}
-        {data.meetingType === 'baptism' ? (
-          <div className="print-panel w-[5.5in] h-[8.5in]" style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box' }} />
-        ) : (
-        <div className={`print-panel print-region-announcements w-[5.5in] h-[8.5in] text-left print:!text-black ${pad.leftPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in', display: 'flex', flexDirection: 'column' }}>
-              {/* No header over an empty panel: a minimal program without
-                  announcements shouldn't print an "Announcements & Events"
-                  title with nothing under it. */}
-              {announcementCount > 0 && (
-                <h2 className="print-heading text-sm font-bold print:!text-base print:!text-black w-full text-center flex-shrink-0 mb-0.5" style={headingStyle}>{t('printPreview.announcementsAndEvents')}</h2>
-              )}
-              <div ref={announcementsRef} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-              {(() => {
-                const displayAnnouncements = announcementPages[0] || [];
-                const unitAudience = getUnitLabel(unitTypeOverride);
-                const columnCount = 1;
-                const gap = tight ? '0.35rem' : '0.5rem';
-
-                const densityScale = isHeavyContent ? 0.8 : isLightContent ? 1.4 : 1;
-                const baseTitle = Math.round((tight ? 13 : 15) * densityScale);
-                const baseContent = Math.round((tight ? 12 : 14) * densityScale);
-                const titleFontSize = announceTitleStyle.fontSize || scalePx(Math.round(baseTitle * announceFitScale));
-                const contentFontSize = announceBodyStyle.fontSize || scalePx(Math.round(baseContent * announceFitScale));
-
-                return (
-                  <div style={{ columnCount, columnGap: gap, columnFill: 'auto', height: '100%' }}>
-                    <ul style={{ display: 'flex', flexDirection: 'column', gap: isLightContent ? '0.75rem' : tight ? '0.125rem' : '0.25rem' }}>
-                      {displayAnnouncements.map((a: any, idx: number) => {
-                            const decodedContent = sanitizedAnnouncementHtml(a.content ?? '');
-                            const isStandalone = a.audience === 'standalone' || a.audience?.startsWith('standalone_');
-                            const audienceLabel = isStandalone
-                              ? (a.customAudienceLabel || '')
-                              : getAudienceLabel(a.audience || getUnitLowercase(unitTypeOverride));
-                            const prev = displayAnnouncements[idx - 1];
-                            const prevLabel = prev
-                              ? (prev.audience === 'standalone' || prev.audience?.startsWith('standalone_')
-                                ? (prev.customAudienceLabel || '')
-                                : getAudienceLabel(prev.audience || getUnitLowercase(unitTypeOverride)))
-                              : '';
-                            const showHeader = !!audienceLabel && audienceLabel !== unitAudience && audienceLabel !== prevLabel;
-                            return (
-                              <li key={`${a.id || idx}-${a.continued ? 'cont' : 'full'}`} style={{ marginBottom: isLightContent ? '0.5rem' : '0.125rem' }}>
-                                {showHeader && (
-                                  <div
-                                    className="print-heading font-bold print:!text-black border-b print:!border-black border-gray-300 pb-0.5 mb-1"
-                                    style={headingStyle || { fontSize: titleFontSize }}
-                                  >
-                                    {audienceLabel}
-                                  </div>
-                                )}
-                                <div
-                                  className="print-heading font-semibold print:!text-black leading-tight"
-                                  style={{ fontSize: titleFontSize, fontWeight: 600 }}
-                                >
-                                  {a.title}{a.continued ? ` (${t('printPreview.continued', 'Continued')})` : ''}
-                                </div>
-                                {a.category && a.category !== 'general' && (
-                                  <span
-                                    className="text-gray-600 print:!text-black bg-gray-100 print:!bg-transparent px-1 py-0.5 rounded inline-block mb-0.5"
-                                    style={{ fontSize: scalePx(tight ? 10 : 11) }}
-                                  >
-                                    {a.category}
-                                  </span>
-                                )}
-                                <div
-                                  className="print-body print:!text-black leading-tight [&_a]:underline [&_a]:break-all"
-                                  style={{
-                                    fontSize: contentFontSize,
-                                    wordWrap: 'break-word',
-                                    overflowWrap: 'break-word',
-                                  } as React.CSSProperties}
-                                  dangerouslySetInnerHTML={{
-                                    __html: decodedContent.replace(
-                                      /<ul>/g,
-                                      '<ul style="list-style-type: disc; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
-                                    ).replace(
-                                      /<ol>/g,
-                                      '<ol style="list-style-type: decimal; list-style-position: inside; margin-left: 0.5rem; padding-left: 0;">'
-                                    ).replace(
-                                      /<li>/g,
-                                      '<li style="margin-left: 0; display: list-item;">'
-                                    ).replace(
-                                      /<p>/g,
-                                      '<p style="margin: 0 0 0.1rem 0;">'
-                                    )
-                                  }}
-                                />
-
-                                {a.imageId && a.imageId !== 'none' && !a.images && !a.hideImageOnPrint && (
-                                  <div className="mb-1">
-                                    {(() => {
-                                      const selectedImage = getImageByIdSync(a.imageId);
-                                      return selectedImage?.url ? (
-                                        <img
-                                          src={selectedImage.url}
-                                          alt={selectedImage.name}
-                                          className="h-auto rounded"
-                                          style={{ objectFit: 'contain', maxHeight: '100px', maxWidth: '150px' }}
-                                        />
-                                      ) : null;
-                                    })()}
-                                  </div>
-                                )}
-
-                                {a.images && a.images.length > 0 && (
-                                  <div className="mb-1 flex flex-wrap gap-1">
-                                    {a.images.slice(0, 3).map((img: any, index: number) => {
-                                      if (img.hideImageOnPrint) return null;
-                                      let imageUrl = img.imageUrl;
-                                      if (!imageUrl && img.imageId) {
-                                        const imageData = getImageByIdSync(img.imageId);
-                                        imageUrl = imageData?.url;
-                                      }
-                                      return imageUrl ? (
-                                        <img
-                                          key={index}
-                                          src={imageUrl}
-                                          alt="Announcement"
-                                          className="h-auto rounded"
-                                          style={{ objectFit: 'contain', maxHeight: '80px', maxWidth: '120px' }}
-                                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                        />
-                                      ) : null;
-                                    })}
-                                    {a.images.filter((img: any) => !img.hideImageOnPrint).length > 3 && (
-                                      <span style={{ fontSize: scalePx(8) }} className="text-gray-500 print:!text-black self-end">
-                                        +{a.images.filter((img: any) => !img.hideImageOnPrint).length - 3} more
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </li>
-                            );
-                          })}
-                    </ul>
-                  </div>
-                );
-              })()}
-              </div>
-              {/* QR code for full announcements */}
-              {profile?.profile_slug && data.showQRCodeOnPrint !== false && (
-                <div className="flex-shrink-0 flex items-center justify-center gap-2 pt-0.5">
-                  <PrintQRCode profileSlug={`${profile.profile_slug}#announcements`} size={56} />
-                  <span className="print:!text-black italic" style={{ fontSize: scalePx(9) }}>
-                    {t('printPreview.scanForFullAnnouncements')}
-                  </span>
-                </div>
-              )}
-        </div>
-        )}
-
-        {/* Program (right) */}
-        <div className={`print-panel print-region-program w-[5.5in] h-[8.5in] ${data.meetingType === 'baptism' ? 'justify-start' : 'justify-start'} flex flex-col items-center text-center print:!text-black ${pad.rightPanel}`} style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}>
-          {data.meetingType === 'baptism' ? (
-            <>
-              <p className="print-cover-sub text-lg mb-1 print:!text-xl print:!text-black uppercase" style={coverSubStyle}>{t('bulletin.theBaptismOf')}</p>
-              <h2 className="print-cover-name text-3xl font-bold mb-2 print:!text-4xl print:!text-black" style={{ wordWrap: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', maxWidth: '100%', lineHeight: '1.2', ...coverNameStyle }}>{data.agenda?.find((i: any) => i.type === 'baptism_ordinance')?.candidateName || ''}</h2>
-              <p className="print-cover-sub italic text-lg mb-6 print:!text-2xl print:!text-black" style={coverSubStyle}>{formatDate(data.date, i18n.language)}</p>
-            </>
-          ) : (
-            <>
-              <h2 className="print-heading text-3xl font-bold mb-1 print:!text-xl print:!text-black" style={{ 
-                wordWrap: 'break-word', 
-                overflowWrap: 'anywhere', 
-                wordBreak: 'break-word',
-                hyphens: 'auto', 
-                maxWidth: '100%',
-                lineHeight: '1.15',
-                ...headingStyle
-              }}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
-              <h3 className="print-heading text-2xl font-bold mb-0.5 print:!text-lg print:!text-black" style={headingStyle}>{t('bulletin.sacramentMeeting')}</h3>
-              <p className="print-cover-sub italic text-lg mb-2 print:!text-sm print:!text-black" style={{ wordWrap: 'break-word', ...coverSubStyle }}>{formatDate(data.date, i18n.language)}</p>
-            </>
-          )}
-
-          {data.leadership?.meetingLink && data.leadership.meetingLink.trim() !== '' && (
-            <p className="text-xs text-gray-600 print:!text-black mb-2 print:!text-sm">
-              {t('bulletin.joinMeetingPrint')} {data.leadership.meetingLink.trim()}
+          <p className="font-semibold mb-1">
+            {t('printPreview.omittedAnnouncementsWarning', 'These announcements will not print at this size. They remain in the digital bulletin (QR code):')}
+          </p>
+          <ul className="list-disc pl-5">
+            {plan.omittedAnnouncements.map((item) => (
+              <li key={item.id}>{item.title}</li>
+            ))}
+          </ul>
+          {outputMode !== 'booklet' && (
+            <p className="mt-2">
+              {t('printPreview.bookletSuggestion', 'Switch to Booklet to print more announcements on two nested sheets.')}
             </p>
           )}
-
-          <table className="print-body w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.08em', width: '100%', tableLayout: 'fixed', ...bodyStyle }}>
-            <tbody>
-              {(programPages[0] || []).map((block) =>
-                block.kind === 'banner' ? (
-                  <tr key={block.id}>
-                    <td colSpan={3} className="print-heading text-center font-medium text-lg print:!text-xl print:!text-black" style={headingStyle}>
-                      {block.text}
-                      {block.extra && (
-                        <div className="print-body text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black" style={bodyStyle}>
-                          {block.extra}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ) : (
-                  <ProgramTableRow key={block.id} label={block.label} value={block.value} extra={block.extra} extra2={block.extra2} sizeStyle={bodyStyle} />
-                )
-              )}
-            </tbody>
-          </table>
         </div>
-      </div>
-
-      {Array.from({ length: Math.max(announcementPages.length - 1, programPages.length - 1, 0) }).map((_, pageIdx) => {
-        const pageAnnouncements = announcementPages[pageIdx + 1] || [];
-        const pageProgram = programPages[pageIdx + 1] || [];
-        const titleFontSize = announceTitleStyle.fontSize || scalePx(15);
-        const contentFontSize = announceBodyStyle.fontSize || scalePx(14);
-        return (
+      )}
+      {sheets.map(([left, right], index) => (
         <div
-          key={`continuation-${pageIdx}`}
+          key={`sheet-${index}`}
+          ref={index === 0 ? refs?.page1 : index === 1 ? refs?.page2 : undefined}
           className="print-page landscape w-[11in] h-[8.5in] flex print:!text-black"
-          style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakBefore: 'always', pageBreakAfter: 'always', boxSizing: 'border-box' }}
+          data-sheet={index + 1}
+          style={{ width: '11in', height: '8.5in', overflow: 'hidden', pageBreakAfter: 'always', boxSizing: 'border-box' }}
         >
-          <div
-            className={`print-panel print-region-announcements w-[5.5in] h-[8.5in] text-left print:!text-black ${pad.leftPanel}`}
-            style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.3in', display: 'flex', flexDirection: 'column' }}
-          >
-            {pageAnnouncements.length > 0 && (
-              <>
-                <h2 className="print-heading text-sm font-bold print:!text-base print:!text-black w-full text-center mb-2" style={headingStyle}>{t('printPreview.announcementsAndEvents')} ({t('printPreview.continued', 'Continued')})</h2>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div className="space-y-3">
-                    {pageAnnouncements.map((a: any, idx: number) => (
-                      <div key={`${a.id || idx}-${a.continued ? 'cont' : 'full'}`}>
-                        <div
-                          className="print-heading font-semibold print:!text-black leading-tight mb-1"
-                          style={{ fontSize: titleFontSize }}
-                        >
-                          {a.title}{a.continued ? ` (${t('printPreview.continued', 'Continued')})` : ''}
-                        </div>
-                        <div
-                          className="print-body print:!text-black leading-tight"
-                          style={{
-                            fontSize: contentFontSize,
-                            wordWrap: 'break-word',
-                            overflowWrap: 'break-word',
-                          } as React.CSSProperties}
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizedAnnouncementHtml(a.content ?? '')
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          <div
-            className={`print-panel print-region-program w-[5.5in] h-[8.5in] flex flex-col items-center text-center print:!text-black ${pad.rightPanel}`}
-            style={{ width: '5.5in', height: '8.5in', overflow: 'hidden', flexShrink: 0, boxSizing: 'border-box', padding: '0.35in 0.3in' }}
-          >
-            {pageProgram.length > 0 && (
-              <>
-                <h2 className="print-heading text-3xl font-bold mb-1 print:!text-xl print:!text-black" style={{ maxWidth: '100%', ...headingStyle }}>
-                  {data.wardName}
-                </h2>
-                <h3 className="print-heading text-2xl font-bold mb-2 print:!text-lg print:!text-black" style={headingStyle}>
-                  {t('bulletin.sacramentMeeting')} ({t('printPreview.continued', 'Continued')})
-                </h3>
-                <table className="print-body w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: '0 0.08em', width: '100%', tableLayout: 'fixed', ...bodyStyle }}>
-                  <tbody>
-                    {pageProgram.map((block) =>
-                      block.kind === 'banner' ? (
-                        <tr key={block.id}>
-                          <td colSpan={3} className="print-heading text-center font-medium text-lg print:!text-xl print:!text-black" style={headingStyle}>
-                            {block.text}
-                            {block.extra && (
-                              <div className="print-body text-sm font-normal italic mt-1" style={bodyStyle}>{block.extra}</div>
-                            )}
-                          </td>
-                        </tr>
-                      ) : (
-                        <ProgramTableRow key={block.id} label={block.label} value={block.value} extra={block.extra} extra2={block.extra2} sizeStyle={bodyStyle} />
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </>
-            )}
-          </div>
+          {panelByReading[left]}
+          {panelByReading[right]}
         </div>
-        );
-      })}
-
+      ))}
     </div>
   );
 });

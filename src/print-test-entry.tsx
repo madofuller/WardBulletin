@@ -19,6 +19,23 @@ function ScreenUI({ fixtureName, ready, fontScale }: { fixtureName: string; read
 const params = new URLSearchParams(window.location.search);
 const fixtureName = params.get('fixture') || 'minimal';
 const fontScale = parseFloat(params.get('fontScale') || '1');
+const outputMode = params.get('output') === 'booklet' ? 'booklet' : 'single';
+try {
+  window.localStorage.setItem('selectedLanguage', 'en');
+} catch {
+  /* ignore */
+}
+(window as any).__TEST_SESSION__ = {
+  user: { id: 'test-user-id', email: 'test@example.com' },
+  profile: {
+    email: 'test@example.com',
+    profile_slug: 'test-ward',
+    role: 'user',
+    active_bulletin_id: null,
+    unit_type: 'ward',
+    language: 'en',
+  },
+};
 
 const rootElement = document.getElementById('root')!;
 const rootRoot = createRoot(rootElement);
@@ -46,6 +63,7 @@ async function renderBulletin() {
 
     bulletinData.printFontScale = fontScale;
     bulletinData.showQRCodeOnPrint = true;
+    bulletinData.printOutputMode = outputMode;
     (window as any).__BULLETIN_DATA__ = bulletinData;
     console.log(`[Print Test] Loaded ${fixtureName}, fontScale=${fontScale}`);
 

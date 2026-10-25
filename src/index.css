@@ -93,33 +93,64 @@
   }
 
   /*
-    Scale by region, never via html rem and never via a blanket :not() rule
-    (that rule is more specific than h1/h2 and flattened headings to body size).
-    Large: body 10.5pt, headings 14pt, cover name 30pt.
-    Extra Large: body 14pt, headings 18pt, cover name 36pt.
-    Cover subtitles stay smaller than the ward name.
+    Scale by region, never via html rem. Body sizes strictly increase
+    Normal (8pt) < Large (11pt) < Extra Large (14pt). Cover subtitles
+    in Extra Large are at least 14pt (date, church name, meeting, QR caption).
   */
+  .print-layout[data-font-scale="1"] .print-body,
+  .print-layout[data-font-scale="1"] .print-region-leadership .print-body,
+  .print-layout[data-font-scale="1"] .print-region-program .print-body,
+  .print-layout[data-font-scale="1"] .print-region-announcements .print-body {
+    font-size: 8pt !important;
+    line-height: 1.25 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-heading,
+  .print-layout[data-font-scale="1"] .print-page h2.print-heading,
+  .print-layout[data-font-scale="1"] .print-page h3.print-heading {
+    font-size: 12pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-announce-title {
+    font-size: 9.5pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-cover-name,
+  .print-layout[data-font-scale="1"] .print-page h1.print-cover-name,
+  .print-layout[data-font-scale="1"] .print-page h2.print-cover-name {
+    font-size: 22pt !important;
+    line-height: 1.1 !important;
+  }
+  .print-layout[data-font-scale="1"] .print-cover-sub {
+    font-size: 10pt !important;
+    line-height: 1.25 !important;
+  }
+
   .print-layout[data-font-scale="1.4"] .print-body,
   .print-layout[data-font-scale="1.4"] .print-region-leadership .print-body,
   .print-layout[data-font-scale="1.4"] .print-region-program .print-body,
   .print-layout[data-font-scale="1.4"] .print-region-announcements .print-body {
-    font-size: 10.5pt !important;
+    font-size: 11pt !important;
     line-height: 1.25 !important;
   }
   .print-layout[data-font-scale="1.4"] .print-heading,
   .print-layout[data-font-scale="1.4"] .print-page h2.print-heading,
   .print-layout[data-font-scale="1.4"] .print-page h3.print-heading {
-    font-size: 14pt !important;
+    font-size: 15pt !important;
+    line-height: 1.2 !important;
+  }
+  .print-layout[data-font-scale="1.4"] .print-announce-title {
+    font-size: 13pt !important;
     line-height: 1.2 !important;
   }
   .print-layout[data-font-scale="1.4"] .print-cover-name,
   .print-layout[data-font-scale="1.4"] .print-page h1.print-cover-name,
   .print-layout[data-font-scale="1.4"] .print-page h2.print-cover-name {
-    font-size: 30pt !important;
+    font-size: 28pt !important;
     line-height: 1.1 !important;
   }
   .print-layout[data-font-scale="1.4"] .print-cover-sub {
     font-size: 12pt !important;
+    line-height: 1.25 !important;
   }
 
   .print-layout[data-font-scale="1.8"] .print-body,
@@ -135,6 +166,10 @@
     font-size: 18pt !important;
     line-height: 1.15 !important;
   }
+  .print-layout[data-font-scale="1.8"] .print-announce-title {
+    font-size: 16pt !important;
+    line-height: 1.2 !important;
+  }
   .print-layout[data-font-scale="1.8"] .print-cover-name,
   .print-layout[data-font-scale="1.8"] .print-page h1.print-cover-name,
   .print-layout[data-font-scale="1.8"] .print-page h2.print-cover-name {
@@ -142,7 +177,8 @@
     line-height: 1.05 !important;
   }
   .print-layout[data-font-scale="1.8"] .print-cover-sub {
-    font-size: 13pt !important;
+    font-size: 14pt !important;
+    line-height: 1.25 !important;
   }
 
   /* Preserve colors and backgrounds for intentional design elements */
