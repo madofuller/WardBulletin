@@ -40,6 +40,17 @@
     { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/site.webmanifest", "destination": "/site.webmanifest" },
     { "source": "/llms.txt", "destination": "/llms.txt" },
+    { "source": "/about", "destination": "/index.html" },
+    { "source": "/how-to-use", "destination": "/index.html" },
+    { "source": "/contact", "destination": "/index.html" },
+    { "source": "/baptism", "destination": "/index.html" },
+    { "source": "/baptism/:path*", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/profile/:path*", "destination": "/index.html" },
+    { "source": "/guide/:path*", "destination": "/index.html" },
+    { "source": "/invite/:path*", "destination": "/index.html" },
+    { "source": "/submit/:path*", "destination": "/index.html" },
+    { "source": "/([a-z0-9_-]{1,50})", "destination": "/public.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
