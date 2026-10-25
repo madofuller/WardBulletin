@@ -111,8 +111,15 @@ async function renderPrintPDF(
 ): Promise<void> {
   const testData = { ...fixture.data, printFontScale: fontMode.scale };
   
+  // Set both draft data AND mock profile for QR code rendering
   await page.evaluate((data: any) => {
     window.localStorage.setItem('draft_bulletin', JSON.stringify({ data, savedAt: Date.now(), bulletinId: null }));
+    
+    // Mock session context for QR code
+    window.localStorage.setItem('mock_session', JSON.stringify({
+      user: { id: 'test-user-id', email: 'test@example.com' },
+      profile: { profile_slug: 'sunriver-2nd-ward', id: 'test-profile-id' }
+    }));
   }, testData);
   
   await page.reload({ waitUntil: 'networkidle' });

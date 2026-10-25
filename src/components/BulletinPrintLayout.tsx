@@ -315,15 +315,26 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const announcementsRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState<{ backCover: boolean; announcements: boolean }>({ backCover: false, announcements: false });
 
-  // Print font scale: 1 = normal, 1.15 = large, 1.25 = extra large
-  const fontScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
-    ? data.printFontScale
-    : 1;
+  // Print font scale: Map UI scale to actual print multipliers for senior readability
+  // Goals: Normal ~11pt body, Large ~14pt body, Extra Large ~16-18pt body
+  const fontScale = (() => {
+    const uiScale = typeof data.printFontScale === 'number' && data.printFontScale >= 1 && data.printFontScale <= 1.5
+      ? data.printFontScale
+      : 1;
+    
+    // Map UI scale (1.0/1.15/1.25) to real print scale for seniors:
+    // - Normal (1.0): 1.0× = 11-12pt body text
+    // - Large (1.15): 1.4× = 14-16pt body text  
+    // - Extra Large (1.25): 1.8× = 16-20pt body text
+    if (uiScale >= 1.25) return 1.8;  // Extra Large
+    if (uiScale >= 1.15) return 1.4;  // Large
+    return 1.0;                        // Normal
+  })();
 
-  // In Large/Extra Large modes (fontScale >= 1.15), disable auto-shrinking entirely.
+  // In Large/Extra Large modes (fontScale >= 1.4), disable auto-shrinking entirely.
   // Text must remain at full scale for senior readability. Overflow flows to a
   // continuation page instead of shrinking.
-  const isLargeOrExtraLarge = fontScale >= 1.15;
+  const isLargeOrExtraLarge = fontScale >= 1.4;
   const MIN_FONT_SIZE_PT = 12; // Absolute minimum in points
   const MIN_FIT_SCALE = isLargeOrExtraLarge ? 1.0 : 0.85;
   const [announceFitScale, setAnnounceFitScale] = useState(1);
