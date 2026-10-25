@@ -45,9 +45,12 @@ async function setupBranch(branch: string): Promise<void> {
   
   // Copy test harness files into worktree
   const testFiles = [
-    'tests/print',
-    'print-test.html',
-    'test-fixtures',
+    { src: 'tests/print', dest: 'tests/print' },
+    { src: 'print-test.html', dest: 'print-test.html' },
+    { src: 'public/test-fixtures', dest: 'public/test-fixtures' },
+    { src: 'src/lib/supabase.test-stub.ts', dest: 'src/lib/supabase.test-stub.ts' },
+    { src: 'src/print-test-entry.tsx', dest: 'src/print-test-entry.tsx' },
+    { src: 'vite.config.ts', dest: 'vite.config.ts' },
   ];
   
   for (const file of testFiles) {
