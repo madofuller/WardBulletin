@@ -64,10 +64,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      input: {
-        main: '/index.html',
-        public: '/public.html',
-      },
+      input: '/index.html',
       output: {
         manualChunks(id) {
           // Editor and PDF - these should ONLY load for editor routes

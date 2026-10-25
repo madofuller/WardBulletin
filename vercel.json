@@ -50,7 +50,6 @@
     { "source": "/guide/:path*", "destination": "/index.html" },
     { "source": "/invite/:path*", "destination": "/index.html" },
     { "source": "/submit/:path*", "destination": "/index.html" },
-    { "source": "/([a-z0-9_-]{1,50})", "destination": "/public.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
