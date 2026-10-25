@@ -49,6 +49,11 @@ async function renderBulletin() {
     if (!res.ok) throw new Error(`Failed to load: ${res.statusText}`);
     const bulletinData: BulletinData = await res.json();
     
+    // Override font scale if specified
+    if (fontScale !== 1) {
+      bulletinData.printFontScale = fontScale;
+    }
+    
     // Expose for test inspection
     (window as any).__BULLETIN_DATA__ = bulletinData;
     
