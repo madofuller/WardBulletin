@@ -149,16 +149,26 @@ async function renderPrintPDF(
 ): Promise<void> {
   const testData = { ...fixture.data, printFontScale: fontMode.scale };
   
-  // Set both draft data AND mock profile for QR code rendering
+  // Set draft data
   await page.evaluate((data: any) => {
     window.localStorage.setItem('draft_bulletin', JSON.stringify({ data, savedAt: Date.now(), bulletinId: null }));
-    
-    // Mock session context for QR code
-    window.localStorage.setItem('mock_session', JSON.stringify({
-      user: { id: 'test-user-id', email: 'test@example.com' },
-      profile: { profile_slug: 'sunriver-2nd-ward', id: 'test-profile-id' }
-    }));
   }, testData);
+  
+  // Inject mock profile via page context - this will make useSession return our mock data
+  await page.addInitScript(() => {
+    // Override SessionContext to return mock profile
+    (window as any).__TEST_SESSION__ = {
+      user: { id: 'test-user-id', email: 'test@example.com' },
+      profile: { 
+        profile_slug: 'sunriver-2nd-ward',
+        email: 'test@example.com',
+        role: 'user',
+        active_bulletin_id: null,
+        unit_type: 'ward',
+        language: 'en'
+      }
+    };
+  });
   
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('#form-ward-name', { timeout: 15000 });
