@@ -54,11 +54,15 @@ async function setupBranch(branch: string): Promise<void> {
   ];
   
   for (const file of testFiles) {
-    const src = path.join('/workspace', file);
-    const dest = path.join(worktreePath, file);
+    const src = path.join('/workspace', file.src);
+    const dest = path.join(worktreePath, file.dest);
     const destDir = path.dirname(dest);
     await execAsync(`mkdir -p ${destDir}`);
-    await execAsync(`cp -r ${src} ${dest}`);
+    if (fs.existsSync(src)) {
+      await execAsync(`cp -r ${src} ${dest}`);
+    } else {
+      console.warn(`  ⚠️  Skipping missing file: ${src}`);
+    }
   }
   
   console.log(`  ✓ Worktree ready at ${worktreePath}`);
