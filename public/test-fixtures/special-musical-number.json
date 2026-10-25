@@ -1,0 +1,62 @@
+{
+  "wardName": "SunRiver 2nd Ward",
+  "date": "2024-03-24",
+  "meetingType": "sacrament",
+  "theme": "Music and Worship",
+  "userTheme": "default",
+  "bishopricMessage": "",
+  "announcements": [
+    {
+      "id": "1",
+      "title": "Ward Conference",
+      "content": "Next week will be ward conference. Stake presidency will be visiting.",
+      "category": "general",
+      "audience": "ward"
+    }
+  ],
+  "meetings": [],
+  "specialEvents": [],
+  "agenda": [
+    { "type": "speaker", "id": "1", "name": "Emily Johnson", "speakerType": "youth" },
+    { 
+      "type": "musical", 
+      "id": "2", 
+      "label": "Special Musical Number",
+      "songName": "I Know That My Redeemer Lives",
+      "performers": "Ward Choir"
+    },
+    { "type": "sacrament", "id": "3" },
+    { "type": "speaker", "id": "4", "name": "Brother James Wilson", "speakerType": "adult" }
+  ],
+  "prayers": {
+    "opening": "John Smith",
+    "closing": "Jane Doe",
+    "invocation": "",
+    "benediction": ""
+  },
+  "musicProgram": {
+    "openingHymn": "",
+    "openingHymnNumber": "2",
+    "openingHymnTitle": "The Spirit of God",
+    "sacramentHymn": "",
+    "sacramentHymnNumber": "169",
+    "sacramentHymnTitle": "As Now We Take the Sacrament",
+    "closingHymn": "",
+    "closingHymnNumber": "27",
+    "closingHymnTitle": "Praise to the Man"
+  },
+  "leadership": {
+    "presiding": "Bishop Williams",
+    "conducting": "President Thompson",
+    "chorister": "Sister Anderson",
+    "organist": "Brother Martinez"
+  },
+  "wardLeadership": [
+    { "title": "Bishop", "name": "John Williams", "phone": "555-0101" }
+  ],
+  "missionaries": [],
+  "wardMissionaries": [],
+  "serviceMissionaries": [],
+  "showQRCodeOnPrint": false,
+  "printFontScale": 1
+}

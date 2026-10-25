@@ -1,0 +1,23 @@
+{
+  "name": "wardbulletin-print-regression",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx harness-real.ts",
+    "test:old": "tsx harness.ts"
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "pdf-lib": "^1.17.1",
+    "pdf2pic": "^3.2.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.3"
+  }
+}
