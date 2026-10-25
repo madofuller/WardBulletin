@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -32,6 +33,12 @@ export default defineConfig({
         enabled: false,
       },
     }),
+    visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
   test: {
     exclude: ['node_modules', '.claude', 'dist', 'e2e/**'],
@@ -41,6 +48,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        main: '/index.html',
+        public: '/public.html',
+      },
       output: {
         manualChunks(id) {
           // Editor and PDF - these should ONLY load for editor routes

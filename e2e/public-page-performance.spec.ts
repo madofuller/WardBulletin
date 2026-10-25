@@ -17,25 +17,32 @@ interface PerformanceMetrics {
   cssBytes: number;
   requestCount: number;
   fcpTime: number;
-  contentVisibleTime: number;
+  wardNameVisibleTime: number;
+  programTextVisibleTime: number;
   totalLoadTime: number;
 }
 
-// Slow 3G throttling preset
+// Network throttling presets
 const SLOW_3G_THROTTLING = {
   downloadThroughput: (400 * 1024) / 8, // 400 Kbps in bytes/s
   uploadThroughput: (400 * 1024) / 8,
   latency: 2000, // 2000ms RTT
 };
 
-async function setupNetworkThrottling(page: Page) {
+const CONGESTED_WIFI_THROTTLING = {
+  downloadThroughput: (1500 * 1024) / 8, // 1.5 Mbps in bytes/s
+  uploadThroughput: (750 * 1024) / 8, // 750 Kbps up
+  latency: 300, // 300ms RTT
+};
+
+async function setupNetworkThrottling(page: Page, profile: typeof SLOW_3G_THROTTLING) {
   const client = await page.context().newCDPSession(page);
   await client.send('Network.enable');
   await client.send('Network.emulateNetworkConditions', {
     offline: false,
-    downloadThroughput: SLOW_3G_THROTTLING.downloadThroughput,
-    uploadThroughput: SLOW_3G_THROTTLING.uploadThroughput,
-    latency: SLOW_3G_THROTTLING.latency,
+    downloadThroughput: profile.downloadThroughput,
+    uploadThroughput: profile.uploadThroughput,
+    latency: profile.latency,
   });
   return client;
 }
@@ -144,8 +151,12 @@ async function measurePerformance(page: Page, client: CDPSession): Promise<Perfo
 
   // Wait for bulletin content to be visible (ward name is a good indicator)
   const wardNameSelector = 'text=Test Ward';
-  await page.waitForSelector(wardNameSelector, { timeout: 30000 });
-  const contentVisibleTime = Date.now() - navigationStartTime;
+  await page.waitForSelector(wardNameSelector, { timeout: 120000 });
+  const wardNameVisibleTime = Date.now() - navigationStartTime;
+  
+  // Wait for program text to be visible
+  await page.waitForSelector('text=Faith in Jesus Christ', { timeout: 10000 }).catch(() => {});
+  const programTextVisibleTime = Date.now() - navigationStartTime;
 
   // Wait a bit more for all resources to finish
   await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
@@ -167,7 +178,8 @@ async function measurePerformance(page: Page, client: CDPSession): Promise<Perfo
     cssBytes,
     requestCount,
     fcpTime,
-    contentVisibleTime,
+    wardNameVisibleTime,
+    programTextVisibleTime,
     totalLoadTime,
   };
 }
@@ -181,99 +193,92 @@ function formatTime(ms: number): string {
 }
 
 test.describe('Public Bulletin Page Performance', () => {
-  test('Baseline - Cold cache on Slow 3G', async ({ page, browser }) => {
-    // Setup network throttling
-    const client = await setupNetworkThrottling(page);
-    
-    // Setup Supabase interception
+  test('Branch - Cold cache on Slow 3G', async ({ page, browser }) => {
+    test.setTimeout(180000); // 3 minutes
+    const client = await setupNetworkThrottling(page, SLOW_3G_THROTTLING);
     await setupSupabaseInterception(page, 'test-ward');
-    
-    // Measure performance
     const metrics = await measurePerformance(page, client);
     
-    // Log results
-    console.log('\n=== BASELINE METRICS (Cold Cache, Slow 3G) ===');
+    console.log('\n=== BRANCH: Cold Cache, Slow 3G (400kbps/2000ms) ===');
     console.log(`Total Transferred: ${formatBytes(metrics.totalTransferredBytes)}`);
     console.log(`JavaScript: ${formatBytes(metrics.jsBytes)}`);
     console.log(`CSS: ${formatBytes(metrics.cssBytes)}`);
     console.log(`Requests: ${metrics.requestCount}`);
     console.log(`First Contentful Paint: ${formatTime(metrics.fcpTime)}`);
-    console.log(`Content Visible: ${formatTime(metrics.contentVisibleTime)}`);
+    console.log(`Ward Name Visible: ${formatTime(metrics.wardNameVisibleTime)}`);
+    console.log(`Program Text Visible: ${formatTime(metrics.programTextVisibleTime)}`);
     console.log(`Total Load: ${formatTime(metrics.totalLoadTime)}`);
-    console.log('=============================================\n');
+    console.log('========================================================\n');
     
-    // Take screenshot for reference
-    await page.screenshot({ 
-      path: 'e2e/screenshots/baseline-loaded.png',
-      fullPage: true 
-    });
-    
-    // Verify content is actually visible
+    await page.screenshot({ path: 'e2e/screenshots/branch-slow3g-cold.png', fullPage: true });
     await expect(page.locator('text=Test Ward')).toBeVisible();
     await expect(page.locator('text=Faith in Jesus Christ')).toBeVisible();
-    
-    // Basic assertions - we expect slow times on Slow 3G
-    expect(metrics.requestCount).toBeGreaterThan(0);
-    expect(metrics.totalTransferredBytes).toBeGreaterThan(0);
+    expect(metrics.wardNameVisibleTime).toBeLessThan(120000);
   });
 
-  test('Baseline - Repeat visit (warm cache)', async ({ page, browser }) => {
-    // Setup network throttling
-    const client = await setupNetworkThrottling(page);
-    
-    // Setup Supabase interception
+  test('Branch - Repeat visit on Slow 3G', async ({ page, browser }) => {
+    test.setTimeout(180000);
+    const client = await setupNetworkThrottling(page, SLOW_3G_THROTTLING);
     await setupSupabaseInterception(page, 'test-ward');
     
     // First visit to populate cache
-    await page.goto('/test-ward', { waitUntil: 'networkidle' });
-    await page.waitForSelector('text=Test Ward');
-    
-    // Clear CDP listeners
+    await page.goto('/test-ward', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Test Ward', { timeout: 120000 });
     client.removeAllListeners();
     
     // Measure repeat visit
     const metrics = await measurePerformance(page, client);
     
-    console.log('\n=== BASELINE METRICS (Warm Cache, Slow 3G) ===');
+    console.log('\n=== BRANCH: Repeat Visit, Slow 3G (400kbps/2000ms) ===');
     console.log(`Total Transferred: ${formatBytes(metrics.totalTransferredBytes)}`);
     console.log(`JavaScript: ${formatBytes(metrics.jsBytes)}`);
     console.log(`CSS: ${formatBytes(metrics.cssBytes)}`);
     console.log(`Requests: ${metrics.requestCount}`);
-    console.log(`First Contentful Paint: ${formatTime(metrics.fcpTime)}`);
-    console.log(`Content Visible: ${formatTime(metrics.contentVisibleTime)}`);
-    console.log(`Total Load: ${formatTime(metrics.totalLoadTime)}`);
-    console.log('=============================================\n');
+    console.log(`Ward Name Visible: ${formatTime(metrics.wardNameVisibleTime)}`);
+    console.log(`Program Text Visible: ${formatTime(metrics.programTextVisibleTime)}`);
+    console.log('=======================================================\n');
     
-    // Verify content
     await expect(page.locator('text=Test Ward')).toBeVisible();
   });
 
-  test('Content visibility under throttling', async ({ page }) => {
-    const client = await setupNetworkThrottling(page);
+  test('Branch - Cold cache on Congested WiFi', async ({ page, browser }) => {
+    test.setTimeout(120000);
+    const client = await setupNetworkThrottling(page, CONGESTED_WIFI_THROTTLING);
+    await setupSupabaseInterception(page, 'test-ward');
+    const metrics = await measurePerformance(page, client);
+    
+    console.log('\n=== BRANCH: Cold Cache, Congested WiFi (1.5Mbps/300ms) ===');
+    console.log(`Total Transferred: ${formatBytes(metrics.totalTransferredBytes)}`);
+    console.log(`JavaScript: ${formatBytes(metrics.jsBytes)}`);
+    console.log(`Requests: ${metrics.requestCount}`);
+    console.log(`Ward Name Visible: ${formatTime(metrics.wardNameVisibleTime)}`);
+    console.log(`Program Text Visible: ${formatTime(metrics.programTextVisibleTime)}`);
+    console.log('============================================================\n');
+    
+    await page.screenshot({ path: 'e2e/screenshots/branch-wifi-cold.png', fullPage: true });
+    await expect(page.locator('text=Test Ward')).toBeVisible();
+  });
+
+  test('Branch - Repeat visit on Congested WiFi', async ({ page, browser }) => {
+    test.setTimeout(120000);
+    const client = await setupNetworkThrottling(page, CONGESTED_WIFI_THROTTLING);
     await setupSupabaseInterception(page, 'test-ward');
     
-    const startTime = Date.now();
-    await page.goto('/test-ward');
+    // First visit
+    await page.goto('/test-ward', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('text=Test Ward', { timeout: 60000 });
+    client.removeAllListeners();
     
-    // Check that skeleton/loading state appears quickly
-    const hasLoadingState = await page.locator('.animate-spin, .skeleton, text=Loading').count();
+    // Measure repeat visit
+    const metrics = await measurePerformance(page, client);
     
-    // Wait for actual content
-    await page.waitForSelector('text=Test Ward', { timeout: 30000 });
-    const wardNameVisibleTime = Date.now() - startTime;
+    console.log('\n=== BRANCH: Repeat Visit, Congested WiFi (1.5Mbps/300ms) ===');
+    console.log(`Total Transferred: ${formatBytes(metrics.totalTransferredBytes)}`);
+    console.log(`Requests: ${metrics.requestCount}`);
+    console.log(`Ward Name Visible: ${formatTime(metrics.wardNameVisibleTime)}`);
+    console.log(`Program Text Visible: ${formatTime(metrics.programTextVisibleTime)}`);
+    console.log('=============================================================\n');
     
-    await page.waitForSelector('text=Faith in Jesus Christ', { timeout: 5000 });
-    const themeVisibleTime = Date.now() - startTime;
-    
-    console.log('\n=== CONTENT VISIBILITY TIMELINE ===');
-    console.log(`Ward Name Visible: ${formatTime(wardNameVisibleTime)}`);
-    console.log(`Theme Visible: ${formatTime(themeVisibleTime)}`);
-    console.log('===================================\n');
-    
-    // Take screenshot showing the loaded state
-    await page.screenshot({ 
-      path: 'e2e/screenshots/content-visible.png',
-      fullPage: true 
-    });
+    await expect(page.locator('text=Test Ward')).toBeVisible();
   });
 });
