@@ -17,7 +17,6 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'supabase': ['@supabase/supabase-js'],
           'editor': ['react-quill-new'],
-          'pdf': ['html2canvas', 'jspdf'],
           'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           'ui-vendor': ['react-helmet-async', 'react-toastify', '@tanstack/react-query'],
         },
