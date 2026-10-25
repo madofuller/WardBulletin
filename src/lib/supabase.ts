@@ -1421,38 +1421,213 @@ export const bulletinService = {
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {
-    // OPTIMIZED: Single RPC call instead of 3 sequential queries (users → bulletins → tokens)
-    // Reduces latency on slow connections from ~6+ seconds to ~2 seconds
-    const { data, error } = await supabase
-      .rpc('get_public_bulletin_by_slug', { profile_slug_param: profileSlug });
+    // OPTIMIZED: Try single RPC call first, fall back to 3-query path if RPC doesn't exist
+    // This allows deployment before migration is applied (PGRST202 / 404 on missing RPC)
+    try {
+      const { data, error } = await supabase
+        .rpc('get_public_bulletin_by_slug', { profile_slug_param: profileSlug });
 
-    if (error) {
-      throw new Error('Failed to fetch bulletin');
-    }
+      // If RPC doesn't exist (PGRST202 or 404), fall back to old path
+      if (error && (error.code === 'PGRST202' || error.message?.includes('does not exist'))) {
+        console.warn('RPC not found, falling back to 3-query path');
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+      }
 
-    if (!data) {
-      return null;
-    }
+      if (error) {
+        throw new Error('Failed to fetch bulletin');
+      }
 
-    // Check for error response from RPC
-    if (data.error) {
-      if (data.error === 'Bulletin not found' || data.error === 'No bulletin published') {
+      if (!data) {
         return null;
       }
-      throw new Error(data.error);
+
+      // Check for error response from RPC
+      if (data.error) {
+        if (data.error === 'Bulletin not found' || data.error === 'No bulletin published') {
+          return null;
+        }
+        throw new Error(data.error);
+      }
+
+      // Extract tokens from the RPC result
+      const tokens = data.tokens || {};
+      const userId = data.created_by;
+
+      // Parse tokens (RPC returns them as JSON strings)
+      const image = tokens.image || null;
+      const imagePosition = tokens.imagePosition;
+      const imageOpacity = tokens.imageOpacity;
+      
+      // Handle custom image URL
+      const storedImageUrl = tokens.imageUrl || null;
+      let imageUrl: string | null = storedImageUrl || null;
+      if (!imageUrl && image && image.startsWith('custom-')) {
+        try {
+          const filePath = `${userId}/${image}.jpg`;
+          const { data: urlData } = supabase.storage
+            .from('bulletin-images')
+            .getPublicUrl(filePath);
+          imageUrl = urlData.publicUrl;
+        } catch {
+          // Silently handle custom image fetch errors
+        }
+      }
+
+      // Build result matching existing structure
+      const result = {
+        id: data.id,
+        user_id: data.created_by,
+        profile_slug: data.profile_slug,
+        profile_unit_type: data.profile_unit_type || 'ward',
+        profile_language: data.profile_language || 'en',
+        ward_name: tokens.ward_name || '',
+        date: data.meeting_date,
+        meeting_type: data.meeting_type,
+        theme: tokens.theme || '',
+        userTheme: tokens.userTheme || '',
+        imageId: image || 'none',
+        imageUrl: imageUrl,
+        imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
+        imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
+        bishopric_message: tokens.bishopric || '',
+        announcements: tokens.announcements ? JSON.parse(tokens.announcements) : [],
+        meetings: tokens.meetings ? JSON.parse(tokens.meetings) : [],
+        special_events: tokens.events ? JSON.parse(tokens.events) : [],
+        agenda: tokens.agenda ? JSON.parse(tokens.agenda) : [],
+        prayers: tokens.prayers ? JSON.parse(tokens.prayers) : {},
+        music_program: tokens.music ? JSON.parse(tokens.music) : {},
+        leadership: tokens.leadership ? JSON.parse(tokens.leadership) : {},
+        wardLeadership: tokens.wardLeadership ? JSON.parse(tokens.wardLeadership) : [],
+        missionaries: tokens.missionaries ? JSON.parse(tokens.missionaries) : [],
+        wardMissionaries: tokens.wardMissionaries ? JSON.parse(tokens.wardMissionaries) : [],
+        serviceMissionaries: tokens.serviceMissionaries ? JSON.parse(tokens.serviceMissionaries) : [],
+        created_at: data.created_at,
+        updated_at: data.created_at
+      };
+
+      return result;
+    } catch (err: any) {
+      // If RPC call fails entirely, fall back to legacy
+      if (err?.message?.includes('does not exist') || err?.code === 'PGRST202') {
+        console.warn('RPC not available, using legacy 3-query path');
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+      }
+      throw err;
+    }
+  },
+
+  // Legacy 3-query path (kept as fallback for safe deployment)
+  async getLatestBulletinByProfileSlugLegacy(profileSlug: string) {
+    // First get the user by profile_slug and their active bulletin
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, active_bulletin_id, unit_type, language')
+      .eq('profile_slug', profileSlug)
+      .maybeSingle();
+
+    if (userError || !userData) {
+      throw new Error('Bulletin not found');
     }
 
-    // Extract tokens from the RPC result
-    const tokens = data.tokens || {};
+    let bulletinId = userData.active_bulletin_id;
+
+    // If no active bulletin is set, get their latest bulletin
+    if (!bulletinId) {
+      const { data: latestBulletin, error: latestError } = await supabase
+        .from('bulletins')
+        .select('id')
+        .or(`created_by.eq.${userData.id},profile_slug.eq."${profileSlug}"`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestError) throw latestError;
+      if (!latestBulletin) return null;
+
+      bulletinId = latestBulletin.id;
+    }
+
+    // Get the specific bulletin
+    const { data, error } = await supabase
+      .from('bulletins')
+      .select('*')
+      .eq('id', bulletinId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+
     const userId = data.created_by;
 
-    // Parse tokens (RPC returns them as JSON strings)
-    const image = tokens.image || null;
-    const imagePosition = tokens.imagePosition;
-    const imageOpacity = tokens.imageOpacity;
-    
-    // Handle custom image URL
-    const storedImageUrl = tokens.imageUrl || null;
+    // Fetch bulletin data from tokens
+    const tokenKeys = [
+      `bulletin-${data.slug}-ward_name`,
+      `bulletin-${data.slug}-theme`,
+      `bulletin-${data.slug}-userTheme`,
+      `bulletin-${data.slug}-bishopric`,
+      `bulletin-${data.slug}-announcements`,
+      `bulletin-${data.slug}-meetings`,
+      `bulletin-${data.slug}-events`,
+      `bulletin-${data.slug}-agenda`,
+      `bulletin-${data.slug}-prayers`,
+      `bulletin-${data.slug}-music`,
+      `bulletin-${data.slug}-leadership`,
+      `bulletin-${data.slug}-wardLeadership`,
+      `bulletin-${data.slug}-missionaries`,
+      `bulletin-${data.slug}-wardMissionaries`,
+      `bulletin-${data.slug}-serviceMissionaries`,
+      `bulletin-${data.slug}-image`,
+      `bulletin-${data.slug}-imageUrl`,
+      `bulletin-${data.slug}-imagePosition`,
+      `bulletin-${data.slug}-imageOpacity`
+    ];
+
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('tokens')
+      .select('key, value, created_by')
+      .in('key', tokenKeys)
+      .order('created_at', { ascending: false });
+
+    const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
+    (tokenData || []).forEach((token: any) => {
+      const rows = tokenRowsByKey.get(token.key) || [];
+      rows.push(token);
+      tokenRowsByKey.set(token.key, rows);
+    });
+
+    const tokenMap = new Map();
+    tokenRowsByKey.forEach((rows, key) => {
+      const row = pickTokenRow(rows, userId);
+      if (row) tokenMap.set(key, row.value);
+    });
+
+    // Extract values from the map
+    const wardName = tokenMap.get(`bulletin-${data.slug}-ward_name`) || null;
+    const theme = tokenMap.get(`bulletin-${data.slug}-theme`) || null;
+    const userTheme = tokenMap.get(`bulletin-${data.slug}-userTheme`) || null;
+    const bishopric = tokenMap.get(`bulletin-${data.slug}-bishopric`) || null;
+    const announcements = tokenMap.get(`bulletin-${data.slug}-announcements`) || null;
+    const meetings = tokenMap.get(`bulletin-${data.slug}-meetings`) || null;
+    const events = tokenMap.get(`bulletin-${data.slug}-events`) || null;
+    const agenda = tokenMap.get(`bulletin-${data.slug}-agenda`) || null;
+    const prayers = tokenMap.get(`bulletin-${data.slug}-prayers`) || null;
+    const music = tokenMap.get(`bulletin-${data.slug}-music`) || null;
+    const leadership = tokenMap.get(`bulletin-${data.slug}-leadership`) || null;
+    const wardLeadership = tokenMap.get(`bulletin-${data.slug}-wardLeadership`) || null;
+    const missionaries = tokenMap.get(`bulletin-${data.slug}-missionaries`) || null;
+    const wardMissionaries = tokenMap.get(`bulletin-${data.slug}-wardMissionaries`) || null;
+    const serviceMissionaries = tokenMap.get(`bulletin-${data.slug}-serviceMissionaries`) || null;
+    const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
+    const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
+    const imageOpacity = tokenMap.get(`bulletin-${data.slug}-imageOpacity`) || null;
+
+    const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
+
+    const storedImageUrl = tokenMap.get(`bulletin-${data.slug}-imageUrl`) || null;
     let imageUrl: string | null = storedImageUrl || null;
     if (!imageUrl && image && image.startsWith('custom-')) {
       try {
@@ -1466,34 +1641,33 @@ export const bulletinService = {
       }
     }
 
-    // Build result matching existing structure
     const result = {
       id: data.id,
       user_id: data.created_by,
       profile_slug: data.profile_slug,
-      profile_unit_type: data.profile_unit_type || 'ward',
-      profile_language: data.profile_language || 'en',
-      ward_name: tokens.ward_name || '',
+      profile_unit_type: userData.unit_type || 'ward',
+      profile_language: userData.language || 'en',
+      ward_name: wardName || '',
       date: data.meeting_date,
       meeting_type: data.meeting_type,
-      theme: tokens.theme || '',
-      userTheme: tokens.userTheme || '',
+      theme: theme || '',
+      userTheme: userTheme || '',
       imageId: image || 'none',
       imageUrl: imageUrl,
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
-      bishopric_message: tokens.bishopric || '',
-      announcements: tokens.announcements ? JSON.parse(tokens.announcements) : [],
-      meetings: tokens.meetings ? JSON.parse(tokens.meetings) : [],
-      special_events: tokens.events ? JSON.parse(tokens.events) : [],
-      agenda: tokens.agenda ? JSON.parse(tokens.agenda) : [],
-      prayers: tokens.prayers ? JSON.parse(tokens.prayers) : {},
-      music_program: tokens.music ? JSON.parse(tokens.music) : {},
-      leadership: tokens.leadership ? JSON.parse(tokens.leadership) : {},
-      wardLeadership: tokens.wardLeadership ? JSON.parse(tokens.wardLeadership) : [],
-      missionaries: tokens.missionaries ? JSON.parse(tokens.missionaries) : [],
-      wardMissionaries: tokens.wardMissionaries ? JSON.parse(tokens.wardMissionaries) : [],
-      serviceMissionaries: tokens.serviceMissionaries ? JSON.parse(tokens.serviceMissionaries) : [],
+      bishopric_message: bishopric || '',
+      announcements: parsedAnnouncements,
+      meetings: meetings ? JSON.parse(meetings) : [],
+      special_events: events ? JSON.parse(events) : [],
+      agenda: agenda ? JSON.parse(agenda) : [],
+      prayers: prayers ? JSON.parse(prayers) : {},
+      music_program: music ? JSON.parse(music) : {},
+      leadership: leadership ? JSON.parse(leadership) : {},
+      wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
+      missionaries: missionaries ? JSON.parse(missionaries) : [],
+      wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+      serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
       created_at: data.created_at,
       updated_at: data.created_at
     };
