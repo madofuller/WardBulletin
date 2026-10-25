@@ -17,7 +17,10 @@
   "meetings": [],
   "specialEvents": [],
   "agenda": [
-    { "type": "sacrament", "id": "1" }
+    {
+      "type": "sacrament",
+      "id": "1"
+    }
   ],
   "prayers": {
     "opening": "John Smith",
@@ -46,6 +49,6 @@
   "missionaries": [],
   "wardMissionaries": [],
   "serviceMissionaries": [],
-  "showQRCodeOnPrint": false,
+  "showQRCodeOnPrint": true,
   "printFontScale": 1.15
 }

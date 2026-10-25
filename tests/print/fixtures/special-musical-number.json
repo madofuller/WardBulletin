@@ -17,16 +17,29 @@
   "meetings": [],
   "specialEvents": [],
   "agenda": [
-    { "type": "speaker", "id": "1", "name": "Emily Johnson", "speakerType": "youth" },
-    { 
-      "type": "musical", 
-      "id": "2", 
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Emily Johnson",
+      "speakerType": "youth"
+    },
+    {
+      "type": "musical",
+      "id": "2",
       "label": "Special Musical Number",
       "songName": "I Know That My Redeemer Lives",
       "performers": "Ward Choir"
     },
-    { "type": "sacrament", "id": "3" },
-    { "type": "speaker", "id": "4", "name": "Brother James Wilson", "speakerType": "adult" }
+    {
+      "type": "sacrament",
+      "id": "3"
+    },
+    {
+      "type": "speaker",
+      "id": "4",
+      "name": "Brother James Wilson",
+      "speakerType": "adult"
+    }
   ],
   "prayers": {
     "opening": "John Smith",
@@ -52,11 +65,15 @@
     "organist": "Brother Martinez"
   },
   "wardLeadership": [
-    { "title": "Bishop", "name": "John Williams", "phone": "555-0101" }
+    {
+      "title": "Bishop",
+      "name": "John Williams",
+      "phone": "555-0101"
+    }
   ],
   "missionaries": [],
   "wardMissionaries": [],
   "serviceMissionaries": [],
-  "showQRCodeOnPrint": false,
+  "showQRCodeOnPrint": true,
   "printFontScale": 1
 }

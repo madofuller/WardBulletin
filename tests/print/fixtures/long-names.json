@@ -17,9 +17,22 @@
   "meetings": [],
   "specialEvents": [],
   "agenda": [
-    { "type": "speaker", "id": "1", "name": "Brother Christopher Alexander Montgomery-Williamson III", "speakerType": "adult" },
-    { "type": "sacrament", "id": "2" },
-    { "type": "speaker", "id": "3", "name": "Sister Elizabeth Victoria Anastasia Thompson-Henderson", "speakerType": "adult" }
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Brother Christopher Alexander Montgomery-Williamson III",
+      "speakerType": "adult"
+    },
+    {
+      "type": "sacrament",
+      "id": "2"
+    },
+    {
+      "type": "speaker",
+      "id": "3",
+      "name": "Sister Elizabeth Victoria Anastasia Thompson-Henderson",
+      "speakerType": "adult"
+    }
   ],
   "prayers": {
     "opening": "Brother Jonathan David Richardson-Martinez Jr.",
@@ -45,13 +58,25 @@
     "organist": "Brother Christopher Michael Anderson-Rodriguez"
   },
   "wardLeadership": [
-    { "title": "Bishop", "name": "Alexander Christopher Montgomery-Williamson", "phone": "555-0101" },
-    { "title": "1st Counselor", "name": "Jonathan David Richardson-Martinez", "phone": "555-0102" },
-    { "title": "Executive Secretary", "name": "Brother Christopher Michael Anderson-Rodriguez Jr.", "phone": "555-0103" }
+    {
+      "title": "Bishop",
+      "name": "Alexander Christopher Montgomery-Williamson",
+      "phone": "555-0101"
+    },
+    {
+      "title": "1st Counselor",
+      "name": "Jonathan David Richardson-Martinez",
+      "phone": "555-0102"
+    },
+    {
+      "title": "Executive Secretary",
+      "name": "Brother Christopher Michael Anderson-Rodriguez Jr.",
+      "phone": "555-0103"
+    }
   ],
   "missionaries": [],
   "wardMissionaries": [],
   "serviceMissionaries": [],
-  "showQRCodeOnPrint": false,
+  "showQRCodeOnPrint": true,
   "printFontScale": 1
 }

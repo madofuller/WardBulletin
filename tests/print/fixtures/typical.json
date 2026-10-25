@@ -38,10 +38,28 @@
   "meetings": [],
   "specialEvents": [],
   "agenda": [
-    { "type": "speaker", "id": "1", "name": "Emily Johnson", "speakerType": "youth" },
-    { "type": "sacrament", "id": "2" },
-    { "type": "speaker", "id": "3", "name": "Brother James Wilson", "speakerType": "adult" },
-    { "type": "speaker", "id": "4", "name": "Sister Mary Thompson", "speakerType": "adult" }
+    {
+      "type": "speaker",
+      "id": "1",
+      "name": "Emily Johnson",
+      "speakerType": "youth"
+    },
+    {
+      "type": "sacrament",
+      "id": "2"
+    },
+    {
+      "type": "speaker",
+      "id": "3",
+      "name": "Brother James Wilson",
+      "speakerType": "adult"
+    },
+    {
+      "type": "speaker",
+      "id": "4",
+      "name": "Sister Mary Thompson",
+      "speakerType": "adult"
+    }
   ],
   "prayers": {
     "opening": "John Smith",
@@ -67,13 +85,31 @@
     "organist": "Brother Martinez"
   },
   "wardLeadership": [
-    { "title": "Bishop", "name": "John Williams", "phone": "555-0101" },
-    { "title": "1st Counselor", "name": "Michael Davis", "phone": "555-0102" },
-    { "title": "2nd Counselor", "name": "Robert Garcia", "phone": "555-0103" }
+    {
+      "title": "Bishop",
+      "name": "John Williams",
+      "phone": "555-0101"
+    },
+    {
+      "title": "1st Counselor",
+      "name": "Michael Davis",
+      "phone": "555-0102"
+    },
+    {
+      "title": "2nd Counselor",
+      "name": "Robert Garcia",
+      "phone": "555-0103"
+    }
   ],
   "missionaries": [
-    { "name": "Elder Johnson", "phone": "555-0201" },
-    { "name": "Elder Smith", "phone": "555-0202" }
+    {
+      "name": "Elder Johnson",
+      "phone": "555-0201"
+    },
+    {
+      "name": "Elder Smith",
+      "phone": "555-0202"
+    }
   ],
   "wardMissionaries": [],
   "serviceMissionaries": [],
