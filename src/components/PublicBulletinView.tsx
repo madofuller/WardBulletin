@@ -1,9 +1,24 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Home } from 'lucide-react';
 import BulletinPreview from './BulletinPreview';
 import { BulletinData } from '../types/bulletin';
 import { UnitType } from '../lib/terminology';
+
+function HomeIcon() {
+  return (
+    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5z" />
+    </svg>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+  );
+}
 
 interface PublicBulletinViewProps {
   bulletinData: BulletinData | null;
@@ -56,16 +71,27 @@ export default function PublicBulletinView({
                 <li>• {t('bulletin.linkTypedIncorrectly')}</li>
                 <li>• {t('bulletin.bulletinWasDeleted')}</li>
                 <li>• {t('bulletin.wardNotPublished')}</li>
+                <li>• {t('bulletin.slowConnection', 'Slow or unstable internet connection')}</li>
               </ul>
             </div>
             
             {/* Action Buttons */}
             <div className="space-y-3">
               <button
-                onClick={onBackToEditor}
+                onClick={() => window.location.reload()}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                <Home className="w-4 h-4 mr-2" />
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {t('common.retry', 'Retry')}
+              </button>
+
+              <button
+                onClick={onBackToEditor}
+                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                <HomeIcon />
                 {t('bulletin.createYourOwnBulletin')}
               </button>
 
@@ -73,7 +99,7 @@ export default function PublicBulletinView({
                 onClick={() => window.history.back()}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <BackIcon />
                 {t('common.back')}
               </button>
             </div>
@@ -123,7 +149,7 @@ export default function PublicBulletinView({
                 onClick={onBackToEditor}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                <Home className="w-4 h-4 mr-2" />
+                <HomeIcon />
                 {t('bulletin.createYourOwnBulletin')}
               </button>
 
@@ -131,7 +157,7 @@ export default function PublicBulletinView({
                 onClick={() => window.history.back()}
                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <BackIcon />
                 {t('common.back')}
               </button>
             </div>

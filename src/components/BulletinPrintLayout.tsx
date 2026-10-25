@@ -4,7 +4,7 @@ import { sanitizeHtml } from "../lib/sanitizeHtml";
 import { linkifyHtml } from "../lib/linkifyHtml";
 import { decodeHtml } from '../lib/decodeHtml';
 import { sanitizedAnnouncementHtml } from '../lib/sanitizeCache';
-import { LDS_IMAGES, getImageByIdSync } from '../data/images';
+import { LDS_IMAGES, getImageByIdSync } from '../data/imageCatalog';
 import { useSession } from '../lib/SessionContext';
 import { themes } from '../data/themes';
 

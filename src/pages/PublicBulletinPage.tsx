@@ -1,37 +1,27 @@
-import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useState } from 'react';
 import PublicBulletinView from '../components/PublicBulletinView';
 import DynamicMetaTags from '../components/DynamicMetaTags';
 import DynamicManifest from '../components/DynamicManifest';
-import { bulletinService } from '../lib/supabase';
-import { SkeletonBulletin } from '../components/SkeletonLoader';
+import { getPublicBulletinBySlug, type PublicBulletinData } from '../lib/public-fetch';
+import { loadPublicLocale } from '../i18n/public';
 
-// Helper function to ensure sacrament item exists at the top of agenda
 function ensureSacramentItem(agenda: any[]): any[] {
-  // Check if sacrament item already exists
   const hasSacramentItem = agenda.some(item => item.type === 'sacrament');
-  
   if (!hasSacramentItem) {
-    // Add sacrament item at the top
     return [{ type: 'sacrament', id: crypto.randomUUID() }, ...agenda];
   }
-  
   return agenda;
 }
 
-export default function PublicBulletinPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
-  const { i18n } = useTranslation();
+export default function PublicBulletinPage({ slug: slugProp }: { slug?: string }) {
+  const slug = slugProp || window.location.pathname.replace(/^\/+|\/+$/g, '');
+  const [publicBulletin, setPublicBulletin] = useState<PublicBulletinData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  // CRITICAL: Clear any stale localStorage data that might be cached
-  // This runs once when the component mounts to handle users with old cached data
   useEffect(() => {
     const clearStaleCache = () => {
       try {
-        // Clear React Query cache from localStorage (if using persistQueryClient)
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -44,24 +34,19 @@ export default function PublicBulletinPage() {
           }
         }
         keysToRemove.forEach(key => localStorage.removeItem(key));
-
-        // Also clear sessionStorage which Safari might use
         sessionStorage.clear();
-      } catch (error) {
+      } catch {
         // Failed to clear stale cache
       }
     };
 
     clearStaleCache();
-  }, [slug]); // Re-run when slug changes
+  }, [slug]);
 
-  // CRITICAL: Add cache-control meta tags to prevent Safari from caching this page
   useEffect(() => {
-    // Remove existing cache-control meta tags
     const existingTags = document.querySelectorAll('meta[http-equiv="Cache-Control"], meta[http-equiv="Pragma"], meta[http-equiv="Expires"]');
     existingTags.forEach(tag => tag.remove());
 
-    // Add aggressive cache-busting meta tags for Safari
     const metaTags = [
       { httpEquiv: 'Cache-Control', content: 'no-cache, no-store, must-revalidate, max-age=0' },
       { httpEquiv: 'Pragma', content: 'no-cache' },
@@ -75,51 +60,55 @@ export default function PublicBulletinPage() {
       document.head.appendChild(meta);
     });
 
-    // Cleanup function to remove tags when component unmounts
     return () => {
       const tagsToRemove = document.querySelectorAll('meta[http-equiv="Cache-Control"], meta[http-equiv="Pragma"], meta[http-equiv="Expires"]');
       tagsToRemove.forEach(tag => tag.remove());
     };
   }, []);
 
-  // Get cache-busting parameter from URL (if present)
-  const searchParams = new URLSearchParams(window.location.search);
-  const cacheBuster = searchParams.get('t');
-
-  const {
-    data: publicBulletin,
-    isLoading,
-    error
-  } = useQuery({
-    queryKey: ['public-bulletin', slug, cacheBuster],
-    queryFn: () => slug ? bulletinService.getLatestBulletinByProfileSlug(slug) : Promise.resolve(null),
-    enabled: !!slug,
-    // Prevent stale data from being shown
-    staleTime: 0,
-    gcTime: 0, // Previously cacheTime in older versions of React Query
-    refetchOnMount: 'always', // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    refetchOnReconnect: true // Refetch when connection is restored
-  });
-
-  // Set the language to the bulletin creator's preferred language
   useEffect(() => {
-    if (publicBulletin?.profile_language) {
-      i18n.changeLanguage(publicBulletin.profile_language);
+    let cancelled = false;
+    setIsLoading(true);
+    setError('');
+
+    if (!slug) {
+      setPublicBulletin(null);
+      setIsLoading(false);
+      return;
     }
-  }, [publicBulletin?.profile_language, i18n]);
+
+    getPublicBulletinBySlug(slug)
+      .then((data) => {
+        if (cancelled) return;
+        setPublicBulletin(data);
+        setIsLoading(false);
+        void loadPublicLocale(data?.profile_language || 'en');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setPublicBulletin(null);
+        setError(err instanceof Error ? err.message : 'Bulletin not found');
+        setIsLoading(false);
+        void loadPublicLocale('en');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="max-w-4xl mx-auto">
-          <SkeletonBulletin />
+        <div className="max-w-4xl mx-auto space-y-4 pt-8">
+          <div className="h-10 bg-white/70 rounded-md animate-pulse" />
+          <div className="h-64 bg-white/70 rounded-xl animate-pulse" />
+          <div className="h-24 bg-white/70 rounded-xl animate-pulse" />
         </div>
       </div>
     );
   }
 
-  // Extract unit_type from the profile for terminology
   const profileUnitType = publicBulletin?.profile_unit_type as 'ward' | 'branch' | undefined;
 
   const bulletinData = publicBulletin ? {
@@ -128,7 +117,7 @@ export default function PublicBulletinPage() {
     meetingType: publicBulletin.meeting_type || '',
     theme: publicBulletin.theme || '',
     imageId: publicBulletin.imageId || 'none',
-    imageUrl: publicBulletin.imageUrl, // Include the direct URL for custom images
+    imageUrl: publicBulletin.imageUrl,
     imagePosition: (() => {
       const pos = publicBulletin.imagePosition;
       if (!pos) return { x: 50, y: 50 };
@@ -166,8 +155,6 @@ export default function PublicBulletinPage() {
     serviceMissionaries: publicBulletin.serviceMissionaries || []
   } : null;
 
-
-
   return (
     <>
       <DynamicMetaTags
@@ -182,8 +169,8 @@ export default function PublicBulletinPage() {
       <PublicBulletinView
         bulletinData={bulletinData}
         loading={isLoading}
-        error={error ? (error as Error).message || 'Bulletin not found' : ''}
-        onBackToEditor={() => navigate('/')}
+        error={error || ''}
+        onBackToEditor={() => { window.location.href = '/'; }}
         unitTypeOverride={profileUnitType}
       />
     </>
