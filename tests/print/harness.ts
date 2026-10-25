@@ -21,7 +21,11 @@ const FIXTURES = [
   'font-extra-large',
 ];
 
-const BROWSERS: BrowserType[] = ['chromium', 'firefox', 'webkit'];
+// Default to Chromium only for speed. Set BROWSERS env var to test others.
+// Examples: BROWSERS=all, BROWSERS=chromium,firefox
+const BROWSERS: BrowserType[] = process.env.BROWSERS === 'all' 
+  ? ['chromium', 'firefox', 'webkit']
+  : (process.env.BROWSERS?.split(',') as BrowserType[] | undefined) || ['chromium'];
 const PAGE_SIZES: PageSize[] = ['letter']; // Add 'a4' if needed
 
 interface TestSuite {

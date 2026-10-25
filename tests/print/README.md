@@ -151,7 +151,12 @@ Based on the bishop's report, this harness specifically validates:
 ## Troubleshooting
 
 ### "No QR code found"
-The simple HTML renderer in `render.ts` uses placeholders for QR codes. For full QR testing, point the harness at a running dev server.
+The simple HTML renderer in `render.ts` uses placeholders for QR codes. For full QR testing:
+1. Start the dev server: `npm run dev` (from project root)
+2. Update `render.ts` to navigate to `http://localhost:5173/` with fixture data injected
+3. Or use the actual React component by building it as a standalone test harness
+
+The current simplified renderer validates layout and structure but not actual QR code generation.
 
 ### "Playwright not installed"
 Run `npx playwright install` to download browser binaries.
