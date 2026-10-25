@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font scaling for on-screen print preview */
+.print-layout[data-font-scale="1"] {
+  font-size: 100%;
+}
+.print-layout[data-font-scale="1.4"] {
+  font-size: 140%;
+}
+.print-layout[data-font-scale="1.8"] {
+  font-size: 180%;
+}
+
 /* ============================================================
    PRINT STYLES
    When the browser prints, hide everything except the dedicated
@@ -30,6 +41,17 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* Scale root font-size based on printFontScale for rem-based Tailwind classes */
+  html:has(.print-layout[data-font-scale="1"]) {
+    font-size: 16px !important; /* Normal: 100% */
+  }
+  html:has(.print-layout[data-font-scale="1.4"]) {
+    font-size: 22.4px !important; /* Large: 140% */
+  }
+  html:has(.print-layout[data-font-scale="1.8"]) {
+    font-size: 28.8px !important; /* Extra Large: 180% */
+  }
 
   /* Hide everything by default */
   body > * {
@@ -51,6 +73,17 @@
 
   .print-source-portal .print-layout {
     position: static !important;
+  }
+  
+  /* Scale all rem-based sizes by fontScale data attribute in print */
+  .print-source-portal .print-layout[data-font-scale="1"] {
+    font-size: 16px !important; /* Normal: 100% = 11-12pt */
+  }
+  .print-source-portal .print-layout[data-font-scale="1.4"] {
+    font-size: 22.4px !important; /* Large: 140% = 14-16pt */
+  }
+  .print-source-portal .print-layout[data-font-scale="1.8"] {
+    font-size: 28.8px !important; /* Extra Large: 180% = 16-20pt */
   }
 
   .print-source-portal .print-page {

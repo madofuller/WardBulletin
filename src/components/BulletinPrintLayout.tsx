@@ -488,10 +488,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     <div
       ref={ref}
       className="print-layout font-sans"
+      data-font-scale={fontScale.toString()}
       style={{
         // Use system fonts that render consistently across platforms and printers
         fontFamily: selectedTheme ? selectedTheme.fontFamily : '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        fontSize: `${fontScale * 100}%`
+        // fontSize handled by data-font-scale attribute in print CSS
       }}
     >
       {hasOverflow && (
