@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx harness-real.ts",
-    "test:old": "tsx harness.ts"
+    "test": "tsx complete-matrix.ts"
   },
   "dependencies": {
     "jsqr": "^1.4.0",

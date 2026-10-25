@@ -24,9 +24,10 @@ yarn-error.log*
 
 dist/
 
-# Print test results (keep only summaries)
+# Print test results (keep comparison + committed artifacts)
 tests/print/results/*/
 !tests/print/results/COMPARISON.md
 !tests/print/results/SUMMARY.md
 !tests/print/results/FINAL_RESULTS.md
 !tests/print/results/artifacts/
+tests/print/output/

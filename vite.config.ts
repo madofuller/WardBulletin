@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command, mode }) => {
-  // For print-test build, stub out Supabase
+export default defineConfig(() => {
   const isTest = process.env.VITE_PRINT_TEST === 'true';
   const stubPath = path.resolve(__dirname, 'src/lib/supabase.test-stub.ts');
 
@@ -28,21 +27,21 @@ export default defineConfig(({ command, mode }) => {
       return null;
     },
   };
-  
+
   return {
     plugins: [react(), stubSupabasePlugin],
     test: {
       exclude: ['node_modules', '.claude', 'dist', 'e2e/**'],
     },
     resolve: {
-      alias: isTest ? {
-        // Stub Supabase for print tests
-        // Match the import paths used in the codebase
-        '@/lib/supabase': stubPath,
-        './supabase': stubPath,
-        './lib/supabase': stubPath,
-        '../lib/supabase': stubPath,
-      } : {},
+      alias: isTest
+        ? {
+            '@/lib/supabase': stubPath,
+            './supabase': stubPath,
+            './lib/supabase': stubPath,
+            '../lib/supabase': stubPath,
+          }
+        : {},
     },
     optimizeDeps: {
       exclude: ['lucide-react'],
@@ -66,9 +65,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     server: isTest
-      ? {
-          hmr: false,
-        }
+      ? { hmr: false }
       : {
           hmr: {
             clientPort: 5173,

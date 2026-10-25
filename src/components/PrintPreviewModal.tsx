@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { QrCode, Type, Maximize2, Printer, Download, X } from 'lucide-react';
+import { QrCode, Type, Maximize2, Printer, Download, X, BookOpen } from 'lucide-react';
 import BulletinPrintLayout from './BulletinPrintLayout';
 import { BulletinData } from '../types/bulletin';
+import { planPrintLayout, printModeFromScale } from '../lib/printPagination';
 
 const FONT_SCALE_OPTIONS = [
   { value: 1, labelKey: 'printPreview.fontSizeNormal' },
@@ -41,6 +42,20 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
   const currentScale = typeof bulletinData.printFontScale === 'number' && bulletinData.printFontScale >= 1 && bulletinData.printFontScale <= 1.5
     ? bulletinData.printFontScale
     : 1;
+  const outputMode = bulletinData.printOutputMode === 'booklet' ? 'booklet' : 'single';
+  const omittedPlan = useMemo(() => {
+    const ui = currentScale;
+    const fontScale = ui >= 1.25 ? 1.8 : ui >= 1.15 ? 1.4 : 1;
+    return planPrintLayout({
+      mode: printModeFromScale(fontScale),
+      outputMode,
+      announcements: (bulletinData.announcements || []).filter((a) => !a.hideOnPrint),
+      programBlocks: [],
+      leadershipCount: (bulletinData.wardLeadership || []).filter((e) => e?.name || e?.phone).length,
+      missionaryCount: (bulletinData.missionaries || []).length,
+      hasQR: bulletinData.showQRCodeOnPrint !== false,
+    });
+  }, [bulletinData.announcements, bulletinData.wardLeadership, bulletinData.missionaries, bulletinData.showQRCodeOnPrint, currentScale, outputMode]);
 
   const toggleQRCode = () => {
     onUpdateData({
@@ -55,6 +70,13 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
 
   const toggleTightMargins = () => {
     onUpdateData({ ...bulletinData, printTightMargins: !bulletinData.printTightMargins });
+  };
+
+  const toggleBooklet = () => {
+    onUpdateData({
+      ...bulletinData,
+      printOutputMode: outputMode === 'booklet' ? 'single' : 'booklet',
+    });
   };
 
   const handlePrint = () => {
@@ -167,15 +189,42 @@ export default function PrintPreviewModal({ isOpen, onClose, bulletinData, onUpd
               <span className="hidden sm:inline">{bulletinData.showQRCodeOnPrint !== false ? t('printPreview.qrCodeOn') : t('printPreview.qrCodeOff')}</span>
               <span className="sm:hidden">{bulletinData.showQRCodeOnPrint !== false ? t('printPreview.qrOnShort') : t('printPreview.qrOffShort')}</span>
             </button>
+
+            {(omittedPlan.omittedAnnouncements.length > 0 || outputMode === 'booklet') && (
+              <button
+                onClick={toggleBooklet}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  outputMode === 'booklet'
+                    ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={t('printPreview.bookletModeTooltip')}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('printPreview.bookletMode')}</span>
+                {outputMode === 'booklet' && <span className="text-blue-600">&#10003;</span>}
+              </button>
+            )}
           </div>
         </div>
+
+        {omittedPlan.omittedAnnouncements.length > 0 && (
+          <div className="mx-4 sm:mx-5 mt-3 px-3 py-2 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-950 flex-shrink-0">
+            <p className="font-semibold">{t('printPreview.omittedAnnouncementsWarning')}</p>
+            <ul className="list-disc pl-5 mt-1">
+              {omittedPlan.omittedAnnouncements.map((item) => (
+                <li key={item.id}>{item.title}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Duplex printing hint */}
         <div className="mx-4 sm:mx-5 mt-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-sm text-blue-800 flex-shrink-0">
           <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
           </svg>
-          <span>{t('printPreview.duplexHint')}</span>
+          <span>{outputMode === 'booklet' ? t('printPreview.bookletHint') : t('printPreview.duplexHint')}</span>
         </div>
 
         {/* Preview area - wrapped in .print-preview so Tailwind print: utilities are replicated */}

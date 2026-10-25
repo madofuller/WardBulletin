@@ -26,8 +26,11 @@ const SessionContext = createContext<SessionContextValue>({
 });
 
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // Check for test session override (for automated testing with QR codes)
+  const testSession = typeof window !== 'undefined' ? (window as any).__TEST_SESSION__ : null;
+  
+  const [session, setSession] = useState<Session | null>(testSession?.user ? { user: testSession.user } as Session : null);
+  const [profile, setProfile] = useState<UserProfile | null>(testSession?.profile || null);
   const [profileRefreshTrigger, setProfileRefreshTrigger] = useState(0);
 
   // Preserve recovery hash as early as possible (Supabase may strip it when processing the token)
@@ -68,6 +71,11 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Fetch profile whenever we have a valid session or when refresh is triggered
   useEffect(() => {
+    // Skip profile loading if test session is active
+    if (testSession?.profile) {
+      return;
+    }
+    
     const loadProfile = async () => {
       if (!session?.user || !supabase) {
         setProfile(null);
