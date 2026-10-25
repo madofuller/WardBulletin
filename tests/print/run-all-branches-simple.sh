@@ -8,7 +8,7 @@ ROOT="/workspace"
 RESULTS="$ROOT/tests/print/results"
 PORT=5180
 HARNESS_BRANCH="$(git -C "$ROOT" branch --show-current)"
-SOURCE_DIRS=(src/components src/index.css src/lib src/pages src/i18n src/contexts src/hooks src/data src/types)
+SOURCE_DIRS=(src/components src/index.css src/lib src/pages src/i18n src/hooks src/data src/types)
 HARNESS_FILES=(
   src/lib/supabase.test-stub.ts
   src/print-test-entry.tsx
@@ -129,9 +129,9 @@ for spec in "${BRANCHES[@]}"; do
     fi
   done
   echo "  checkout ${existing[*]}"
-  git checkout "origin/$BRANCH" -- "${existing[@]}" || {
-    echo "  checkout of some paths failed; continuing with what landed"
-  }
+  for d in "${existing[@]}"; do
+    git checkout "origin/$BRANCH" -- "$d" || echo "  skip $d"
+  done
 
   git checkout "$HARNESS_BRANCH" -- "${HARNESS_FILES[@]}"
   # Keep our QR-enabled fixtures even if a branch also ships public fixtures.

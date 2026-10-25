@@ -7,487 +7,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Normal/page-1.png"
-      },
-      "qr_clean": {
         "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": true,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": true,
-        "value": "l9 c15 a15 p12"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "30 fields"
-      },
-      "clipping": {
-        "pass": true,
-        "value": "None"
-      },
-      "pages": {
-        "pass": true,
-        "value": "2"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 15,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "typical",
-    "mode": "Large",
-    "scale": 1.15,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Large/page-1.png"
-      },
-      "qr_clean": {
-        "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": true,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": false,
-        "value": "leadership 9.0pt"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "30 fields"
-      },
-      "clipping": {
-        "pass": true,
-        "value": "None"
-      },
-      "pages": {
-        "pass": true,
-        "value": "2"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 17,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "typical",
-    "mode": "Extra Large",
-    "scale": 1.25,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_typical_Extra-Large/page-1.png"
-      },
-      "qr_clean": {
-        "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": false,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, leadership 9.0pt"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "30 fields"
-      },
-      "clipping": {
-        "pass": true,
-        "value": "None"
-      },
-      "pages": {
-        "pass": true,
-        "value": "2"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      },
-      "mode_scale": {
-        "pass": false,
-        "value": "1.00×"
-      },
-      "region_scale": {
-        "pass": false,
-        "value": "program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 18.5,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "special-musical-number",
-    "mode": "Normal",
-    "scale": 1,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "-0.23in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Normal/page-1.png"
-      },
-      "qr_clean": {
-        "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": true,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": true,
-        "value": "l9 c15 a12 p12"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "21 fields"
-      },
-      "clipping": {
-        "pass": false,
-        "value": "Yes"
-      },
-      "pages": {
-        "pass": false,
-        "value": "3"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "special-musical-number",
-    "mode": "Large",
-    "scale": 1.15,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "-0.23in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Large/page-1.png"
-      },
-      "qr_clean": {
-        "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": true,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": false,
-        "value": "leadership 9.0pt"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "21 fields"
-      },
-      "clipping": {
-        "pass": false,
-        "value": "Yes"
-      },
-      "pages": {
-        "pass": false,
-        "value": "3"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "special-musical-number",
-    "mode": "Extra Large",
-    "scale": 1.25,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "-0.23in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_special-musical-number_Extra-Large/page-1.png"
-      },
-      "qr_clean": {
-        "pass": true,
-        "value": "Found"
-      },
-      "qr_degraded": {
-        "pass": true,
-        "value": "Pass"
-      },
-      "qr_margin": {
-        "pass": true,
-        "value": "Inside"
-      },
-      "body_pt": {
-        "pass": false,
-        "value": "12.0pt"
-      },
-      "heading_pt": {
-        "pass": true,
-        "value": "27.0pt"
-      },
-      "heading_gt_body": {
-        "pass": true,
-        "value": "27.0>12.0"
-      },
-      "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 12.0pt, leadership 9.0pt"
-      },
-      "completeness": {
-        "pass": true,
-        "value": "21 fields"
-      },
-      "clipping": {
-        "pass": false,
-        "value": "Yes"
-      },
-      "pages": {
-        "pass": false,
-        "value": "3"
-      },
-      "fold_sim": {
-        "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
-      },
-      "no_continued": {
-        "pass": true,
-        "value": "None"
-      },
-      "overlap": {
-        "pass": true,
-        "value": "None"
-      },
-      "fold": {
-        "pass": true,
-        "value": "None"
-      },
-      "mode_scale": {
-        "pass": false,
-        "value": "1.00×"
-      },
-      "region_scale": {
-        "pass": false,
-        "value": "program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL"
-      }
-    },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
-    "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
-    }
-  },
-  {
-    "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "many-announcements",
-    "mode": "Normal",
-    "scale": 1,
-    "output": "single",
-    "checks": {
-      "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Normal/page-1.png"
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -507,19 +28,19 @@
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "22.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>8.0"
+        "value": "22.0>8.0"
       },
       "region_body": {
         "pass": true,
-        "value": "c15 a8 p12"
+        "value": "l8 c10 a8 p8"
       },
       "completeness": {
-        "pass": false,
-        "value": "order"
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -548,23 +69,22 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 12,
-      "cover": 15,
+      "leadership": 8,
+      "cover": 10,
       "announcements": 8,
-      "program": 12
+      "program": 8
     }
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "many-announcements",
+    "fixture": "typical",
     "mode": "Large",
     "scale": 1.15,
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -579,24 +99,24 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "9.5pt"
+        "pass": true,
+        "value": "11.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "28.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>9.5"
+        "value": "28.0>11.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "announcements 9.5pt"
+        "pass": true,
+        "value": "l11 c12 a11 p11"
       },
       "completeness": {
-        "pass": false,
-        "value": "missing Primary Presentation Practice | Primary children will practice for the s"
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -625,23 +145,22 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 12,
-      "cover": 15,
-      "announcements": 9.5,
-      "program": 12
+      "leadership": 11,
+      "cover": 12,
+      "announcements": 11,
+      "program": 11
     }
   },
   {
     "branch": "cursor-print-layout-fixes-f7ea",
-    "fixture": "many-announcements",
+    "fixture": "typical",
     "mode": "Extra Large",
     "scale": 1.25,
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -656,24 +175,24 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "10.5pt"
+        "pass": true,
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "36.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>10.5"
+        "value": "36.0>14.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 10.5pt"
+        "pass": true,
+        "value": "l14 c14 a14 p14"
       },
       "completeness": {
-        "pass": false,
-        "value": "missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help"
+        "pass": true,
+        "value": "30 fields"
       },
       "clipping": {
         "pass": true,
@@ -700,20 +219,492 @@
         "value": "None"
       },
       "mode_scale": {
-        "pass": false,
-        "value": "1.31×"
+        "pass": true,
+        "value": "1.75×"
       },
       "region_scale": {
-        "pass": false,
-        "value": "program N≥L, program L≥XL, program N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL"
+        "pass": true,
+        "value": "N<L<XL"
       }
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 12,
-      "cover": 15,
-      "announcements": 10.5,
-      "program": 12
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "special-musical-number",
+    "mode": "Normal",
+    "scale": 1,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "22.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "22.0>8.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l8 c10 a8 p8"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
+    "regionFonts": {
+      "leadership": 8,
+      "cover": 10,
+      "announcements": 8,
+      "program": 8
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "special-musical-number",
+    "mode": "Large",
+    "scale": 1.15,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "11.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "28.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "28.0>11.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l11 c12 a11 p11"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
+    "regionFonts": {
+      "leadership": 11,
+      "cover": 12,
+      "announcements": 11,
+      "program": 11
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "special-musical-number",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "14.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "l14 c14 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "21 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.75×"
+      },
+      "region_scale": {
+        "pass": true,
+        "value": "N<L<XL"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
+    "regionFonts": {
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "many-announcements",
+    "mode": "Normal",
+    "scale": 1,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "8.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "22.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "22.0>8.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c10 a8 p8"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "39 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L",
+    "regionFonts": {
+      "leadership": 0,
+      "cover": 10,
+      "announcements": 8,
+      "program": 8
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "many-announcements",
+    "mode": "Large",
+    "scale": 1.15,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "11.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "28.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "28.0>11.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c12 a11 p11"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "29 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L",
+    "regionFonts": {
+      "leadership": 0,
+      "cover": 12,
+      "announcements": 11,
+      "program": 11
+    }
+  },
+  {
+    "branch": "cursor-print-layout-fixes-f7ea",
+    "fixture": "many-announcements",
+    "mode": "Extra Large",
+    "scale": 1.25,
+    "output": "single",
+    "checks": {
+      "margin": {
+        "pass": true,
+        "value": "0.30in"
+      },
+      "qr_clean": {
+        "pass": true,
+        "value": "Found"
+      },
+      "qr_degraded": {
+        "pass": true,
+        "value": "Pass"
+      },
+      "qr_margin": {
+        "pass": true,
+        "value": "Inside"
+      },
+      "body_pt": {
+        "pass": true,
+        "value": "14.0pt"
+      },
+      "heading_pt": {
+        "pass": true,
+        "value": "36.0pt"
+      },
+      "heading_gt_body": {
+        "pass": true,
+        "value": "36.0>14.0"
+      },
+      "region_body": {
+        "pass": true,
+        "value": "c14 a14 p14"
+      },
+      "completeness": {
+        "pass": true,
+        "value": "25 fields"
+      },
+      "clipping": {
+        "pass": true,
+        "value": "None"
+      },
+      "pages": {
+        "pass": true,
+        "value": "2"
+      },
+      "fold_sim": {
+        "pass": true,
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L"
+      },
+      "no_continued": {
+        "pass": true,
+        "value": "None"
+      },
+      "overlap": {
+        "pass": true,
+        "value": "None"
+      },
+      "fold": {
+        "pass": true,
+        "value": "None"
+      },
+      "mode_scale": {
+        "pass": true,
+        "value": "1.75×"
+      },
+      "region_scale": {
+        "pass": true,
+        "value": "N<L<XL"
+      }
+    },
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:announcements/p1L",
+    "regionFonts": {
+      "leadership": 0,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
     }
   },
   {
@@ -724,9 +715,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.01in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -742,19 +732,19 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "12.0pt"
+        "value": "8.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "22.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>12.0"
+        "value": "22.0>8.0"
       },
       "region_body": {
         "pass": true,
-        "value": "l9 c15 a12 p12"
+        "value": "l8 c10 a8 p8"
       },
       "completeness": {
         "pass": true,
@@ -765,8 +755,8 @@
         "value": "None"
       },
       "pages": {
-        "pass": false,
-        "value": "3"
+        "pass": true,
+        "value": "2"
       },
       "fold_sim": {
         "pass": true,
@@ -787,10 +777,10 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
+      "leadership": 8,
+      "cover": 10,
+      "announcements": 8,
+      "program": 8
     }
   },
   {
@@ -801,9 +791,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.01in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -819,19 +808,19 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "12.0pt"
+        "value": "11.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "28.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>12.0"
+        "value": "28.0>11.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "leadership 9.0pt"
+        "pass": true,
+        "value": "l11 c12 a11 p11"
       },
       "completeness": {
         "pass": true,
@@ -842,8 +831,8 @@
         "value": "None"
       },
       "pages": {
-        "pass": false,
-        "value": "3"
+        "pass": true,
+        "value": "2"
       },
       "fold_sim": {
         "pass": true,
@@ -864,10 +853,10 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
+      "leadership": 11,
+      "cover": 12,
+      "announcements": 11,
+      "program": 11
     }
   },
   {
@@ -878,9 +867,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.01in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_long-names_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -895,20 +883,20 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "12.0pt"
+        "pass": true,
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "36.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>12.0"
+        "value": "36.0>14.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 12.0pt, leadership 9.0pt"
+        "pass": true,
+        "value": "l14 c14 a14 p14"
       },
       "completeness": {
         "pass": true,
@@ -919,8 +907,8 @@
         "value": "None"
       },
       "pages": {
-        "pass": false,
-        "value": "3"
+        "pass": true,
+        "value": "2"
       },
       "fold_sim": {
         "pass": true,
@@ -939,20 +927,20 @@
         "value": "None"
       },
       "mode_scale": {
-        "pass": false,
-        "value": "1.00×"
+        "pass": true,
+        "value": "1.75×"
       },
       "region_scale": {
-        "pass": false,
-        "value": "program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL"
+        "pass": true,
+        "value": "N<L<XL"
       }
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 15,
-      "announcements": 12,
-      "program": 12
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
     }
   },
   {
@@ -963,9 +951,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.34in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_bishops-exact-case_Normal/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -981,27 +968,27 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "14.5pt"
+        "value": "8.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "26.5pt"
+        "value": "22.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "26.5>14.5"
+        "value": "22.0>8.0"
       },
       "region_body": {
         "pass": true,
-        "value": "l9 c15 a12 p12"
+        "value": "l8 c10 a8 p8"
       },
       "completeness": {
         "pass": true,
         "value": "34 fields"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
@@ -1026,10 +1013,10 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 14.5,
-      "announcements": 12,
-      "program": 12
+      "leadership": 8,
+      "cover": 10,
+      "announcements": 8,
+      "program": 8
     }
   },
   {
@@ -1040,9 +1027,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.34in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_bishops-exact-case_Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -1058,27 +1044,27 @@
       },
       "body_pt": {
         "pass": true,
-        "value": "12.0pt"
+        "value": "11.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "26.5pt"
+        "value": "28.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "26.5>12.0"
+        "value": "28.0>11.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "leadership 9.0pt"
+        "pass": true,
+        "value": "l11 c12 a11 p11"
       },
       "completeness": {
         "pass": true,
         "value": "34 fields"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
@@ -1103,10 +1089,10 @@
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 14.5,
-      "announcements": 12,
-      "program": 12
+      "leadership": 11,
+      "cover": 12,
+      "announcements": 11,
+      "program": 11
     }
   },
   {
@@ -1117,9 +1103,8 @@
     "output": "single",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.34in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_bishops-exact-case_Extra-Large/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -1134,28 +1119,28 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "12.0pt"
+        "pass": true,
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "26.5pt"
+        "value": "36.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "26.5>12.0"
+        "value": "36.0>14.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 12.0pt, leadership 9.0pt"
+        "pass": true,
+        "value": "l14 c14 a14 p14"
       },
       "completeness": {
-        "pass": false,
-        "value": "order"
+        "pass": true,
+        "value": "34 fields"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
         "pass": true,
@@ -1178,20 +1163,20 @@
         "value": "None"
       },
       "mode_scale": {
-        "pass": false,
-        "value": "0.83×"
+        "pass": true,
+        "value": "1.75×"
       },
       "region_scale": {
-        "pass": false,
-        "value": "program N≥L, program L≥XL, program N≥XL, announcements N≥L, announcements L≥XL, announcements N≥XL, leadership N≥L, leadership L≥XL, leadership N≥XL, cover N≥L, cover L≥XL, cover N≥XL"
+        "pass": true,
+        "value": "N<L<XL"
       }
     },
     "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p2R 4:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 14.5,
-      "announcements": 12,
-      "program": 12
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
     }
   },
   {
@@ -1202,9 +1187,8 @@
     "output": "booklet",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "0.04in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_many-announcements_Extra-Large_booklet/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -1219,36 +1203,36 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "10.5pt"
+        "pass": true,
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "27.0pt"
+        "value": "36.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "27.0>10.5"
+        "value": "36.0>14.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 10.5pt"
+        "pass": true,
+        "value": "c14 a14 p14"
       },
       "completeness": {
-        "pass": false,
-        "value": "missing Elders Quorum Service Opportunity | Brothers, we need volunteers to help"
+        "pass": true,
+        "value": "43 fields"
       },
       "clipping": {
         "pass": true,
         "value": "None"
       },
       "pages": {
-        "pass": false,
-        "value": "2"
+        "pass": true,
+        "value": "4"
       },
       "fold_sim": {
         "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L"
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p3R 4:announcements/p4L 5:announcements/p4R 6:announcements/p3L 7:announcements/p2R 8:leadership/p1L"
       },
       "no_continued": {
         "pass": true,
@@ -1263,12 +1247,12 @@
         "value": "None"
       }
     },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L",
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p3R 4:announcements/p4L 5:announcements/p4R 6:announcements/p3L 7:announcements/p2R 8:leadership/p1L",
     "regionFonts": {
-      "leadership": 12,
-      "cover": 15,
-      "announcements": 10.5,
-      "program": 12
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
     }
   },
   {
@@ -1279,9 +1263,8 @@
     "output": "booklet",
     "checks": {
       "margin": {
-        "pass": false,
-        "value": "-0.34in",
-        "pngPath": "/workspace/tests/print/results/cursor-print-layout-fixes-f7ea_bishops-exact-case_Extra-Large_booklet/page-1.png"
+        "pass": true,
+        "value": "0.30in"
       },
       "qr_clean": {
         "pass": true,
@@ -1296,36 +1279,36 @@
         "value": "Inside"
       },
       "body_pt": {
-        "pass": false,
-        "value": "12.0pt"
+        "pass": true,
+        "value": "14.0pt"
       },
       "heading_pt": {
         "pass": true,
-        "value": "26.5pt"
+        "value": "36.0pt"
       },
       "heading_gt_body": {
         "pass": true,
-        "value": "26.5>12.0"
+        "value": "36.0>14.0"
       },
       "region_body": {
-        "pass": false,
-        "value": "program 12.0pt, announcements 12.0pt, leadership 9.0pt"
+        "pass": true,
+        "value": "l14 c14 a14 p14"
       },
       "completeness": {
-        "pass": false,
-        "value": "order"
+        "pass": true,
+        "value": "34 fields"
       },
       "clipping": {
-        "pass": false,
-        "value": "Yes"
+        "pass": true,
+        "value": "None"
       },
       "pages": {
-        "pass": false,
-        "value": "2"
+        "pass": true,
+        "value": "4"
       },
       "fold_sim": {
         "pass": true,
-        "value": "1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L"
+        "value": "1:cover/p1R 2:announcements/p2L 3:program/p3R 4:announcements/p4L 5:announcements/p4R 6:announcements/p3L 7:announcements/p2R 8:leadership/p1L"
       },
       "no_continued": {
         "pass": true,
@@ -1340,12 +1323,12 @@
         "value": "None"
       }
     },
-    "panelMap": "1:cover/p1R 2:announcements/p2L 3:empty/p3R 4:empty/p4L 5:empty/p4R 6:empty/p3L 7:program/p2R 8:leadership/p1L",
+    "panelMap": "1:cover/p1R 2:announcements/p2L 3:program/p3R 4:announcements/p4L 5:announcements/p4R 6:announcements/p3L 7:announcements/p2R 8:leadership/p1L",
     "regionFonts": {
-      "leadership": 9,
-      "cover": 14.5,
-      "announcements": 12,
-      "program": 12
+      "leadership": 14,
+      "cover": 14,
+      "announcements": 14,
+      "program": 14
     }
   }
 ]
