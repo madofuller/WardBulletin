@@ -96,7 +96,16 @@
       ]
     },
     {
-      "source": "/(.*\\.(ico|png|svg|jpg|jpeg|webp|woff2))",
+      "source": "/:file.:ext(ico|png|svg|jpg|jpeg|webp|woff2)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/:path*/:file.:ext(ico|png|svg|jpg|jpeg|webp|woff2)",
       "headers": [
         {
           "key": "Cache-Control",
