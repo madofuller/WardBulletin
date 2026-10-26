@@ -1421,17 +1421,110 @@ export const bulletinService = {
   },
 
   async getLatestBulletinByProfileSlug(profileSlug: string) {
-    // CRITICAL: Safari caches Supabase requests aggressively even with cache-control headers
-    // Solution: Add a cache-busting timestamp to make Safari think it's a new request
-    // This is added as a comment filter that doesn't affect the query but changes the URL
-    const cacheBuster = Date.now().toString();
+    // OPTIMIZED: Try single RPC call first, fall back to 3-query path on ANY failure
+    // This allows deployment before migration is applied
+    try {
+      const { data, error } = await supabase
+        .rpc('get_public_bulletin_by_slug', { profile_slug_param: profileSlug });
 
+      // On ANY RPC failure (PGRST202, 404, network error, malformed payload), fall back
+      if (error) {
+        if (!(globalThis as any).__rpcFallbackLogged) {
+          (globalThis as any).__rpcFallbackLogged = true;
+          console.warn('[RPC fallback] RPC error, using legacy path:', error.code || error.message);
+        }
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+      }
+
+      // If data is null/undefined/malformed, fall back
+      if (!data || typeof data !== 'object') {
+        console.warn('[RPC fallback] Malformed RPC response, using legacy path');
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+      }
+
+      // Check for error response from RPC
+      if (data.error) {
+        // Only return null for true "not found" errors (skip fallback)
+        if (data.error === 'Bulletin not found' || data.error === 'No bulletin published') {
+          return null;
+        }
+        // Other errors: fall back
+        console.warn('[RPC fallback] RPC returned error, using legacy path:', data.error);
+        return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+      }
+
+      // Extract tokens from the RPC result
+      const tokens = data.tokens || {};
+      const userId = data.created_by;
+
+      // Parse tokens (RPC returns them as JSON strings)
+      const image = tokens.image || null;
+      const imagePosition = tokens.imagePosition;
+      const imageOpacity = tokens.imageOpacity;
+      
+      // Handle custom image URL
+      const storedImageUrl = tokens.imageUrl || null;
+      let imageUrl: string | null = storedImageUrl || null;
+      if (!imageUrl && image && image.startsWith('custom-')) {
+        try {
+          const filePath = `${userId}/${image}.jpg`;
+          const { data: urlData } = supabase.storage
+            .from('bulletin-images')
+            .getPublicUrl(filePath);
+          imageUrl = urlData.publicUrl;
+        } catch {
+          // Silently handle custom image fetch errors
+        }
+      }
+
+      // Build result matching existing structure
+      const result = {
+        id: data.id,
+        user_id: data.created_by,
+        profile_slug: data.profile_slug,
+        profile_unit_type: data.profile_unit_type || 'ward',
+        profile_language: data.profile_language || 'en',
+        ward_name: tokens.ward_name || '',
+        date: data.meeting_date,
+        meeting_type: data.meeting_type,
+        theme: tokens.theme || '',
+        userTheme: tokens.userTheme || '',
+        imageId: image || 'none',
+        imageUrl: imageUrl,
+        imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
+        imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
+        bishopric_message: tokens.bishopric || '',
+        announcements: tokens.announcements ? JSON.parse(tokens.announcements) : [],
+        meetings: tokens.meetings ? JSON.parse(tokens.meetings) : [],
+        special_events: tokens.events ? JSON.parse(tokens.events) : [],
+        agenda: tokens.agenda ? JSON.parse(tokens.agenda) : [],
+        prayers: tokens.prayers ? JSON.parse(tokens.prayers) : {},
+        music_program: tokens.music ? JSON.parse(tokens.music) : {},
+        leadership: tokens.leadership ? JSON.parse(tokens.leadership) : {},
+        wardLeadership: tokens.wardLeadership ? JSON.parse(tokens.wardLeadership) : [],
+        missionaries: tokens.missionaries ? JSON.parse(tokens.missionaries) : [],
+        wardMissionaries: tokens.wardMissionaries ? JSON.parse(tokens.wardMissionaries) : [],
+        serviceMissionaries: tokens.serviceMissionaries ? JSON.parse(tokens.serviceMissionaries) : [],
+        created_at: data.created_at,
+        updated_at: data.created_at
+      };
+
+      return result;
+    } catch (err: any) {
+      // On ANY unexpected error (network, timeout, parse, etc), fall back to legacy
+      console.warn('[RPC fallback] Exception during RPC, using legacy path:', err);
+      return this.getLatestBulletinByProfileSlugLegacy(profileSlug);
+    }
+  },
+
+  // Legacy 3-query path (kept as fallback for safe deployment)
+  async getLatestBulletinByProfileSlugLegacy(profileSlug: string) {
     // First get the user by profile_slug and their active bulletin
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('id, active_bulletin_id, unit_type, language')
       .eq('profile_slug', profileSlug)
-      .maybeSingle(); // Use maybeSingle to handle not found case properly
+      .maybeSingle();
 
     if (userError || !userData) {
       throw new Error('Bulletin not found');
@@ -1440,7 +1533,6 @@ export const bulletinService = {
     let bulletinId = userData.active_bulletin_id;
 
     // If no active bulletin is set, get their latest bulletin
-    // Include bulletins created by profile owner OR bulletins for this profile (e.g. by editors)
     if (!bulletinId) {
       const { data: latestBulletin, error: latestError } = await supabase
         .from('bulletins')
@@ -1451,7 +1543,7 @@ export const bulletinService = {
         .maybeSingle();
 
       if (latestError) throw latestError;
-      if (!latestBulletin) return null; // No bulletins found
+      if (!latestBulletin) return null;
 
       bulletinId = latestBulletin.id;
     }
@@ -1464,19 +1556,15 @@ export const bulletinService = {
       .single();
 
     if (error) {
-      // If bulletin not found, return null instead of throwing
       if (error.code === 'PGRST116') {
         return null;
       }
       throw error;
     }
 
-    // Get user ID to fetch tokens - MUST use bulletin creator, not profile owner!
-    // When an editor creates/edits a bulletin for a shared profile, tokens have created_by = editor
     const userId = data.created_by;
 
-    // Fetch bulletin data from tokens - Use batch fetch to avoid caching issues
-    // Build the list of token keys we need
+    // Fetch bulletin data from tokens
     const tokenKeys = [
       `bulletin-${data.slug}-ward_name`,
       `bulletin-${data.slug}-theme`,
@@ -1499,10 +1587,6 @@ export const bulletinService = {
       `bulletin-${data.slug}-imageOpacity`
     ];
 
-    // Fetch all tokens in a single query. Don't filter by created_by: legacy
-    // bulletins can have their content saved under a shared editor's id rather
-    // than the bulletin creator's. Fetch all visible rows and prefer the
-    // creator's row per key, falling back to editor-saved rows.
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
       .select('key, value, created_by')
@@ -1516,7 +1600,6 @@ export const bulletinService = {
       tokenRowsByKey.set(token.key, rows);
     });
 
-    // Create a map for quick lookup
     const tokenMap = new Map();
     tokenRowsByKey.forEach((rows, key) => {
       const row = pickTokenRow(rows, userId);
@@ -1545,7 +1628,6 @@ export const bulletinService = {
 
     const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
 
-    // Use the stored imageUrl token if available; fall back to constructing from userId
     const storedImageUrl = tokenMap.get(`bulletin-${data.slug}-imageUrl`) || null;
     let imageUrl: string | null = storedImageUrl || null;
     if (!imageUrl && image && image.startsWith('custom-')) {
@@ -1559,6 +1641,7 @@ export const bulletinService = {
         // Silently handle custom image fetch errors
       }
     }
+
     const result = {
       id: data.id,
       user_id: data.created_by,
@@ -1571,7 +1654,7 @@ export const bulletinService = {
       theme: theme || '',
       userTheme: userTheme || '',
       imageId: image || 'none',
-      imageUrl: imageUrl, // Include the actual URL for custom images
+      imageUrl: imageUrl,
       imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
       imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
       bishopric_message: bishopric || '',

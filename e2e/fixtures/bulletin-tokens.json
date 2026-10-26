@@ -1,0 +1,97 @@
+[
+  {
+    "key": "bulletin-test-ward-2024-ward_name",
+    "value": "Test Ward",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-theme",
+    "value": "Faith in Jesus Christ",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-userTheme",
+    "value": "",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-bishopric",
+    "value": "Welcome to our worship service today. We are grateful for your presence and pray that you will feel the Spirit.",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-announcements",
+    "value": "[{\"id\":\"1\",\"text\":\"Youth Conference: Next Saturday at 9am. All youth invited.\"},{\"id\":\"2\",\"text\":\"Temple trip scheduled for November 3rd. Sign up in the foyer.\"}]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-meetings",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-events",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-agenda",
+    "value": "[{\"type\":\"sacrament\",\"id\":\"sacrament-1\"},{\"type\":\"speaker\",\"id\":\"speaker-1\",\"name\":\"Sister Johnson\",\"topic\":\"Faith\"},{\"type\":\"speaker\",\"id\":\"speaker-2\",\"name\":\"Brother Smith\",\"topic\":\"Repentance\"}]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-prayers",
+    "value": "{\"opening\":\"Brother Anderson\",\"closing\":\"Sister Martinez\",\"invocation\":\"\",\"benediction\":\"\"}",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-music",
+    "value": "{\"openingHymn\":\"Hymn 2\",\"openingHymnNumber\":\"2\",\"openingHymnTitle\":\"The Spirit of God\",\"sacramentHymn\":\"Hymn 169\",\"sacramentHymnNumber\":\"169\",\"sacramentHymnTitle\":\"As Now We Take the Sacrament\",\"closingHymn\":\"Hymn 100\",\"closingHymnNumber\":\"100\",\"closingHymnTitle\":\"Nearer, My God, to Thee\"}",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-leadership",
+    "value": "{\"presiding\":\"Bishop Williams\",\"conducting\":\"Brother Davis\",\"chorister\":\"Sister Lee\",\"organist\":\"Brother Taylor\"}",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-wardLeadership",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-missionaries",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-wardMissionaries",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-serviceMissionaries",
+    "value": "[]",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-image",
+    "value": "none",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-imageUrl",
+    "value": "",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-imagePosition",
+    "value": "{\"x\":50,\"y\":50}",
+    "created_by": "user-123"
+  },
+  {
+    "key": "bulletin-test-ward-2024-imageOpacity",
+    "value": "40",
+    "created_by": "user-123"
+  }
+]
