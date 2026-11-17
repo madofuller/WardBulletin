@@ -439,6 +439,13 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const programContentRef = useRef<HTMLDivElement>(null);
   const [programNaturalHeight, setProgramNaturalHeight] = useState(0);
   const programScale = bodyPx / BASE_BODY_PX;
+  // A long program (e.g. several Christmas musical numbers) first gives up whitespace —
+  // row spacing, the gap under the date, panel padding — before any text shrinks. Text
+  // shrinking is shared by the whole bulletin, so whitespace is the cheaper thing to spend.
+  // Keyed to the program content so it resets (and re-measures) whenever the program changes.
+  const programKey = JSON.stringify([data.agenda, data.musicProgram, data.leadership, data.prayers, data.wardName, data.date, data.meetingType, fontScale, data.printTightMargins]);
+  const [programCompactKey, setProgramCompactKey] = useState<string | null>(null);
+  const programCompact = programCompactKey === programKey;
   useEffect(() => {
     const measure = () => {
       const panel = programPanelRef.current;
@@ -449,6 +456,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       const natural = content.offsetHeight;
       if (!available || !natural) return;
       setProgramNaturalHeight(natural);
+      // Doesn't fit at the chosen size: compact the spacing first, then measure again
+      if (!programCompact && natural * targetBodyPx / BASE_BODY_PX > available + 1) {
+        setProgramCompactKey(programKey);
+        return;
+      }
       // Largest body size at which the whole program fits the page height
       const cap = Math.min(targetBodyPx, BASE_BODY_PX * available / natural);
       setProgramCap(prev => Math.abs(prev - cap) < 0.05 ? prev : cap);
@@ -554,7 +566,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     leftPanel: tight ? 'pl-2 pr-8 pt-2 pb-0' : isLightContent ? 'pl-4 pr-6 pt-3 pb-0' : 'pl-3 pr-12 pt-3 pb-0',
     // Centered on the half-page: the page's safe margin only narrows the outer edge, so the
     // fold-side padding adds it back (0.3in = PRINT_SAFE_MARGIN's horizontal inset).
-    rightPanel: tight ? 'pl-[calc(0.3in+0.5rem)] pr-2 py-4' : 'pl-[calc(0.3in+1rem)] pr-4 py-6',
+    rightPanel: `${tight ? 'pl-[calc(0.3in+0.5rem)] pr-2' : 'pl-[calc(0.3in+1rem)] pr-4'} ${programCompact ? 'py-1' : tight ? 'py-4' : 'py-6'}`,
     announcementsGap: tight ? 'gap-2' : 'gap-4',
     announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
     sectionMb: tight ? 'mb-0.5' : 'mb-1'
@@ -1078,7 +1090,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             <>
               <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
               <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
-              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+              <p className={`italic text-lg ${programCompact ? 'mb-3' : 'mb-6'} print:!text-2xl print:!text-black`}>{formatDate(data.date, i18n.language)}</p>
             </>
           )}
 
@@ -1088,7 +1100,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </p>
           )}
 
-          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: `0 ${fontScale > 1 ? 0.1 : 0.4}em` }}>
+          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: `0 ${programCompact ? 0.15 : fontScale > 1 ? 0.1 : 0.4}em` }}>
             <tbody>
               <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />
               <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
