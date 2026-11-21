@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, LogOut, Save, FileText, Settings, MessageSquare, Users } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface UserMenuProps {
   user: any;
@@ -31,10 +30,10 @@ export default function UserMenu({
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    onSignOut();
+  // The parent signs out: it may need to warn about unsaved work first.
+  const handleSignOut = () => {
     setIsOpen(false);
+    onSignOut();
   };
 
   return (

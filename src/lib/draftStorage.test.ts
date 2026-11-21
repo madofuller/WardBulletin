@@ -44,6 +44,16 @@ describe('draftStorage', () => {
     expect(localStorage.getItem('draft_bulletin')).toBeNull();
   });
 
+  it('records which signed-in user wrote the draft', () => {
+    writeDraft(sampleData, 'bulletin-1', 'user-a');
+    expect(readDraft()!.userId).toBe('user-a');
+  });
+
+  it('marks drafts written while signed out as unowned', () => {
+    writeDraft(sampleData, null);
+    expect(readDraft()!.userId).toBeNull();
+  });
+
   it('clearDraft removes the draft', () => {
     writeDraft(sampleData, null);
     clearDraft();

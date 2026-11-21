@@ -92,7 +92,7 @@ export default function PublicBulletinPage() {
     error
   } = useQuery({
     queryKey: ['public-bulletin', slug, cacheBuster],
-    queryFn: () => slug ? bulletinService.getLatestBulletinByProfileSlug(slug) : Promise.resolve(null),
+    queryFn: () => slug ? bulletinService.getLatestBulletinByProfileSlug(slug, { publicView: true }) : Promise.resolve(null),
     enabled: !!slug,
     // Prevent stale data from being shown
     staleTime: 0,

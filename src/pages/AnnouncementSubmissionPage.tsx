@@ -83,6 +83,14 @@ export default function AnnouncementSubmissionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Spam trap: the "website" field is hidden from people, so only bots fill
+    // it in. Pretend it worked so they don't retry, but store nothing.
+    const honeypot = (e.currentTarget as HTMLFormElement).elements.namedItem('website') as HTMLInputElement | null;
+    if (honeypot?.value) {
+      setSubmitStatus("success");
+      return;
+    }
     
     if (!slug) {
       setErrorMessage(t('validation.invalidLink'));
@@ -100,6 +108,11 @@ export default function AnnouncementSubmissionPage() {
     for (const announcement of formData.announcements) {
       if (!announcement.title.trim() || !announcement.content.trim()) {
         setErrorMessage(t('validation.pleaseFillInAllFields'));
+        setSubmitStatus("error");
+        return;
+      }
+      if (announcement.content.length > 5000) {
+        setErrorMessage(t('announcementForm.contentTooLong', 'One announcement is too long. Please keep each one under 5,000 characters.'));
         setSubmitStatus("error");
         return;
       }
@@ -140,7 +153,14 @@ export default function AnnouncementSubmissionPage() {
         }]
       });
     } catch (error) {
-      setErrorMessage(t('announcementForm.failedToSubmit'));
+      const message = (error as { message?: string })?.message || '';
+      if (message.includes('rate_limited') || message.includes('too_many_pending')) {
+        setErrorMessage(t('announcementForm.tooManySubmissions', 'This ward has received a lot of submissions recently. Please try again later.'));
+      } else if (message.includes('unknown_profile')) {
+        setErrorMessage(t('validation.invalidLink'));
+      } else {
+        setErrorMessage(t('announcementForm.failedToSubmit'));
+      }
       setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
@@ -190,6 +210,12 @@ export default function AnnouncementSubmissionPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+              <label>
+                Website
+                <input type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
+              </label>
+            </div>
             {/* Contact Information */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('announcementForm.yourInformation')}</h3>
@@ -202,6 +228,7 @@ export default function AnnouncementSubmissionPage() {
                     id="submitter-name"
                     type="text"
                     value={formData.submitterName}
+                    maxLength={100}
                     onChange={(e) => handleInputChange("submitterName", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder={t('announcementForm.enterYourName')}
@@ -216,6 +243,7 @@ export default function AnnouncementSubmissionPage() {
                     id="submitter-email"
                     type="email"
                     value={formData.submitterEmail}
+                    maxLength={255}
                     onChange={(e) => handleInputChange("submitterEmail", e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="your.email@example.com"
@@ -261,6 +289,7 @@ export default function AnnouncementSubmissionPage() {
                       id={`announcement-title-${announcement.id}`}
                       type="text"
                       value={announcement.title}
+                      maxLength={200}
                       onChange={(e) => updateAnnouncement(announcement.id, "title", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={t('announcementForm.enterTitle')}

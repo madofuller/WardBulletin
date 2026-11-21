@@ -88,9 +88,14 @@ export default function InvitePage() {
       }
 
       setInvitation(invitation);
-      
-      // Check if the invited email exists in the database
-      await checkEmailExists(invitation.invited_email);
+
+      // The database function already says whether the invited email has an
+      // account; only the legacy fallback needs the separate lookup
+      if (typeof invitation.email_registered === 'boolean') {
+        setEmailExists(invitation.email_registered);
+      } else {
+        await checkEmailExists(invitation.invited_email);
+      }
     } catch (error: any) {
       setError(error.message);
     } finally {
