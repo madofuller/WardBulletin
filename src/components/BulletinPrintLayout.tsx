@@ -439,6 +439,17 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
   const programContentRef = useRef<HTMLDivElement>(null);
   const [programNaturalHeight, setProgramNaturalHeight] = useState(0);
   const programScale = bodyPx / BASE_BODY_PX;
+  // A long program (e.g. several Christmas musical numbers) first gives up whitespace —
+  // row spacing, the gap under the date, panel padding — before any text shrinks. Text
+  // shrinking is shared by the whole bulletin, so whitespace is the cheaper thing to spend.
+  // Keyed to the program content so it resets (and re-measures) whenever the program changes.
+  const programKey = JSON.stringify([data.agenda, data.musicProgram, data.leadership, data.prayers, data.wardName, data.date, data.meetingType, fontScale, data.printTightMargins]);
+  // Level 1 tightens spacing only; level 2 (still too long) also shrinks the headings and
+  // puts hymn titles beside their numbers.
+  const [programCompactState, setProgramCompactState] = useState<{ key: string; level: number } | null>(null);
+  const programCompactLevel = programCompactState?.key === programKey ? programCompactState.level : 0;
+  const programCompact = programCompactLevel >= 1;
+  const programCompact2 = programCompactLevel >= 2;
   useEffect(() => {
     const measure = () => {
       const panel = programPanelRef.current;
@@ -449,6 +460,11 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
       const natural = content.offsetHeight;
       if (!available || !natural) return;
       setProgramNaturalHeight(natural);
+      // Doesn't fit at the chosen size: compact one level further, then measure again
+      if (programCompactLevel < 2 && natural * targetBodyPx / BASE_BODY_PX > available + 1) {
+        setProgramCompactState({ key: programKey, level: programCompactLevel + 1 });
+        return;
+      }
       // Largest body size at which the whole program fits the page height
       const cap = Math.min(targetBodyPx, BASE_BODY_PX * available / natural);
       setProgramCap(prev => Math.abs(prev - cap) < 0.05 ? prev : cap);
@@ -554,7 +570,7 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
     leftPanel: tight ? 'pl-2 pr-8 pt-2 pb-0' : isLightContent ? 'pl-4 pr-6 pt-3 pb-0' : 'pl-3 pr-12 pt-3 pb-0',
     // Centered on the half-page: the page's safe margin only narrows the outer edge, so the
     // fold-side padding adds it back (0.3in = PRINT_SAFE_MARGIN's horizontal inset).
-    rightPanel: tight ? 'pl-[calc(0.3in+0.5rem)] pr-2 py-4' : 'pl-[calc(0.3in+1rem)] pr-4 py-6',
+    rightPanel: `${tight ? 'pl-[calc(0.3in+0.5rem)] pr-2' : 'pl-[calc(0.3in+1rem)] pr-4'} ${programCompact ? 'py-1' : tight ? 'py-4' : 'py-6'}`,
     announcementsGap: tight ? 'gap-2' : 'gap-4',
     announcementsList: tight ? 'space-y-0.5' : 'space-y-1',
     sectionMb: tight ? 'mb-0.5' : 'mb-1'
@@ -1076,9 +1092,9 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-bold mb-2 print:!text-4xl print:!text-black">{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
-              <h3 className="text-2xl font-bold mb-1 print:!text-3xl print:!text-black">{t('bulletin.sacramentMeeting')}</h3>
-              <p className="italic text-lg mb-6 print:!text-2xl print:!text-black">{formatDate(data.date, i18n.language)}</p>
+              <h2 className={`text-3xl font-bold ${programCompact2 ? 'mb-1 print:!text-3xl' : 'mb-2 print:!text-4xl'} print:!text-black`}>{data.wardName || t('form.wardName', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}</h2>
+              <h3 className={`text-2xl font-bold ${programCompact2 ? 'mb-0 print:!text-2xl' : 'mb-1 print:!text-3xl'} print:!text-black`}>{t('bulletin.sacramentMeeting')}</h3>
+              <p className={`italic text-lg ${programCompact ? 'mb-3' : 'mb-6'} ${programCompact2 ? 'print:!text-xl' : 'print:!text-2xl'} print:!text-black`}>{formatDate(data.date, i18n.language)}</p>
             </>
           )}
 
@@ -1088,36 +1104,37 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
             </p>
           )}
 
-          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: `0 ${fontScale > 1 ? 0.1 : 0.4}em` }}>
+          <table className="w-full text-[1rem] print:!text-base print:!text-black" style={{ borderCollapse: 'separate', borderSpacing: `0 ${programCompact ? 0.15 : fontScale > 1 ? 0.1 : 0.4}em` }}>
             <tbody>
-              <ProgramTableRow label={t('bulletin.presiding')} value={data.leadership?.presiding} />
-              <ProgramTableRow label={t('bulletin.conducting')} value={data.leadership?.conducting} />
-              <ProgramTableRow label={data.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')} value={data.leadership?.chorister} />
-              <ProgramTableRow label={data.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')} value={data.leadership?.organist} />
+              <ProgramTableRow tight={programCompact} label={t('bulletin.presiding')} value={data.leadership?.presiding} />
+              <ProgramTableRow tight={programCompact} label={t('bulletin.conducting')} value={data.leadership?.conducting} />
+              <ProgramTableRow tight={programCompact} label={data.leadership?.choristerLabel === 'Music Leader' ? t('form.musicLeader') : t('form.chorister')} value={data.leadership?.chorister} />
+              <ProgramTableRow tight={programCompact} label={data.leadership?.organistLabel === 'Pianist' ? t('form.pianist') : t('form.organist')} value={data.leadership?.organist} />
               {data.leadership?.interpreter && (
-                <ProgramTableRow label={t('form.interpreter')} value={data.leadership?.interpreter} />
+                <ProgramTableRow tight={programCompact} label={t('form.interpreter')} value={data.leadership?.interpreter} />
               )}
               {data.leadership?.preludeMusic && (
-                <ProgramTableRow label={t('bulletin.preludeMusic')} value={data.leadership?.preludeMusic} />
+                <ProgramTableRow tight={programCompact} label={t('bulletin.preludeMusic')} value={data.leadership?.preludeMusic} />
               )}
-              <ProgramTableRow
+              <ProgramTableRow tight={programCompact}
                 label={t('bulletin.openingHymn')}
+                inline={programCompact2}
                 value={data.musicProgram?.openingHymnNumber}
                 extra={data.musicProgram?.openingHymnTitle}
               />
-              <ProgramTableRow label={t('bulletin.invocation')} value={data.prayers?.opening} />
+              <ProgramTableRow tight={programCompact} label={t('bulletin.invocation')} value={data.prayers?.opening} />
               {data.meetingType !== 'baptism' && (
                 <tr>
-                  <td colSpan={3} className="text-center font-medium text-lg print:!text-xl print:!text-black">
+                  <td colSpan={3} className={`text-center font-medium text-lg ${programCompact2 ? 'print:!text-lg' : 'print:!text-xl'} print:!text-black`}>
                     {t('bulletin.unitBusiness', { unit: getTranslatedUnitLabel(t, unitTypeOverride) })}
                   </td>
                 </tr>
               )}
               {data.agenda?.map((item: any, idx: number) => (
                 item.type === 'speaker' ? (
-                  <ProgramTableRow key={idx} label={item.customLabel || (item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : item.speakerType === 'highCouncil' ? t('bulletin.highCouncilSpeaker') : t('bulletin.speaker'))} value={item.name} />
+                  <ProgramTableRow tight={programCompact} key={idx} label={item.customLabel || (item.speakerType === 'youth' ? t('bulletin.youthSpeaker') : item.speakerType === 'highCouncil' ? t('bulletin.highCouncilSpeaker') : t('bulletin.speaker'))} value={item.name} />
                 ) : item.type === 'musical' ? (
-                  <ProgramTableRow key={idx} label={item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')} value={item.hymnNumber || item.songName} extra={item.hymnTitle} extra2={item.performers} />
+                  <ProgramTableRow tight={programCompact} key={idx} label={item.label === 'Intermediate Hymn' ? t('form.intermediateHymn') : t('bulletin.musicalNumber')} value={item.hymnNumber || item.songName} extra={item.hymnTitle} extra2={item.performers} />
                 ) : item.type === 'testimony' ? (
                   <React.Fragment key={idx}>
                     <tr>
@@ -1173,10 +1190,10 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                 ) : item.type === 'program' ? (
                   <React.Fragment key={idx}>
                     <tr>
-                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">
+                      <td colSpan={3} className={`text-center font-bold text-lg ${programCompact2 ? 'py-1 print:!text-xl' : 'py-2 print:!text-2xl'} print:!text-black`}>
                         {item.title}
                         {item.note && (
-                          <div className="text-sm font-normal italic text-gray-700 mt-1 print:!text-base print:!text-black">
+                          <div className={`text-sm font-normal italic text-gray-700 ${programCompact2 ? 'mt-0' : 'mt-1'} print:!text-base print:!text-black`}>
                             {item.note}
                           </div>
                         )}
@@ -1185,23 +1202,25 @@ const BulletinPrintLayout = forwardRef<HTMLDivElement, { data: any, refs?: { pag
                   </React.Fragment>
                 ) : item.type === 'sacrament' && data.meetingType === 'sacrament' ? (
                   <React.Fragment key={idx}>
-                    <ProgramTableRow
+                    <ProgramTableRow tight={programCompact}
                       label={t('bulletin.sacramentHymn')}
+                inline={programCompact2}
                       value={data.musicProgram?.sacramentHymnNumber}
                       extra={data.musicProgram?.sacramentHymnTitle}
                     />
                     <tr>
-                      <td colSpan={3} className="text-center font-bold text-lg py-2 print:!text-2xl print:!text-black">{t('bulletin.administrationOfSacrament')}</td>
+                      <td colSpan={3} className={`text-center font-bold text-lg ${programCompact2 ? 'py-1 print:!text-xl' : 'py-2 print:!text-2xl'} print:!text-black`}>{t('bulletin.administrationOfSacrament')}</td>
                     </tr>
                   </React.Fragment>
                 ) : null
               ))}
-              <ProgramTableRow
+              <ProgramTableRow tight={programCompact}
                 label={t('bulletin.closingHymn')}
+                inline={programCompact2}
                 value={data.musicProgram?.closingHymnNumber}
                 extra={data.musicProgram?.closingHymnTitle}
               />
-              <ProgramTableRow label={t('bulletin.benediction')} value={data.prayers?.closing} />
+              <ProgramTableRow tight={programCompact} label={t('bulletin.benediction')} value={data.prayers?.closing} />
             </tbody>
           </table>
           </div>
@@ -1265,18 +1284,21 @@ function PrintQRCode({ profileSlug, size = 128 }: { profileSlug: string; size?: 
 
 export default React.memo(BulletinPrintLayout);
 
-function ProgramTableRow({ label, value, extra, extra2 }: { label: string, value?: string, extra?: string, extra2?: string }) {
+function ProgramTableRow({ label, value, extra, extra2, inline, tight }: { label: string, value?: string, extra?: string, extra2?: string, inline?: boolean, tight?: boolean }) {
+  // inline: a long program puts the hymn title beside its number ("201 · Joy to the World")
+  // instead of on its own line, saving a row per hymn.
+  const extraInline = inline && !!extra && !!value;
   return (
     <>
       <tr>
-        <td colSpan={3} className="py-[2px] print:!text-base print:!text-black">
+        <td colSpan={3} className={`${tight ? 'py-0' : 'py-[2px]'} print:!text-base print:!text-black`}>
           <div className="flex justify-between w-full">
             <span className="text-left mr-2 whitespace-nowrap print:!text-base print:!text-black">{label}</span>
-            <span className="text-right ml-2 whitespace-nowrap text-[0.9rem] print:!text-base print:!text-black">{value}</span>
+            <span className="text-right ml-2 whitespace-nowrap text-[0.9rem] print:!text-base print:!text-black">{value}{extraInline && <> · <i>{extra}</i></>}</span>
           </div>
         </td>
       </tr>
-      {extra && (
+      {extra && !extraInline && (
         <tr>
           <td colSpan={3} className="pt-0 text-center italic text-black text-sm print:!text-base print:!text-black">{extra}</td>
         </tr>
