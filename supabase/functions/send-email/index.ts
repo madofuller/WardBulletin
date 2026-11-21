@@ -44,6 +44,8 @@ function sanitizeText(value: string): string {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const MAX_INVITES_PER_HOUR = 20;
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -85,7 +87,51 @@ Deno.serve(async (req: Request) => {
       if (validationError) {
         return jsonResponse({ error: validationError }, 400);
       }
-      return await sendInvitationEmail(data as InvitationEmailData);
+
+      // Only send for a real, pending invitation the caller owns. Recipient,
+      // ward and role come from the database, never from the request body,
+      // so this endpoint can't be used to email arbitrary people or text.
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!serviceKey) {
+        console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+        return jsonResponse({ error: 'Internal server error' }, 500);
+      }
+      const admin = createClient(supabaseUrl, serviceKey);
+      const inviteToken = (data as InvitationEmailData).invitationLink
+        .slice(`${ALLOWED_ORIGIN}/invite/`.length)
+        .split(/[?#/]/)[0];
+      const { data: invitation } = await admin
+        .from('profile_invitations')
+        .select('invited_email, profile_slug, role, owner_id, token, expires_at, accepted_at')
+        .eq('token', inviteToken)
+        .maybeSingle();
+      if (
+        !invitation ||
+        invitation.owner_id !== userData.user.id ||
+        invitation.accepted_at ||
+        new Date(invitation.expires_at) < new Date()
+      ) {
+        return jsonResponse({ error: 'Invitation not found' }, 404);
+      }
+
+      // Rate limit: invitations this account created in the last hour
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count } = await admin
+        .from('profile_invitations')
+        .select('id', { count: 'exact', head: true })
+        .eq('owner_id', userData.user.id)
+        .gte('created_at', hourAgo);
+      if ((count ?? 0) > MAX_INVITES_PER_HOUR) {
+        return jsonResponse({ error: 'Too many invitations. Please try again later.' }, 429);
+      }
+
+      return await sendInvitationEmail({
+        invitedEmail: invitation.invited_email,
+        profileSlug: invitation.profile_slug,
+        role: invitation.role,
+        invitationLink: `${ALLOWED_ORIGIN}/invite/${invitation.token}`,
+        inviterName: userData.user.email?.split('@')[0],
+      });
     }
 
     return jsonResponse({ error: 'Invalid email type' }, 400);

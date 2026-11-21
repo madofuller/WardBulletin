@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo';
 import UserMenu from './UserMenu';
+import { supabase } from '../lib/supabase';
 import TerminologyToggle from './TerminologyToggle';
 import LanguageSelector from './LanguageSelector';
 import BulletinActions from './BulletinActions';
@@ -132,7 +133,7 @@ export default function Header({
             {!onlyNewBulletin && (user ? (
               <UserMenu
                 user={user}
-                onSignOut={() => setUser(null)}
+                onSignOut={async () => { await supabase?.auth.signOut(); setUser(null); }}
                 onSaveBulletin={handleSaveBulletin}
                 onViewSavedBulletins={handleViewSavedBulletins}
                 hasUnsavedChanges={hasUnsavedChanges}

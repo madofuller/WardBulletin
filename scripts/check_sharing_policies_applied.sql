@@ -16,7 +16,7 @@ SELECT
     WHEN COUNT(*) FILTER (
       WHERE policyname IN (
         'Users can view their own tokens',   -- original schema name
-        'Users can read their own tokens'    -- emergency_rollback.sql name
+        'Users can read their own tokens'    -- docs/archive/sql/emergency_rollback.sql name
       )
     ) > 0
     THEN 'NO - creator-only token policies are live: run supabase/migrations/20250127_enable_profile_sharing_rls.sql'

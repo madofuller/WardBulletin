@@ -10,6 +10,7 @@ import { BulletinData, AgendaItem } from '../types/bulletin';
 import BulletinPrintLayout from '../components/BulletinPrintLayout';
 import Logo from '../components/Logo';
 import { LDS_IMAGES } from '../data/images';
+import { pushDocument, fetchDocument } from '../lib/userDocuments';
 
 const loadPdfDeps = () => Promise.all([
   import('jspdf'),
@@ -96,15 +97,52 @@ export default function BaptismEditor() {
 
   React.useEffect(() => { preloadSongData(currentLang); }, [currentLang]);
 
-  // Persist data to localStorage on every change
+  // Persist data to localStorage on every change, and mirror it to the
+  // signed-in user's cloud copy (debounced) so it's on their other devices too.
+  // Changes that came FROM storage/cloud (loading) are not written back.
+  const skipNextPersistRef = useRef(true);
+  const cloudPushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
     try {
       localStorage.setItem(storageKey, JSON.stringify(data));
+      localStorage.setItem(`${storageKey}:savedAt`, String(Date.now()));
     } catch { /* storage may be full or unavailable */ }
+    if (cloudPushTimerRef.current) clearTimeout(cloudPushTimerRef.current);
+    cloudPushTimerRef.current = setTimeout(() => {
+      void pushDocument('baptism_program', storageKey, data);
+    }, 2000);
   }, [data, storageKey]);
+  useEffect(() => () => {
+    if (cloudPushTimerRef.current) clearTimeout(cloudPushTimerRef.current);
+  }, []);
+
+  // Newer copy saved on another device? Use it.
+  useEffect(() => {
+    let cancelled = false;
+    fetchDocument<BulletinData>('baptism_program', storageKey).then((doc) => {
+      if (cancelled || !doc || doc.deleted) return;
+      const cloudTime = new Date(doc.updated_at).getTime();
+      let localTime = 0;
+      try { localTime = Number(localStorage.getItem(`${storageKey}:savedAt`) || 0); } catch { /* ignore */ }
+      if (cloudTime > localTime) {
+        skipNextPersistRef.current = true;
+        setData(doc.data);
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(doc.data));
+          localStorage.setItem(`${storageKey}:savedAt`, String(cloudTime));
+        } catch { /* ignore */ }
+      }
+    });
+    return () => { cancelled = true; };
+  }, [storageKey]);
 
   // Reload when slug changes (navigate between wards)
   useEffect(() => {
+    skipNextPersistRef.current = true;
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) setData(JSON.parse(saved));

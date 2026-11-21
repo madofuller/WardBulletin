@@ -278,11 +278,110 @@ export interface Database {
 }
 
 // Helper function to generate slug from user and date
-function generateUniqueBulletinSlug(userId: string, date: string): string {
+export function generateUniqueBulletinSlug(userId: string, date: string): string {
   const userSlug = userId.substring(0, 8); // Use first 8 chars of user ID
   const dateSlug = date.replace(/\//g, '-');
   const timestamp = Date.now();
   return `${userSlug}-${dateSlug}-${timestamp}`;
+}
+
+// Turns a bulletin row plus its content rows (tokens) into the shape the public
+// bulletin page renders. Shared by the get_public_bulletin path and the direct-read
+// fallback.
+function assemblePublicBulletin(
+  userData: { unit_type?: string | null; language?: string | null },
+  data: Record<string, any>,
+  tokenRows: Array<{ key: string; value: string; created_by: string }>
+) {
+  // Prefer the bulletin creator's rows: when an editor saves a shared ward's
+  // bulletin, tokens can carry the editor's id instead of the owner's.
+  const userId = data.created_by;
+  const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
+  tokenRows.forEach((token) => {
+    const rows = tokenRowsByKey.get(token.key) || [];
+    rows.push(token);
+    tokenRowsByKey.set(token.key, rows);
+  });
+
+  // Create a map for quick lookup
+  const tokenMap = new Map();
+  tokenRowsByKey.forEach((rows, key) => {
+    const row = pickTokenRow(rows, userId);
+    if (row) tokenMap.set(key, row.value);
+  });
+
+  // Extract values from the map
+  const wardName = tokenMap.get(`bulletin-${data.slug}-ward_name`) || null;
+  const theme = tokenMap.get(`bulletin-${data.slug}-theme`) || null;
+  const userTheme = tokenMap.get(`bulletin-${data.slug}-userTheme`) || null;
+  const bishopric = tokenMap.get(`bulletin-${data.slug}-bishopric`) || null;
+  const announcements = tokenMap.get(`bulletin-${data.slug}-announcements`) || null;
+  const meetings = tokenMap.get(`bulletin-${data.slug}-meetings`) || null;
+  const events = tokenMap.get(`bulletin-${data.slug}-events`) || null;
+  const agenda = tokenMap.get(`bulletin-${data.slug}-agenda`) || null;
+  const prayers = tokenMap.get(`bulletin-${data.slug}-prayers`) || null;
+  const music = tokenMap.get(`bulletin-${data.slug}-music`) || null;
+  const leadership = tokenMap.get(`bulletin-${data.slug}-leadership`) || null;
+  const wardLeadership = tokenMap.get(`bulletin-${data.slug}-wardLeadership`) || null;
+  const missionaries = tokenMap.get(`bulletin-${data.slug}-missionaries`) || null;
+  const wardMissionaries = tokenMap.get(`bulletin-${data.slug}-wardMissionaries`) || null;
+  const serviceMissionaries = tokenMap.get(`bulletin-${data.slug}-serviceMissionaries`) || null;
+  const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
+  const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
+  const imageOpacity = tokenMap.get(`bulletin-${data.slug}-imageOpacity`) || null;
+
+  const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
+
+  // Use the stored imageUrl token if available; fall back to constructing from userId
+  const storedImageUrl = tokenMap.get(`bulletin-${data.slug}-imageUrl`) || null;
+  let imageUrl: string | null = storedImageUrl || null;
+  if (!imageUrl && image && image.startsWith('custom-')) {
+    try {
+      const filePath = `${userId}/${image}.jpg`;
+      const { data: urlData } = supabase.storage
+        .from('bulletin-images')
+        .getPublicUrl(filePath);
+      imageUrl = urlData.publicUrl;
+    } catch {
+      // Silently handle custom image fetch errors
+    }
+  }
+  const result = {
+    id: data.id,
+    user_id: data.created_by,
+    profile_slug: data.profile_slug,
+    profile_unit_type: userData.unit_type || 'ward',
+    profile_language: userData.language || 'en',
+    ward_name: wardName || '',
+    date: data.meeting_date,
+    meeting_type: data.meeting_type,
+    theme: theme || '',
+    userTheme: userTheme || '',
+    imageId: image || 'none',
+    imageUrl: imageUrl, // Include the actual URL for custom images
+    imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
+    imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
+    bishopric_message: bishopric || '',
+    announcements: parsedAnnouncements,
+    meetings: meetings ? JSON.parse(meetings) : [],
+    special_events: events ? JSON.parse(events) : [],
+    agenda: agenda ? JSON.parse(agenda) : [],
+    prayers: prayers ? JSON.parse(prayers) : {},
+    music_program: music ? JSON.parse(music) : {},
+    leadership: leadership ? JSON.parse(leadership) : {},
+    wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
+    missionaries: missionaries ? JSON.parse(missionaries) : [],
+    wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
+    serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
+    created_at: data.created_at,
+    updated_at: data.created_at
+  };
+  return result;
+}
+
+// PostgREST reports a function that isn't deployed yet as PGRST202.
+function isMissingFunctionError(error: { code?: string; message?: string } | null): boolean {
+  return !!error && (error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || ''));
 }
 
 // Helper function to get user's profile_slug
@@ -549,7 +648,14 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 10000): Promise
 
 // Bulletin service functions
 export const bulletinService = {
-  async saveBulletin(bulletinData: any, userId: string, bulletinId?: string, profileSlug?: string) {
+  /**
+   * options.newSlug: for a bulletin that hasn't been saved yet, the slug the
+   * caller reserved for it. Passing the same slug on every attempt makes saving
+   * idempotent: if an earlier attempt already created the row (e.g. it timed out
+   * after the insert landed), this one updates that row instead of creating a
+   * duplicate.
+   */
+  async saveBulletin(bulletinData: any, userId: string, bulletinId?: string, profileSlug?: string, options: { newSlug?: string; expectedUpdatedAt?: string | null } = {}) {
     try {
       const { error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) {
@@ -593,6 +699,30 @@ export const bulletinService = {
       if (existingRow.created_by) tokenOwnerId = existingRow.created_by;
       slug = existingRow.slug;
       existingStatus = existingRow.status;
+
+      // Someone else saved this bulletin since it was opened: stop before
+      // overwriting their work (the editor asks whether to overwrite)
+      if (options.expectedUpdatedAt) {
+        const current = await this.getBulletinUpdatedAt(bulletinId);
+        if (current && current !== options.expectedUpdatedAt) {
+          const conflict = new Error('This bulletin was changed by someone else since you opened it.') as Error & { code?: string };
+          conflict.code = 'BULLETIN_CONFLICT';
+          throw conflict;
+        }
+      }
+    } else if (options.newSlug) {
+      slug = options.newSlug;
+      const { data: earlierAttempt, error: earlierError } = await supabase
+        .from('bulletins')
+        .select('id, created_by, status')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (earlierError) throw earlierError;
+      if (earlierAttempt) {
+        bulletinId = earlierAttempt.id;
+        if (earlierAttempt.created_by) tokenOwnerId = earlierAttempt.created_by;
+        existingStatus = earlierAttempt.status;
+      }
     } else {
       slug = generateUniqueBulletinSlug(userId, bulletinData.date);
     }
@@ -723,7 +853,7 @@ export const bulletinService = {
           throw error;
         }
         this.saveToLocalStorage({ ...bulletinRecord, id: data.id });
-        return data;
+        return { ...data, updated_at: await this.getBulletinUpdatedAt(data.id) };
       } else {
         let data, error;
         try {
@@ -746,10 +876,25 @@ export const bulletinService = {
           throw error;
         }
         this.saveToLocalStorage({ ...bulletinRecord, id: data.id });
-        return data;
+        return { ...data, updated_at: await this.getBulletinUpdatedAt(data.id) };
       }
     } catch (bulletinError) {
       throw bulletinError;
+    }
+  },
+
+  /** bulletins.updated_at, or null when unknown (e.g. the column isn't deployed yet). */
+  async getBulletinUpdatedAt(bulletinId: string): Promise<string | null> {
+    try {
+      const { data, error } = await supabase
+        .from('bulletins')
+        .select('updated_at')
+        .eq('id', bulletinId)
+        .maybeSingle();
+      if (error || !data) return null;
+      return (data as { updated_at?: string | null }).updated_at ?? null;
+    } catch {
+      return null;
     }
   },
 
@@ -1420,11 +1565,34 @@ export const bulletinService = {
     return freshBulletin;
   },
 
-  async getLatestBulletinByProfileSlug(profileSlug: string) {
-    // CRITICAL: Safari caches Supabase requests aggressively even with cache-control headers
-    // Solution: Add a cache-busting timestamp to make Safari think it's a new request
-    // This is added as a comment filter that doesn't affect the query but changes the URL
-    const cacheBuster = Date.now().toString();
+  /**
+   * The bulletin shown for a ward link.
+   * publicView (the public page / QR code): only published bulletins, read through
+   * the get_public_bulletin database function so anonymous visitors never need
+   * direct table access. Editors viewing a shared ward keep the direct path,
+   * which also returns drafts.
+   */
+  async getLatestBulletinByProfileSlug(profileSlug: string, options: { publicView?: boolean } = {}) {
+    if (options.publicView) {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const localNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_bulletin', {
+        p_profile_slug: profileSlug,
+        p_local_now: localNow,
+      });
+      if (!rpcError) {
+        if (!rpcData) return null;
+        const { owner, bulletin, tokens } = rpcData as {
+          owner: { id: string; unit_type: string | null; language: string | null };
+          bulletin: Record<string, any>;
+          tokens: Array<{ key: string; value: string; created_by: string }>;
+        };
+        return assemblePublicBulletin(owner, bulletin, tokens || []);
+      }
+      // Function not deployed yet: fall back to direct reads below
+      if (!isMissingFunctionError(rpcError)) throw rpcError;
+    }
 
     // First get the user by profile_slug and their active bulletin
     const { data: userData, error: userError } = await supabase
@@ -1446,6 +1614,8 @@ export const bulletinService = {
         .from('bulletins')
         .select('id')
         .or(`created_by.eq.${userData.id},profile_slug.eq."${profileSlug}"`)
+        // The public page must never show a draft or a not-yet-live scheduled bulletin
+        .in('status', options.publicView ? ['active', 'archived'] : ['draft', 'scheduled', 'active', 'archived'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -1470,10 +1640,6 @@ export const bulletinService = {
       }
       throw error;
     }
-
-    // Get user ID to fetch tokens - MUST use bulletin creator, not profile owner!
-    // When an editor creates/edits a bulletin for a shared profile, tokens have created_by = editor
-    const userId = data.created_by;
 
     // Fetch bulletin data from tokens - Use batch fetch to avoid caching issues
     // Build the list of token keys we need
@@ -1509,88 +1675,9 @@ export const bulletinService = {
       .in('key', tokenKeys)
       .order('created_at', { ascending: false });
 
-    const tokenRowsByKey = new Map<string, Array<{ value: string; created_by: string }>>();
-    (tokenData || []).forEach((token: any) => {
-      const rows = tokenRowsByKey.get(token.key) || [];
-      rows.push(token);
-      tokenRowsByKey.set(token.key, rows);
-    });
-
-    // Create a map for quick lookup
-    const tokenMap = new Map();
-    tokenRowsByKey.forEach((rows, key) => {
-      const row = pickTokenRow(rows, userId);
-      if (row) tokenMap.set(key, row.value);
-    });
-
-    // Extract values from the map
-    const wardName = tokenMap.get(`bulletin-${data.slug}-ward_name`) || null;
-    const theme = tokenMap.get(`bulletin-${data.slug}-theme`) || null;
-    const userTheme = tokenMap.get(`bulletin-${data.slug}-userTheme`) || null;
-    const bishopric = tokenMap.get(`bulletin-${data.slug}-bishopric`) || null;
-    const announcements = tokenMap.get(`bulletin-${data.slug}-announcements`) || null;
-    const meetings = tokenMap.get(`bulletin-${data.slug}-meetings`) || null;
-    const events = tokenMap.get(`bulletin-${data.slug}-events`) || null;
-    const agenda = tokenMap.get(`bulletin-${data.slug}-agenda`) || null;
-    const prayers = tokenMap.get(`bulletin-${data.slug}-prayers`) || null;
-    const music = tokenMap.get(`bulletin-${data.slug}-music`) || null;
-    const leadership = tokenMap.get(`bulletin-${data.slug}-leadership`) || null;
-    const wardLeadership = tokenMap.get(`bulletin-${data.slug}-wardLeadership`) || null;
-    const missionaries = tokenMap.get(`bulletin-${data.slug}-missionaries`) || null;
-    const wardMissionaries = tokenMap.get(`bulletin-${data.slug}-wardMissionaries`) || null;
-    const serviceMissionaries = tokenMap.get(`bulletin-${data.slug}-serviceMissionaries`) || null;
-    const image = tokenMap.get(`bulletin-${data.slug}-image`) || null;
-    const imagePosition = tokenMap.get(`bulletin-${data.slug}-imagePosition`) || null;
-    const imageOpacity = tokenMap.get(`bulletin-${data.slug}-imageOpacity`) || null;
-
-    const parsedAnnouncements = announcements ? JSON.parse(announcements) : [];
-
-    // Use the stored imageUrl token if available; fall back to constructing from userId
-    const storedImageUrl = tokenMap.get(`bulletin-${data.slug}-imageUrl`) || null;
-    let imageUrl: string | null = storedImageUrl || null;
-    if (!imageUrl && image && image.startsWith('custom-')) {
-      try {
-        const filePath = `${userId}/${image}.jpg`;
-        const { data: urlData } = supabase.storage
-          .from('bulletin-images')
-          .getPublicUrl(filePath);
-        imageUrl = urlData.publicUrl;
-      } catch {
-        // Silently handle custom image fetch errors
-      }
-    }
-    const result = {
-      id: data.id,
-      user_id: data.created_by,
-      profile_slug: data.profile_slug,
-      profile_unit_type: userData.unit_type || 'ward',
-      profile_language: userData.language || 'en',
-      ward_name: wardName || '',
-      date: data.meeting_date,
-      meeting_type: data.meeting_type,
-      theme: theme || '',
-      userTheme: userTheme || '',
-      imageId: image || 'none',
-      imageUrl: imageUrl, // Include the actual URL for custom images
-      imagePosition: imagePosition ? JSON.parse(imagePosition) : { x: 50, y: 50 },
-      imageOpacity: imageOpacity ? parseInt(imageOpacity) : 40,
-      bishopric_message: bishopric || '',
-      announcements: parsedAnnouncements,
-      meetings: meetings ? JSON.parse(meetings) : [],
-      special_events: events ? JSON.parse(events) : [],
-      agenda: agenda ? JSON.parse(agenda) : [],
-      prayers: prayers ? JSON.parse(prayers) : {},
-      music_program: music ? JSON.parse(music) : {},
-      leadership: leadership ? JSON.parse(leadership) : {},
-      wardLeadership: wardLeadership ? JSON.parse(wardLeadership) : [],
-      missionaries: missionaries ? JSON.parse(missionaries) : [],
-      wardMissionaries: wardMissionaries ? JSON.parse(wardMissionaries) : [],
-      serviceMissionaries: serviceMissionaries ? JSON.parse(serviceMissionaries) : [],
-      created_at: data.created_at,
-      updated_at: data.created_at
-    };
-
-    return result;
+    // A failed content read shows an empty bulletin rather than an error page (as before)
+    void tokenError;
+    return assemblePublicBulletin(userData, data, (tokenData || []) as Array<{ key: string; value: string; created_by: string }>);
   },
 
   async deleteBulletin(bulletinId: string, userId: string) {
@@ -2542,6 +2629,8 @@ export const retryOperation = async <T>(operation: () => Promise<T>, maxRetries:
       return await operation();
     } catch (error) {
       lastError = error;
+      // A save conflict won't go away by retrying
+      if ((error as { code?: string })?.code === 'BULLETIN_CONFLICT') break;
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, delay * attempt));
       }
