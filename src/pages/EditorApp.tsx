@@ -33,7 +33,7 @@ import ChangelogModal from '../components/ChangelogModal';
 import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
 import { readDraft, writeDraft, clearDraft } from '../lib/draftStorage';
-import { upcomingSundayISO } from '../lib/dates';
+import { upcomingSundayISO, nextBulletinDateISO } from '../lib/dates';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -351,7 +351,8 @@ function EditorApp() {
   function bulletinFromTemplate(data: BulletinData): BulletinData {
     return {
       ...data,
-      date: upcomingSundayISO(),
+      // A copy of this week's program is next week's program.
+      date: nextBulletinDateISO(data.date),
       status: 'draft',
       scheduledDate: undefined,
       autoActivate: false
@@ -1135,8 +1136,10 @@ function EditorApp() {
         await handleActiveBulletinSelect(savedBulletin.id);
       }
 
-      // Invalidate query cache to refresh saved bulletins modal
+      // Invalidate query cache to refresh saved bulletins modal. The modal
+      // lists by profile slug when one is set, so refresh that list too.
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
 
       toast.success(currentBulletinId ? t('success.bulletinUpdated', 'Bulletin updated successfully!') : t('success.bulletinSaved', 'Bulletin saved successfully!'), {
         toastId: 'bulletin-save-success'
