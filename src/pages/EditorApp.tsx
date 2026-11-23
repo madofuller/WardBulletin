@@ -511,7 +511,9 @@ function EditorApp() {
         const tmpl = templateService.getTemplate(activeId);
         if (tmpl) {
           setBulletinData(bulletinFromTemplate(tmpl.data));
-          setHasUnsavedChanges(false);
+          // The active template id is cleared once the copy is saved, so a
+          // restored copy is still unsaved work.
+          setHasUnsavedChanges(true);
           return;
         }
       }
@@ -1402,8 +1404,11 @@ function EditorApp() {
     }
     setBulletinData(next);
     setCurrentBulletinId(null);
-    setHasUnsavedChanges(false);
     clearLocalDraft();
+    // A copy of a saved template is real, unsaved work (often next week's
+    // program, saved as-is). Mark it unsaved so Save isn't refused with
+    // "No changes to save" and it's protected like any other edit.
+    setHasUnsavedChanges(!!template);
     setShowTemplates(false);
   };
 
