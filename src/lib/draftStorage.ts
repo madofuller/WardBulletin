@@ -13,6 +13,12 @@ export interface DraftEnvelope {
   savedAt: number;
   /** Cloud bulletin being edited when the draft was written, if any. */
   bulletinId: string | null;
+  /**
+   * Signed-in user who wrote the draft; null when written while signed out
+   * (that draft is adopted by whoever signs in next, which is the save-before-
+   * sign-in flow). A draft owned by a different user must never be restored.
+   */
+  userId: string | null;
 }
 
 export function readDraft(): DraftEnvelope | null {
@@ -30,19 +36,20 @@ export function readDraft(): DraftEnvelope | null {
         data: parsed.data as BulletinData,
         savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : 0,
         bulletinId: typeof parsed.bulletinId === 'string' ? parsed.bulletinId : null,
+        userId: typeof parsed.userId === 'string' ? parsed.userId : null,
       };
     }
     // Legacy format: the bulletin data was stored bare, with no timestamp.
     // savedAt 0 marks it as unknown age, so cloud data is allowed to win.
-    return { data: parsed as BulletinData, savedAt: 0, bulletinId: null };
+    return { data: parsed as BulletinData, savedAt: 0, bulletinId: null, userId: null };
   } catch {
     clearDraft();
     return null;
   }
 }
 
-export function writeDraft(data: BulletinData, bulletinId: string | null): void {
-  const envelope: DraftEnvelope = { data, savedAt: Date.now(), bulletinId };
+export function writeDraft(data: BulletinData, bulletinId: string | null, userId: string | null = null): void {
+  const envelope: DraftEnvelope = { data, savedAt: Date.now(), bulletinId, userId };
   let serialized: string;
   try {
     serialized = JSON.stringify(envelope);

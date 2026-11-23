@@ -22,3 +22,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:hooks
+      # Additional gates. The workflow/job names are left unchanged so any
+      # existing required-status-check configuration keeps matching.
+      # `tsc --noEmit -p tsconfig.app.json` is intentionally not here yet: it
+      # has pre-existing type errors on main. Add it once those are fixed.
+      - name: Unit tests
+        run: npx vitest run
+      - name: Locale parity
+        run: node scripts/check-locale-parity.mjs
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://dummy-e2e-project.supabase.co
+          VITE_SUPABASE_ANON_KEY: dummy

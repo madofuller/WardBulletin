@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { upcomingSundayISO } from './dates';
+import { upcomingSundayISO, nextBulletinDateISO } from './dates';
 
 describe('upcomingSundayISO', () => {
   it('returns the same day when it is already Sunday', () => {
@@ -24,5 +24,30 @@ describe('upcomingSundayISO', () => {
 
   it('zero-pads month and day', () => {
     expect(upcomingSundayISO(new Date(2026, 0, 2))).toBe('2026-01-04'); // Fri Jan 2 -> Sun Jan 4
+  });
+});
+
+describe('nextBulletinDateISO', () => {
+  const mon = new Date(2026, 10, 23); // Mon Nov 23 2026; upcoming Sunday is Nov 29
+
+  it('moves a copy of this week\'s bulletin to the following Sunday', () => {
+    expect(nextBulletinDateISO('2026-11-29', mon)).toBe('2026-12-06');
+  });
+
+  it('moves a copy of last Sunday\'s bulletin to the upcoming Sunday', () => {
+    expect(nextBulletinDateISO('2026-11-22', mon)).toBe('2026-11-29');
+  });
+
+  it('never dates a copy of an old template in the past', () => {
+    expect(nextBulletinDateISO('2025-07-27', mon)).toBe('2026-11-29');
+  });
+
+  it('handles a non-Sunday source date', () => {
+    expect(nextBulletinDateISO('2026-12-02', mon)).toBe('2026-12-06');
+  });
+
+  it('falls back to the upcoming Sunday for a missing or bad date', () => {
+    expect(nextBulletinDateISO(undefined, mon)).toBe('2026-11-29');
+    expect(nextBulletinDateISO('not a date', mon)).toBe('2026-11-29');
   });
 });

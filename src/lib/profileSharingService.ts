@@ -32,6 +32,11 @@ export interface ProfileInvitation {
   created_at: string;
 }
 
+// PostgREST reports a function that isn't deployed yet as PGRST202
+function isMissingFunctionError(error: { code?: string; message?: string } | null): boolean {
+  return !!error && (error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || ''));
+}
+
 export const createProfileSharingService = (supabase: SupabaseClient) => ({
   // Get all shares for a profile
   async getProfileShares(profileSlug: string): Promise<ProfileShare[]> {
@@ -385,6 +390,21 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
   // Get invitation by token (public method for invitation page)
   async getInvitationByToken(token: string): Promise<{ data: any; error: any }> {
+    // Preferred: the get_invitation_by_token database function (no anonymous
+    // table access; also says whether the invited email already has an account)
+    const { data: rpcRows, error: rpcError } = await supabase.rpc('get_invitation_by_token', { p_token: token });
+    if (!rpcError) {
+      const row = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
+      if (!row) {
+        return { data: null, error: new Error('Invitation not found, already accepted, or expired') };
+      }
+      return { data: row, error: null };
+    }
+    if (!isMissingFunctionError(rpcError)) {
+      return { data: null, error: rpcError };
+    }
+
+    // Fallback until the database function is deployed
     const { data, error } = await supabase
       .from('profile_invitations')
       .select(`
@@ -413,6 +433,20 @@ export const createProfileSharingService = (supabase: SupabaseClient) => ({
 
   // Accept invitation
   async acceptInvitation(token: string, userId: string): Promise<{role: string, profile_slug: string}> {
+    // Preferred: accept on the server, which checks the token, the email and
+    // that the inviter really owns the ward link
+    const { data: accepted, error: rpcError } = await supabase.rpc('accept_invitation', { p_token: token });
+    if (!rpcError && accepted) {
+      return accepted as { role: string; profile_slug: string };
+    }
+    if (rpcError && !isMissingFunctionError(rpcError)) {
+      if (rpcError.message?.includes('email_mismatch')) {
+        throw new Error('This invitation was sent to a different email address. Please sign in with the correct account.');
+      }
+      throw new Error('Invalid or expired invitation');
+    }
+
+    // Fallback until the database function is deployed
     // Get invitation details
     const { data: invitation, error: fetchError } = await supabase
       .from('profile_invitations')

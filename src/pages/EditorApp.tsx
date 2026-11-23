@@ -11,7 +11,7 @@ const loadPdfDeps = () => Promise.all([
   import('jspdf'),
   import('html2canvas'),
 ] as const);
-import { supabase, userService, bulletinService, robustService, retryOperation } from '../lib/supabase';
+import { supabase, userService, bulletinService, robustService, retryOperation, generateUniqueBulletinSlug } from '../lib/supabase';
 import { recurringAnnouncementsService } from '../lib/recurringAnnouncementsService';
 import BulletinForm from '../components/BulletinForm';
 import BulletinPreview from '../components/BulletinPreview';
@@ -33,7 +33,7 @@ import ChangelogModal from '../components/ChangelogModal';
 import BulletinActions from '../components/BulletinActions';
 import { BulletinData } from '../types/bulletin';
 import { readDraft, writeDraft, clearDraft } from '../lib/draftStorage';
-import { upcomingSundayISO } from '../lib/dates';
+import { upcomingSundayISO, nextBulletinDateISO } from '../lib/dates';
 import templateService, { Template } from '../lib/templateService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -192,9 +192,18 @@ function EditorApp() {
     setShowChangelog(false);
   };
 
+  // Where to go after signing in (the invite page sends invitees here to sign
+  // in, then needs them back to accept). Only same-site invite paths are honored.
+  const authReturnToRef = useRef<string | null>(null);
+  // Saving right after sign-in has to wait until the session user is in state;
+  // calling save from the auth callback would still see user = null.
+  const [saveAfterAuth, setSaveAfterAuth] = useState(false);
+
   // Handle invitation state from InvitePage
   useEffect(() => {
     if (location.state?.showAuth) {
+      const returnTo = location.state.returnTo;
+      authReturnToRef.current = typeof returnTo === 'string' && /^\/invite\/[A-Za-z0-9-]+$/.test(returnTo) ? returnTo : null;
       setAuthModalMode(location.state.mode);
       setAuthModalPrefillEmail(location.state.prefillEmail);
       setShowAuthModal(true);
@@ -342,7 +351,8 @@ function EditorApp() {
   function bulletinFromTemplate(data: BulletinData): BulletinData {
     return {
       ...data,
-      date: upcomingSundayISO(),
+      // A copy of this week's program is next week's program.
+      date: nextBulletinDateISO(data.date),
       status: 'draft',
       scheduledDate: undefined,
       autoActivate: false
@@ -448,6 +458,43 @@ function EditorApp() {
   useEffect(() => {
     currentBulletinIdRef.current = currentBulletinId;
   }, [currentBulletinId]);
+  // Slug reserved for the bulletin being created, reused by every save attempt
+  // until it exists in the cloud (see bulletinService.saveBulletin newSlug).
+  const pendingNewSlugRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (currentBulletinId) pendingNewSlugRef.current = null;
+  }, [currentBulletinId]);
+  const reserveNewSlug = (userId: string, date: string) => {
+    if (!pendingNewSlugRef.current) pendingNewSlugRef.current = generateUniqueBulletinSlug(userId, date);
+    return pendingNewSlugRef.current;
+  };
+  const saveInFlightRef = useRef(false);
+  // updated_at of the open bulletin when it was loaded (or last saved here), so
+  // a save can tell that someone else saved in between
+  const loadedUpdatedAtRef = useRef<{ id: string; updatedAt: string | null } | null>(null);
+  useEffect(() => {
+    if (!currentBulletinId || currentBulletinId.startsWith('local_')) {
+      loadedUpdatedAtRef.current = null;
+      return;
+    }
+    if (loadedUpdatedAtRef.current?.id === currentBulletinId) return;
+    const id = currentBulletinId;
+    loadedUpdatedAtRef.current = { id, updatedAt: null };
+    bulletinService.getBulletinUpdatedAt(id).then((updatedAt) => {
+      if (loadedUpdatedAtRef.current?.id === id && !loadedUpdatedAtRef.current.updatedAt) {
+        loadedUpdatedAtRef.current = { id, updatedAt };
+      }
+    });
+  }, [currentBulletinId]);
+  // Bring saved templates from the user's other devices (and back up this one's)
+  useEffect(() => {
+    if (user?.id) void templateService.syncWithCloud();
+  }, [user?.id]);
+  // Same for the signed-in user, so drafts record who wrote them.
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user?.id]);
 
   // Handle template loading only if no draft was loaded during initialization
   useEffect(() => {
@@ -624,7 +671,7 @@ function EditorApp() {
   };
 
   const writeDraftToStorage = useCallback((data: BulletinData) => {
-    writeDraft(data, currentBulletinIdRef.current);
+    writeDraft(data, currentBulletinIdRef.current, userIdRef.current);
   }, []);
 
   const flushDraftSave = useCallback(() => {
@@ -830,6 +877,17 @@ function EditorApp() {
     const fetchInitialBulletin = async () => {
       if (!user) return;
 
+      // A draft left by a different account on this browser (shared clerk
+      // computer) belongs to that account's ward: never show or save it here.
+      const strayDraft = readDraft();
+      if (strayDraft?.userId && strayDraft.userId !== user.id) {
+        clearLocalDraft();
+        setBulletinData(createBlankBulletin());
+        setCurrentBulletinId(null);
+        setHasUnsavedChanges(false);
+        return;
+      }
+
       // CRITICAL: On refresh, prioritize loading saved bulletins over drafts
       // Only skip if user is actively editing (hasUnsavedChanges is true AND we're not on initial load)
       // On initial load (refresh), we want to load the saved bulletin and clear any stale draft
@@ -984,7 +1042,23 @@ function EditorApp() {
   // bulletinData from the closure, so callers that just built a new state
   // object (e.g. auto-save on submission approval) can persist it without
   // waiting for a re-render.
-  const saveBulletinToCloud = async (dataToSave: BulletinData) => {
+  const saveBulletinToCloud = async (dataToSave: BulletinData, opts: { overwrite?: boolean } = {}) => {
+    if (!user) return;
+    // One save at a time: a second click while a slow save is running would
+    // race it (and, for a new bulletin, used to create a duplicate)
+    if (saveInFlightRef.current) {
+      toast.info(t('common.saveInProgress', 'Still saving, one moment...'), { toastId: 'save-in-progress' });
+      return;
+    }
+    saveInFlightRef.current = true;
+    try {
+      await saveBulletinToCloudInner(dataToSave, opts);
+    } finally {
+      saveInFlightRef.current = false;
+    }
+  };
+
+  const saveBulletinToCloudInner = async (dataToSave: BulletinData, opts: { overwrite?: boolean } = {}) => {
     if (!user) return;
 
     try {
@@ -1012,7 +1086,14 @@ function EditorApp() {
           dataToSave,
           user.id,
           currentBulletinId || undefined,
-          currentProfileSlug || undefined
+          currentProfileSlug || undefined,
+          currentBulletinId
+            ? {
+                expectedUpdatedAt: !opts.overwrite && loadedUpdatedAtRef.current?.id === currentBulletinId
+                  ? loadedUpdatedAtRef.current.updatedAt
+                  : null
+              }
+            : { newSlug: reserveNewSlug(user.id, dataToSave.date) }
         ));
         return savedBulletin;
       })();
@@ -1022,6 +1103,17 @@ function EditorApp() {
           reject(new Error('Save operation timed out after 10 seconds.'));
         }, SAVE_TIMEOUT_MS);
       });
+      // If the UI gives up waiting, the save may still land: adopt its result
+      // then, so the editor points at the saved row and the next save neither
+      // duplicates it nor mistakes our own save for someone else's.
+      savePromise.then((late) => {
+        if (!didTimeout || !late) return;
+        loadedUpdatedAtRef.current = { id: late.id, updatedAt: late.updated_at ?? null };
+        setCurrentBulletinId(late.id);
+        setHasUnsavedChanges(false);
+        clearLocalDraft();
+        toast.success(t('success.bulletinSaved', 'Bulletin saved successfully!'), { toastId: 'bulletin-save-success' });
+      }).catch(() => { /* reported by the main path */ });
       const savedBulletin = await Promise.race([savePromise, timeoutPromise]);
       if (timeoutHandle) clearTimeout(timeoutHandle);
       if (didTimeout) return; // Already handled by catch
@@ -1029,6 +1121,7 @@ function EditorApp() {
       // Check if this bulletin was/is active before saving
       const wasActive = currentBulletinId && currentBulletinId === activeBulletinId;
 
+      loadedUpdatedAtRef.current = { id: savedBulletin.id, updatedAt: savedBulletin.updated_at ?? null };
       setCurrentBulletinId(savedBulletin.id);
       setHasUnsavedChanges(false);
       // The work just reached the cloud — the local draft is no longer the
@@ -1043,31 +1136,38 @@ function EditorApp() {
         await handleActiveBulletinSelect(savedBulletin.id);
       }
 
-      // Invalidate query cache to refresh saved bulletins modal
+      // Invalidate query cache to refresh saved bulletins modal. The modal
+      // lists by profile slug when one is set, so refresh that list too.
       queryClient.invalidateQueries({ queryKey: ['user-bulletins', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['shared-profile-bulletins'] });
 
       toast.success(currentBulletinId ? t('success.bulletinUpdated', 'Bulletin updated successfully!') : t('success.bulletinSaved', 'Bulletin saved successfully!'), {
         toastId: 'bulletin-save-success'
       });
     } catch (error) {
       if (timeoutHandle) clearTimeout(timeoutHandle);
+      if ((error as { code?: string }).code === 'BULLETIN_CONFLICT') {
+        flushDraftSave();
+        setConfirmationModal({
+          isOpen: true,
+          title: t('common.bulletinChangedTitle', 'Someone else saved this bulletin'),
+          message: t('common.bulletinChangedMessage', 'Another member of your team saved changes to this bulletin after you opened it. Saving now will replace their changes with yours. Open Saved Bulletins first if you want to compare.'),
+          variant: 'warning',
+          onConfirm: () => { saveBulletinToCloud(dataToSave, { overwrite: true }); }
+        });
+        return;
+      }
       if (didTimeout) {
         toast.error(t('errors.saveTimedOut', 'Saving took too long. Please check your connection or try again.'));
       } else {
         toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
       }
-      // Try to save to localStorage as fallback
-      try {
-        bulletinService.saveToLocalStorage({
-          id: currentBulletinId || `local_${Date.now()}`,
-          ...dataToSave,
-          created_by: user.id,
-          created_at: new Date().toISOString()
-        });
-        toast.warning(t('errors.savedLocallyWillSync', 'Bulletin saved locally due to connection issues. It will sync when connection is restored.'));
-      } catch (localError) {
-        toast.error(t('errors.savingBulletin', 'Error saving bulletin: {{message}}', { message: (error as Error).message }));
-      }
+      // Nothing syncs automatically. The unsaved work stays in this browser's
+      // draft (restored on reload) until a save succeeds, so say exactly that.
+      flushDraftSave();
+      toast.warning(t('errors.notSavedKeptOnDevice', 'Not saved yet. Your changes are kept on this device. Please try saving again.'), {
+        toastId: 'not-saved-kept-on-device'
+      });
     } finally {
       setLoading(false);
     }
@@ -1107,7 +1207,8 @@ function EditorApp() {
           bulletinData,
           user.id,
           undefined,
-          currentProfileSlug || undefined
+          currentProfileSlug || undefined,
+          { newSlug: reserveNewSlug(user.id, bulletinData.date) }
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);
@@ -1136,14 +1237,25 @@ function EditorApp() {
         title: t('common.unsavedChangesTitle', 'Unsaved Changes'),
         message: t('common.signOutUnsavedConfirm', 'You have unsaved changes. Sign out anyway?'),
         variant: 'warning',
-        onConfirm: () => {
-          supabase?.auth.signOut();
+        onConfirm: async () => {
+          // Discarding: the draft must not survive for the next person on this browser
+          clearLocalDraft();
+          await supabase?.auth.signOut();
         }
       });
       return;
     }
+    clearLocalDraft();
     await supabase?.auth.signOut();
   };
+
+  useEffect(() => {
+    if (saveAfterAuth && user) {
+      setSaveAfterAuth(false);
+      handleSaveBulletin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveAfterAuth, user]);
 
   // Ctrl/Cmd+S saves instead of opening the browser's save dialog. The ref
   // keeps the listener stable while always calling the latest handler.
@@ -1364,7 +1476,8 @@ function EditorApp() {
           bulletinData,
           user.id,
           undefined,
-          currentProfileSlug || undefined
+          currentProfileSlug || undefined,
+          { newSlug: reserveNewSlug(user.id, bulletinData.date) }
         ));
         setCurrentBulletinId(savedBulletin.id);
         setHasUnsavedChanges(false);
@@ -2084,10 +2197,16 @@ function EditorApp() {
             setShowAuthModal(false);
             setAuthModalMode(undefined);
             setAuthModalPrefillEmail(undefined);
+            const returnTo = authReturnToRef.current;
+            authReturnToRef.current = null;
+            if (returnTo) {
+              navigate(returnTo);
+              return;
+            }
             const draft = await robustService.restoreDraftAfterAuth();
             if (draft) {
               setBulletinData(draft);
-              await handleSaveBulletin();
+              setSaveAfterAuth(true);
             }
           }}
           mode={authModalMode}

@@ -21,6 +21,12 @@ export default function TemplatesModal({ isOpen, onClose, onSelect }: TemplatesM
   useEffect(() => {
     if (isOpen) {
       setTemplates(templateService.listTemplates());
+      // Pick up templates saved on the user's other devices
+      let cancelled = false;
+      templateService.syncWithCloud().then(() => {
+        if (!cancelled) setTemplates(templateService.listTemplates());
+      });
+      return () => { cancelled = true; };
     }
   }, [isOpen]);
 

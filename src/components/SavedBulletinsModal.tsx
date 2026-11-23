@@ -58,7 +58,7 @@ export default function SavedBulletinsModal({
   // Use local state to persist bulletins even when query cache is cleared
   const [localBulletins, setLocalBulletins] = useState<any[]>([]);
   
-  const { data: bulletins = [], isLoading: loading, error } = useQuery({
+  const { data: bulletins = [], isLoading: loading, error, refetch } = useQuery({
     queryKey: profileSlug ? ['shared-profile-bulletins', profileSlug] : ['user-bulletins', cachedUserId],
     queryFn: async () => {
       if (profileSlug) {
@@ -85,6 +85,15 @@ export default function SavedBulletinsModal({
     // Keep data in cache longer to prevent disappearing during refetches
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  // This component stays mounted while the modal is closed, so refetchOnMount
+  // never fires again. Fetch fresh every time it opens, so a bulletin saved a
+  // moment ago is listed without reloading the page.
+  useEffect(() => {
+    if (isOpen && (cachedUserId || profileSlug)) {
+      refetch();
+    }
+  }, [isOpen, refetch, cachedUserId, profileSlug]);
 
   // Update local state whenever bulletins change, but never clear it
   useEffect(() => {
