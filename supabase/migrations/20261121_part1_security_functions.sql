@@ -95,14 +95,15 @@ BEGIN
     IF NOT FOUND THEN v_bulletin_id := NULL; END IF;
   END IF;
 
-  -- Otherwise the newest published bulletin (never a draft)
+  -- Otherwise an active bulletin, else the newest archived one (never a draft).
+  -- Active must win over a newer archived bulletin.
   IF v_bulletin_id IS NULL THEN
     SELECT id, slug, created_by, profile_slug, meeting_date, meeting_type, status, created_at
     INTO v_bulletin
     FROM public.bulletins
     WHERE (created_by = v_owner.id OR profile_slug = p_profile_slug)
       AND status IN ('active', 'archived')
-    ORDER BY created_at DESC
+    ORDER BY (status = 'active') DESC, created_at DESC
     LIMIT 1;
     IF NOT FOUND THEN
       RETURN NULL;

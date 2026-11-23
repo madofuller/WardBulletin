@@ -1609,6 +1609,20 @@ export const bulletinService = {
 
     // If no active bulletin is set, get their latest bulletin
     // Include bulletins created by profile owner OR bulletins for this profile (e.g. by editors)
+    // Public view: an active bulletin wins over a newer archived one.
+    if (!bulletinId && options.publicView) {
+      const { data: activeBulletin, error: activeError } = await supabase
+        .from('bulletins')
+        .select('id')
+        .or(`created_by.eq.${userData.id},profile_slug.eq."${profileSlug}"`)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (activeError) throw activeError;
+      if (activeBulletin) bulletinId = activeBulletin.id;
+    }
+
     if (!bulletinId) {
       const { data: latestBulletin, error: latestError } = await supabase
         .from('bulletins')
