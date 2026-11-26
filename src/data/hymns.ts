@@ -405,9 +405,25 @@ export const LDS_HYMNS: Record<number, string> = {
   1060: "Build an Ark",
   1061: "Love Will Bless Our Home",
   1062: "Lord, Accept Our Humble Fast",
+  1063: "Peace, Peace, Be Still",
+  1064: "Great Is Thy Faithfulness",
+  1065: "Isaiah Said",
+  1066: "Fight the Good Fight",
+  1067: "It's Joyful to Live the Gospel",
+  1068: "To God Be the Glory",
+  1069: "Speak to Us, Lord",
+  1070: "The Miracle",
+  1071: "What God Calls Us To",
+  1072: "When I Survey the Wondrous Cross",
+  1073: "Be Thou My Vision",
+  1074: "Our Savior Brings Us Joy",
+  1075: "Jesus Is the Strength of Youth",
+  1076: "How I Love the House of God",
+  1077: "God's Armor",
+  1078: "Seek Peace",
 
 
-  // Easter and Christmas (1201–1210)
+  // Easter and Christmas (1201–1212)
   1201: "Hail the Day That Sees Him Rise",
   1202: "He Is Born, the Divine Christ Child",
   1203: "What Child Is This?",
@@ -417,7 +433,9 @@ export const LDS_HYMNS: Record<number, string> = {
   1207: "Still, Still, Still",
   1208: "Go Tell It on the Mountain",
   1209: "Little Baby in a Manger",
-  1210: "Long Ago, Within a Garden"
+  1210: "Long Ago, Within a Garden",
+  1211: "O Come, O Come, Emmanuel",
+  1212: "A Quiet Night"
 };
 
 export const getHymnTitle = (number: number): string => {
@@ -438,6 +456,8 @@ const getHymnRelease = (number: number): number | null => {
   if ((number >= 1042 && number <= 1051) || (number >= 1208 && number <= 1209)) return 5;
   // Release 6: 1052-1062, 1210
   if ((number >= 1052 && number <= 1062) || number === 1210) return 6;
+  // Release 7: 1063-1078, 1211-1212
+  if ((number >= 1063 && number <= 1078) || (number >= 1211 && number <= 1212)) return 7;
   return null;
 };
 

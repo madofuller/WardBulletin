@@ -230,22 +230,31 @@ export const JAPANESE_HYMNS: Record<number, JapaneseHymn> = {
   199: { title: "神権持つ子らよ", englishSlug: "rise-up-o-men-of-god" },
   200: { title: "天父は灯台のごとく", englishSlug: "brightly-beams-our-fathers-mercy" },
 
-  // 安息日と週日 (Sabbath and Weekday) - New Hymns 1001-1009
+  // Hymns—For Home and Church: Sabbath and Weekday (1001–1018)
   1001: { title: "恵みの泉", englishSlug: "come-thou-fount-of-every-blessing" },
   1002: { title: "救い主が来る時", englishSlug: "when-the-savior-comes-again" },
   1003: { title: "わが胸に平安あり", englishSlug: "it-is-well-with-my-soul" },
-  1004: { title: "主と歩もう", englishSlug: "with-jesus-by-my-side" },
+  1004: { title: "主と歩もう", englishSlug: "i-will-walk-with-jesus" },
   1005: { title: "一羽のすずめに主は養いを", englishSlug: "his-eye-is-on-the-sparrow" },
-  1006: { title: "思い出そう聖なる歌", englishSlug: "i-sing-with-my-heart" },
-  1007: { title: "祭壇でさかれるパン", englishSlug: "as-we-break-bread-we-think-of-thee" },
-  1008: { title: "命のパン、生ける水", englishSlug: "o-jesus-bread-of-life" },
+  1006: { title: "思い出そう聖なる歌", englishSlug: "think-a-sacred-song" },
+  1007: { title: "祭壇でさかれるパン", englishSlug: "as-bread-is-broken" },
+  1008: { title: "命のパン、生ける水", englishSlug: "bread-of-life-living-water" },
   1009: { title: "ゲツセマネ", englishSlug: "gethsemane" },
+  1010: { title: "恵みに満ちたる", englishSlug: "amazing-grace" },
+  1011: { title: "世界中と手をつなぐ", englishSlug: "holding-hands-around-the-world" },
+  1012: { title: "どんなときも、どこにいても", englishSlug: "anytime-anywhere" },
+  1013: { title: "神の優しき愛", englishSlug: "gods-gracious-love" },
+  1014: { title: "羊飼いは与えらる", englishSlug: "my-shepherd-will-supply-my-need" },
+  1015: { title: "おお、主の深き愛", englishSlug: "oh-the-deep-deep-love-of-jesus" },
+  1016: { title: "主の手の釘跡", englishSlug: "behold-the-wounds-in-jesus-hands" },
+  1017: { title: "キリスト、神の御子", englishSlug: "this-is-the-christ" },
+  1018: { title: "主よ来たりたまえ", englishSlug: "come-lord-jesus" },
 
-  // 復活祭とクリスマス (Easter and Christmas) - New Hymns 1201-1204
+  // Hymns—For Home and Church: Easter and Christmas (1201–1204)
   1201: { title: "よみがえりし主", englishSlug: "hail-the-day-that-sees-him-rise" },
   1202: { title: "降誕されし神の御子", englishSlug: "he-is-born-the-divine-christ-child" },
   1203: { title: "牧人見守り", englishSlug: "what-child-is-this" },
-  1204: { title: "輝く星よ", englishSlug: "star-bright" }
+  1204: { title: "輝く星よ", englishSlug: "star-bright" },
 };
 
 // Get the Japanese hymn title by number

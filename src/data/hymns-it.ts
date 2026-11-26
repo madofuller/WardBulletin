@@ -234,22 +234,46 @@ export const ITALIAN_HYMNS: Record<number, ItalianHymn> = {
   // Patria (Homeland) - Hymn 202
   202: { title: "Va, pensiero sull'ali dorate", englishSlug: "god-save-the-king" },
 
-  // Giorno del Signore e altri giorni della settimana (Sabbath and Weekday) - Hymns 1001-1062
+  // Hymns—For Home and Church: Sabbath and Weekday (1001–1031)
   1001: { title: "O Sorgente d'ogni bene", englishSlug: "come-thou-fount-of-every-blessing" },
   1002: { title: "Quando il Salvatore tornerà", englishSlug: "when-the-savior-comes-again" },
   1003: { title: "Tutto è ben, mio Signor", englishSlug: "it-is-well-with-my-soul" },
-  1004: { title: "Con Gesù al mio fianco", englishSlug: "with-jesus-by-my-side" },
+  1004: { title: "Con Gesù al mio fianco", englishSlug: "i-will-walk-with-jesus" },
   1005: { title: "So ch'Ei veglia su di me", englishSlug: "his-eye-is-on-the-sparrow" },
-  1006: { title: "Canto col mio cuor", englishSlug: "i-sing-with-my-heart" },
-  1007: { title: "Spezzando il pane pensiamo a Te", englishSlug: "as-we-break-bread-we-think-of-thee" },
-  1008: { title: "O Gesù, Pane di vita", englishSlug: "o-jesus-bread-of-life" },
+  1006: { title: "Canto col mio cuor", englishSlug: "think-a-sacred-song" },
+  1007: { title: "Spezzando il pane pensiamo a Te", englishSlug: "as-bread-is-broken" },
+  1008: { title: "O Gesù, Pane di vita", englishSlug: "bread-of-life-living-water" },
   1009: { title: "Getsemani", englishSlug: "gethsemane" },
+  1010: { title: "Sublime grazia", englishSlug: "amazing-grace" },
+  1011: { title: "Con la mano nella man", englishSlug: "holding-hands-around-the-world" },
+  1012: { title: "Sempre e ovunque andrò", englishSlug: "anytime-anywhere" },
+  1013: { title: "L'amore misericordioso di Dio", englishSlug: "gods-gracious-love" },
+  1014: { title: "Il mio Pastor mi sosterrà", englishSlug: "my-shepherd-will-supply-my-need" },
+  1015: { title: "Oh, profondo, vasto amore", englishSlug: "oh-the-deep-deep-love-of-jesus" },
+  1016: { title: "Le mani di Gesù guardiam", englishSlug: "behold-the-wounds-in-jesus-hands" },
+  1017: { title: "Il Cristo è Lui", englishSlug: "this-is-the-christ" },
+  1018: { title: "Vieni a noi, Gesù", englishSlug: "come-lord-jesus" },
+  1019: { title: "Come fai Tu, io amerò", englishSlug: "to-love-like-thee" },
+  1020: { title: "Con tenerezza Gesù sta chiamando", englishSlug: "softly-and-tenderly-jesus-is-calling" },
+  1021: { title: "Io so che mi ama il Signor", englishSlug: "i-know-that-my-savior-loves-me" },
+  1022: { title: "Fede in ogni passo", englishSlug: "faith-in-every-footstep" },
+  1023: { title: "Saldo alle promesse", englishSlug: "standing-on-the-promises" },
+  1024: { title: "Credo in Te, mio Signor", englishSlug: "i-have-faith-in-the-lord-jesus-christ" },
+  1025: { title: "Rendi il mio cuor, Signor, a Te consacrato", englishSlug: "take-my-heart-and-let-it-be-consecrated" },
+  1026: { title: "Starò in luoghi santi", englishSlug: "holy-places" },
+  1027: { title: "Accolti a casa", englishSlug: "welcome-home" },
+  1028: { title: "Piccola luce mia", englishSlug: "this-little-light-of-mine" },
+  1029: { title: "I doni che il Padre elargisce", englishSlug: "i-cant-count-them-all" },
+  1030: { title: "Sempre a me vicin", englishSlug: "close-as-a-quiet-prayer" },
+  1031: { title: "O voi, venite ad ascoltare", englishSlug: "come-hear-the-word-the-lord-has-spoken" },
 
-  // Pasqua e Natale (Easter and Christmas) - Hymns 1201-1204
+  // Hymns—For Home and Church: Easter and Christmas (1201–1206)
   1201: { title: "Oggi Cristo s'ergerà", englishSlug: "hail-the-day-that-sees-him-rise" },
   1202: { title: "Oggi è nato Gesù bambin", englishSlug: "he-is-born-the-divine-christ-child" },
   1203: { title: "Chi è quel bimbo?", englishSlug: "what-child-is-this" },
-  1204: { title: "O Stella!", englishSlug: "star-bright" }
+  1204: { title: "O Stella!", englishSlug: "star-bright" },
+  1205: { title: "Santi esultate in cor!", englishSlug: "let-easter-anthems-ring" },
+  1206: { title: "Eri lì?", englishSlug: "were-you-there" },
 };
 
 // Get the Italian hymn title by number
